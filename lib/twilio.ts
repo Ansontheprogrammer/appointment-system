@@ -15,6 +15,28 @@ export const getTextMessageTwiml = (res: any) => {
     }
 }
 
+// export async function correctZipCode(req, res, next){
+//     const userMessage: string  = extractText(req.body.Body)
+//     const sendTextMessage = getTextMessageTwiml(res);
+
+//     const phoneNumber = phoneNumberFormatter(req.body.From)
+
+//     // Validate that the user responded with a valid zip code
+//     const validatedUserResponse = lookup(userMessage);
+
+//     if(!!validatedUserResponse){
+//         try {
+//             // move user to next step
+//             await database.updateCustomer(phoneNumber, 'stepNumber', 3)
+//             // update user zip code
+//             await database.updateCustomer(phoneNumber, 'zipCode', userMessage)
+//             // send text alert deal customization message
+//             return sendTextMessage(`Thank you. Now we will begin sending you the best deals in the ${validatedUserResponse.city}, ${validatedUserResponse.state} area via picture message. \n\nEvery Monday at 8am you will receive deals running deals running either Monday, Tuesday, Wednesday or Thursday. \n\nEvery Friday at 8am you will receive deals in your area running throughout Friday, Saturday or Sunday. \n\nThank you for subscribing and enjoy.`)
+//         } catch(err) { next(err) }
+//     } else return sendTextMessage(`You must enter a valid zip code.`)
+// }
+
+
 export function extractText(body: string): string {
     return String(body.toLowerCase().match(/\w+/g))
 }
