@@ -2,7 +2,7 @@ import * as twilioLib from '../lib/twilio'
 
 const steps = {
     // This object will contain the appropriate function in respect to the customer's step number
-    // '1': twilioLib.confirmZipCode,
+    '1': twilioLib.textChoseBarber,
     // '2': twilioLib.correctZipCode,
     // '3': twilioLib.completedTextAlertSetup
 }

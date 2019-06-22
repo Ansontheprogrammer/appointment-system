@@ -11,11 +11,14 @@ app.use(express.json());       // to support JSON-encoded bodies
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 
+// Phone system
 app.post('/api/phoneAppointmentFlow', twilioLib.phoneAppointmentFlow)
 app.post('/api/bookAppointment', twilioLib.bookAppointment)
 app.post('/api/chosenBarber', twilioLib.chosenBarber)
 app.post('/api/confirmation', twilioLib.confirmation)
-app.post('/api/getCustomerFlow', twilioLib.textMessageFlow, flow.processFlow)
+
+// Text system
+app.post('/api/textMessageFlow', twilioLib.textMessageFlow, flow.processFlow)
 app.get('/api/ping', (req, res, next) => {
   res.sendStatus(200);
 })

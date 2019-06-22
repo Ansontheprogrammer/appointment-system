@@ -13,8 +13,8 @@ describe('Database class', () => {
 
     afterEach(() => {
         // restore all mongo db functions
-        BarberModel.find.restore()
-        BarberModel.findOne.restore()
+        // BarberModel.find.restore()
+        // BarberModel.findOne.restore()
     })
 
     // const deals = [ 

@@ -18,7 +18,7 @@ export const getTextMessageTwiml = (res: any) => {
 
 
 export function extractText(body: string): string {
-    return String(body.toLowerCase().match(/\w+/g))
+    return String(body.match(/\w+/gi))
 }
 
 export function phoneAppointmentFlow(req, res, next) {
@@ -39,11 +39,12 @@ export function phoneAppointmentFlow(req, res, next) {
 export function bookAppointment(req, res, next) {
     const keyPress = res.req.body.Digits
     // Use the Twilio Node.js SDK to build an XML response
-   const twiml = new VoiceResponse();
+    const twiml = new VoiceResponse();
     const gather = twiml.gather({
         action: '/api/chosenBarber',
         method: 'POST',
-        numDigits: 1
+        numDigits: 1,
+        timeout: 7,
     });
 
     if(keyPress === '1'){
@@ -52,7 +53,7 @@ export function bookAppointment(req, res, next) {
         return res.send(twiml.toString());
     } else if(keyPress === '2'){
         twiml.say(`Okay I'm connecting you to the shop right now.`, { voice: 'Polly.Joanna' })
-        twiml.dial('6128796369');
+        twiml.dial('9082097544');
           res.set('Content-Type', 'text/xml');
           return res.send(twiml.toString());
     } else {
@@ -111,15 +112,92 @@ export function errorMessage(req, res, next) {
    res.sendStatus(200);
 }
 
+
+/* *************** Text Message Flow ******************* */
+
+
+function validateMessage(body: string, validResponses: string[]){
+    const extractedNumber = body.match(/\d/gi)
+    
+    console.log(extractedNumber, 'extractedNumber')
+
+    if(!extractedNumber) return null;
+
+    console.log(validResponses.find(validResponse => validResponse === extractedNumber[0]), 'is user message valid');
+    return validResponses.find(validResponse => validResponse === extractedNumber[0])
+}
+
+export async function textChoseBarber(req, res, next){
+    const userMessage: string  = extractText(req.body.Body)
+
+    const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
+    const isUserMessageValid = !!validatedResponse;
+    const sendTextMessage = getTextMessageTwiml(res);
+
+    if(!isUserMessageValid) return sendTextMessage('You must a valid response 1, 2 or 3');
+
+    try {
+        await database.updateCustomer(phoneNumberFormatter(req.body.From), 'stepNumber', '2')
+    } catch(err) { next(err) }
+    
+
+    switch(validatedResponse){
+        case '1':
+            sendTextMessage('Awesome! Julian will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm')
+            break
+        case '2': 
+            sendTextMessage('Awesome! Anthony will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm')   
+            break
+        case '3': 
+            sendTextMessage('Awesome! Jimmy will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm')
+            break
+    }
+}
+
+export async function textGetName(req, res, next){
+    const userMessage: string  = extractText(req.body.Body)
+
+    const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
+    const isUserMessageValid = !!validatedResponse;
+    const sendTextMessage = getTextMessageTwiml(res);
+
+    if(!isUserMessageValid) return sendTextMessage('You must a valid response 1, 2 or 3');
+
+    try {
+        await database.updateCustomer(phoneNumberFormatter(req.body.From), 'stepNumber', '2')
+    } catch(err) { next(err) }
+    
+
+    switch(validatedResponse){
+        case '1':
+            sendTextMessage('Awesome! Julian will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm')
+            break
+        case '2': 
+            sendTextMessage('Awesome! Anthony will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm')   
+            break
+        case '3': 
+            sendTextMessage('Awesome! Jimmy will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm')
+            break
+    }
+}
+
+
 export async function textMessageFlow(req, res, next){
-    const customer =  await database.findBarberInDatabase(phoneNumberFormatter(req.body.From))
-    if(!customer) {
-        const sendTextMessage = getTextMessageTwiml(res)
-        return sendTextMessage('Sorry it appears that you are not signed up to Sale Hogs Text alerts')
-    } else {
+    const phoneNumber = phoneNumberFormatter(req.body.From);
+    
+    try {
+        let customer =  await database.findCustomerInDatabase(phoneNumber)
+
+        if(!customer) {
+            const sendTextMessage = getTextMessageTwiml(res)
+            sendTextMessage(`Thank you, this fades of gray appointment system. I'm going to help book your appointment today. Great! Which barber would you like to use today? Text 1 for Julian, Text 2 for Anthony, Text 3 for Antadre`)
+            customer = await database.createCustomer(phoneNumber);
+        } 
+
         req.customer = customer;
         next()
-    }
+    } catch(err) { next(err) }
+    
 }
 
 export function phoneNumberFormatter(phoneNumber: string){
