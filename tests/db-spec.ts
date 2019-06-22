@@ -1,22 +1,92 @@
 import 'mocha';
 import * as assert from 'assert';
-import {BarberModel} from '../lib/database';
+import { Database, BarberModel, BARBER } from '../lib/database';
 import sinon from 'sinon';
 
 describe('Database class', () => {
+    const database = new Database();
+ 
+    // stub out all database functions
+    sinon.stub(BarberModel, 'find')
+    sinon.stub(BarberModel, 'findOne')
 
     beforeEach(() => {
-        // stub out all database functions
-        sinon.stub(BarberModel, 'find')
-        sinon.stub(BarberModel, 'findOne')
+        
     })
 
     afterEach(() => {
         // restore all mongo db functions
-        BarberModel.find.restore()
-        BarberModel.findOne.restore()
     })
 
+    describe('firstLetterUpperCase', () => {
+        it('it should change letter to upperCase', () => {
+            const name = Database.firstLetterUpperCase('anson')
+            assert.equal(name, 'Anson');
+        })
+    })
+
+    describe('findBarberInDatabase', () => {
+        it('it should find barber in mongo db', done => {
+            const expectedBarber: BARBER = {
+                phoneNumber: '9082097544',
+                email: 'ansonervin@gmail.com',
+                firstName: 'Anson',
+                lastName: 'Ervin',
+                zipCode: '07083',
+                appointments: [
+                    {
+                        customer: {
+                            phoneNumber: '9082097544',
+                            firstName: 'Idris',
+                            stepNumber: '1'
+                        },
+                        time: '5pm - 6pm'
+                    }
+                ]
+            };
+
+            (BarberModel as any)
+            .findOne
+            .withArgs({ phoneNumber: '9082097544' })
+            .yields(null, expectedBarber)
+            
+            database.findBarberInDatabase('9082097544').then(barber => {
+                // convert user variable to object
+                assert.deepEqual(barber, expectedBarber);
+                (BarberModel as any).findOne.restore()
+                done()
+            }, done);
+        })
+
+        it('it should not find a barber', done => {
+            const expectedBarber: BARBER = {
+                phoneNumber: '9082097544',
+                email: 'ansonervin@gmail.com',
+                firstName: 'Anson',
+                lastName: 'Ervin',
+                zipCode: '07083',
+                appointments: [
+                    {
+                        customer: {
+                            phoneNumber: '9082097544',
+                            firstName: 'Idris',
+                            stepNumber: '1'
+                        },
+                        time: '5pm - 6pm'
+                    }
+                ]
+            };
+
+            
+            database.findBarberInDatabase('974903903').then(barber => {
+                console.log(barber, 'barber')
+                done()
+            }, err => {
+                console.log(err, 'err')
+                done()
+            });
+        })
+    })
     // const deals = [ 
     //     { daysAvailable: [ 'Monday' ],
     //         _id: '5ce2e5288986ad6ae939f8ed',

@@ -13,24 +13,43 @@ mongoose
 // *******************SCHEMA DECLARATIONS***************************
 const Schema = mongoose.Schema;
 
+const customerSchema = new Schema( {
+	phoneNumber: { type: String, required: true },
+	firstName: { type: String, required: true },
+    stepNumber: { type: String, required: true }
+})
+
 const barberSchema = new Schema( {
     phoneNumber: { type: String, required: true },
     email: { type: String, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     zipCode: { type: String, required: true },
-    stepNumber: { type: String, required: true }
+    appointments: {
+		customer: customerSchema,
+		time: String
+	}
 })
 
-export const BarberModel = mongoose.model('customer', barberSchema)
+export const BarberModel = mongoose.model('barber', barberSchema)
+export const CustomerModel = mongoose.model('customer', customerSchema)
 
-export interface BARBER {
+export type BARBER = {
     phoneNumber: string,
     email: string, 
     firstName: string, 
     lastName: string,
     zipCode: string,
-    stepNumber?: string
+	appointments: [{
+		customer: CUSTOMER,
+		time: string,
+	}]
+}
+
+export type CUSTOMER = {
+	phoneNumber: string,
+	firstName: string,
+	stepNumber?: string
 }
 
 
@@ -40,9 +59,10 @@ export class Database {
 	}
 
 	public findBarberInDatabase(phoneNumber: string): Promise<mongoose.Document>{
-		
+
 		return new Promise((resolve, reject) => {
 			BarberModel.findOne({ phoneNumber }, function(err, doc){
+				console.log('inside find one', err, 'err', doc, 'doc')
 				if(err) return reject(err);
 				if(!doc) return resolve(null);
 				else return resolve(doc)
@@ -50,7 +70,7 @@ export class Database {
 		})
 	}
 
-	public findAllBarbers(): Promise<mongoose.Document>{
+	public findAllBarbers(): Promise<mongoose.Document[]>{
 		
 		return new Promise((resolve, reject) => {
 			BarberModel.find({}, function(err, docs){
@@ -74,17 +94,17 @@ export class Database {
 		})
 	}
 	
-	public createBarber(customerInfo: BARBER){
+	public createBarber(barberInfo: BARBER){
 		// Assign step number field before saving
-		customerInfo = Object.assign(customerInfo, { stepNumber: '1' })
-		customerInfo.firstName = Database.firstLetterUpperCase(customerInfo.firstName)
-		customerInfo.lastName = Database.firstLetterUpperCase(customerInfo.lastName)
-		customerInfo.email = customerInfo.email.toLowerCase();
+		barberInfo = Object.assign(barberInfo, { stepNumber: '1' })
+		barberInfo.firstName = Database.firstLetterUpperCase(barberInfo.firstName)
+		barberInfo.lastName = Database.firstLetterUpperCase(barberInfo.lastName)
+		barberInfo.email = barberInfo.email.toLowerCase();
 
 		return new Promise((resolve, reject) => {
-			this.hasBarberSignedUp(customerInfo.phoneNumber).then(hasBarberSignedUp => {
-				if(hasBarberSignedUp) return reject('Customer has already signed up.')
-				const customer = new BarberModel(customerInfo)
+			this.hasPersonSignedUp(barberInfo.phoneNumber).then(hasPersonSignedUp => {
+				if(hasPersonSignedUp) return reject('Customer has already signed up.')
+				const customer = new BarberModel(barberInfo)
 		
 				// saving customer to database
 				customer.save(function(err, updatedDoc){
@@ -93,9 +113,53 @@ export class Database {
 				})
 			})
 		})
-    }
+	}
+	
+	public findCustomerInDatabase(phoneNumber: string): Promise<mongoose.Document>{
+		
+		return new Promise((resolve, reject) => {
+			CustomerModel.findOne({ phoneNumber }, function(err, doc){
+				if(err) return reject(err);
+				if(!doc) return resolve(null);
+				else return resolve(doc)
+			})
+		})
+	}
+
+	public createCustomer(phoneNumber: string): Promise<mongoose.Document>{
+		// Assign step number field before saving
+		const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
+
+		console.log(customerInfo, 'customer information')
+
+		return new Promise((resolve, reject) => {
+			this.hasPersonSignedUp(customerInfo.phoneNumber).then(hasPersonSignedUp => {
+				if(hasPersonSignedUp) return reject('Customer has already signed up.')
+				const customer = new CustomerModel(customerInfo)
+		
+				// saving customer to database
+				customer.save(function(err, updatedDoc){
+					if(err) reject(err);
+					resolve(updatedDoc)
+				})
+			})
+		})
+	}
+	
+	public updateCustomer(phoneNumber: string, prop, value: string | number | string[]){
+		// finish check to ensure stock list isn't already created.
+		return new Promise((resolve, reject) => {
+			this.findCustomerInDatabase(phoneNumber).then(docs => {
+				(docs as any)[prop] = value;
+				docs.save(function(err, updatedDoc){
+					if(err) reject(err);
+					resolve(updatedDoc);
+				})
+			}, reject)
+		})
+	}
     
-    public hasBarberSignedUp(phoneNumber: string): Promise<boolean>{
+    public hasPersonSignedUp(phoneNumber: string): Promise<boolean>{
 
         return new Promise((resolve, reject) => {
             this.findBarberInDatabase(phoneNumber).then(user => {
