@@ -148,6 +148,15 @@ function validateMessage(body: string, validResponses: string[]) {
   )
 }
 
+export async function confirmAppointmentTime(req, res, next) {
+  //Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm
+
+  const userMessage: string = extractText(req.body.Body)
+  const sendTextMessage = getTextMessageTwiml(res)
+
+  sendTextMessage(`You chose ${userMessage}`)
+}
+
 export async function textChoseBarber(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
 
@@ -185,6 +194,13 @@ export async function textChoseBarber(req, res, next) {
       )
       break
   }
+
+  await database.updateCustomer(
+    phoneNumberFormatter(req.body.From),
+    'stepNumber',
+    '3'
+  )
+  next()
 }
 
 export async function textGetName(req, res, next) {
@@ -225,6 +241,8 @@ export async function textMessageFlow(req, res, next) {
         `Thank you, this fades of gray appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
       )
       customer = await database.createCustomer(phoneNumber)
+    } else {
+      // do something else
     }
 
     req.customer = customer
