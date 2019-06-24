@@ -3,8 +3,8 @@ import * as twilioLib from '../lib/twilio'
 const steps = {
   // This object will contain the appropriate function in respect to the customer's step number
   '1': twilioLib.textGetName,
-  '2': twilioLib.textChoseBarber
-  // '3': twilioLib.completedTextAlertSetup
+  '2': twilioLib.textChoseBarber,
+  '3': twilioLib.confirmAppointmentTime
 }
 
 export function processFlow(req, res, next) {
