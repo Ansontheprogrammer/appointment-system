@@ -152,20 +152,13 @@ export class Database {
     })
   }
 
-  public updateCustomer(
-    phoneNumber: string,
-    prop,
-    value: string | number | string[]
-  ) {
+  public updateCustomer(phoneNumber: string, update: {}) {
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
-      this.findCustomerInDatabase(phoneNumber).then(docs => {
-        ;(docs as any)[prop] = value
-        docs.save(function(err, updatedDoc) {
-          if (err) reject(err)
-          resolve(updatedDoc)
-        })
-      }, reject)
+      CustomerModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
+        if(err) reject(err)
+        else resolve()
+      })
     })
   }
 

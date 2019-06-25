@@ -170,8 +170,7 @@ export async function textChoseBarber(req, res, next) {
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      'stepNumber',
-      '3'
+      { 'stepNumber' : '3' }
     )
   } catch (err) {
     next(err)
@@ -190,13 +189,12 @@ export async function textChoseBarber(req, res, next) {
   }
 
   sendTextMessage(
-    `Awesome! ${barberName} will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm`
+    `Awesome! ${barberName} will be excited. Press: \n1 to book for 11am to 12pm \n2 for 12pm to 1pm\n 3 for 1pm to 2pm\n 4 for 2pm to 3pm\n 5 for 3pm to 4pm\n 6 for 4pm to 5pm\n 7 for 6pm to 7pm\n 8 for 7pm to 8pm`
   )
-
+  
   await database.updateCustomer(
     phoneNumberFormatter(req.body.From),
-    'stepNumber',
-    '3'
+    { 'stepNumber' : '3' }
   )
   next()
 }
@@ -208,8 +206,7 @@ export async function textGetName(req, res, next) {
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      'firstName',
-      userMessage
+      { 'firstName' : userMessage }
     )
 
     sendTextMessage(
@@ -218,8 +215,7 @@ export async function textGetName(req, res, next) {
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      'stepNumber',
-      '2'
+      { 'stepNumber' : '2' }
     )
     next()
   } catch (err) {
