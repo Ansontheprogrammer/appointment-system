@@ -147,7 +147,7 @@ function validateMessage(body: string, validResponses: string[]) {
   )
 }
 
-export async function confirmAppointmentTime(req, res, next) {
+export async function textConfirmAppointmentTime(req, res, next) {
   //Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm
 
   const userMessage: string = extractText(req.body.Body)
@@ -189,7 +189,7 @@ export async function textChoseBarber(req, res, next) {
   }
 
   sendTextMessage(
-    `Awesome! ${barberName} will be excited. Press: \n1 to book for 11am to 12pm \n2 for 12pm to 1pm\n 3 for 1pm to 2pm\n 4 for 2pm to 3pm\n 5 for 3pm to 4pm\n 6 for 4pm to 5pm\n 7 for 6pm to 7pm\n 8 for 7pm to 8pm`
+    `Awesome! ${barberName} will be excited. Press: \n(1) to book for 11am to 12pm \n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`
   )
   
   await database.updateCustomer(
@@ -210,7 +210,7 @@ export async function textGetName(req, res, next) {
     )
 
     sendTextMessage(
-      `Thanks, ${userMessage}! Which barber would you like to use today? Text 1 for Julian, Text 2 for Anthony, Text 3 for Antadre`
+      `Thanks, ${userMessage}! Which barber would you like to use today? Press: \n(1) for Julian \n(2) for Anthony \n(3) for Antadre`
     )
 
     await database.updateCustomer(

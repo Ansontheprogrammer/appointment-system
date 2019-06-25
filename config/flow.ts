@@ -4,7 +4,7 @@ const steps = {
   // This object will contain the appropriate function in respect to the customer's step number
   '1': twilioLib.textGetName,
   '2': twilioLib.textChoseBarber,
-  '3': twilioLib.confirmAppointmentTime
+  '3': twilioLib.textConfirmAppointmentTime
 }
 
 export function processFlow(req, res, next) {
