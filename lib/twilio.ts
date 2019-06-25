@@ -94,7 +94,7 @@ export function chosenBarber(req, res, next) {
     return res.send(twiml.toString())
   } else if (keyPress === '3') {
     gather.say(
-      'Awesome! Antadre will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm',
+      'Awesome! Jimmy will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm',
       { voice: 'Polly.Joanna' }
     )
     return res.send(twiml.toString())
@@ -163,6 +163,7 @@ export async function textChoseBarber(req, res, next) {
   const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
   const isUserMessageValid = !!validatedResponse
   const sendTextMessage = getTextMessageTwiml(res)
+  let barberName = '';
 
   if (!isUserMessageValid)
     return sendTextMessage('You must a valid response 1, 2 or 3')
@@ -179,22 +180,20 @@ export async function textChoseBarber(req, res, next) {
 
   switch (validatedResponse) {
     case '1':
-      sendTextMessage(
-        'Awesome! Julian will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm'
-      )
+      barberName = 'Julian'
       break
     case '2':
-      sendTextMessage(
-        'Awesome! Anthony will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm'
-      )
+      barberName = 'Anthony'
       break
     case '3':
-      sendTextMessage(
-        'Awesome! Jimmy will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm'
-      )
+      barberName = 'Jimmy'
       break
   }
 
+  sendTextMessage(
+    `Awesome! ${barberName} will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm`
+  )
+  
   await database.updateCustomer(
     phoneNumberFormatter(req.body.From),
     'stepNumber',
