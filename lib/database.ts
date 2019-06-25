@@ -19,7 +19,16 @@ const customerSchema = new Schema({
   phoneNumber: { type: String, required: true },
   firstName: { type: String, required: false },
   stepNumber: { type: String, required: true },
-  sessionChosenBarber: { type: String, required: false }
+  session: {
+    barber: String,
+    service: String,
+    time: String
+  },
+  creditCard: {
+    number: String,
+    expiration: String,
+    code: String
+  }
 })
 
 const barberSchema = new Schema({
@@ -29,7 +38,10 @@ const barberSchema = new Schema({
   lastName: { type: String, required: true },
   zipCode: { type: String, required: true },
   appointments: {
-    customer: customerSchema,
+    customer: {
+      phoneNumber: String,
+      firstName: String,
+    },
     time: String
   }
 })

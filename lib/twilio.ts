@@ -140,6 +140,166 @@ function validateMessage(body: string, validResponses: string[]) {
   return validResponses.includes(extractedNumber)
 }
 
+export function phoneNumberFormatter(phoneNumber: string) {
+  if (phoneNumber[0] === '+') return phoneNumber.slice(2)
+  if (phoneNumber[0] === '1') return phoneNumber.slice(1)
+  return phoneNumber
+}
+
+export async function textMessageFlow(req, res, next) {
+  const phoneNumber = phoneNumberFormatter(req.body.From)
+
+  try {
+    let customer = await database.findCustomerInDatabase(phoneNumber)
+
+    if (!customer) {
+      const sendTextMessage = getTextMessageTwiml(res)
+      sendTextMessage(
+        `Thank you, this Fades of Gray appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
+      )
+      customer = await database.createCustomer(phoneNumber)
+    } else {
+      if (customer.get('stepNumber') === '3'){
+        req.barber = customer.get('sessionChosenBarber')
+      }
+    }
+
+    req.customer = customer
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function textGetName(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const sendTextMessage = getTextMessageTwiml(res)
+  const phoneNumber = phoneNumberFormatter(req.body.From)
+  try {
+    await database.updateCustomer(
+      phoneNumber,
+      { 'firstName' : userMessage }
+    )
+
+    sendTextMessage(
+      `Thanks, ${userMessage}! What type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`
+    )
+
+    await database.updateCustomer(
+      phoneNumber,
+      { 'stepNumber' : '2' }
+    )
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function textChooseService(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const sendTextMessage = getTextMessageTwiml(res)
+  const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+  const validatedResponse = validateMessage(userMessage, validResponses)
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
+      if(index === 0) return response
+      if(index === validResponses.length - 1) return ` or ${response}` 
+      return ' ' + response
+    })}\nWhat type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`)
+
+  try {
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { 'firstName' : userMessage }
+    )
+
+    sendTextMessage(
+      `Thanks, ${userMessage}! Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`
+    )
+
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { 'stepNumber' : '2' }
+    )
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function textAdditionalService(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const sendTextMessage = getTextMessageTwiml(res)
+
+  try {
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { 'firstName' : userMessage }
+    )
+
+    sendTextMessage(
+      `Thanks, ${userMessage}! Which barber would you like to use today? Press: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`
+    )
+
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { 'stepNumber' : '2' }
+    )
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function textChoseBarber(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const phoneNumber: string = req.body.From
+  const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
+  const sendTextMessage = getTextMessageTwiml(res)
+  let barberName = '';
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must a valid response 1, 2 or 3\nPress: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`)
+
+  try {
+    await database.updateCustomer(
+      phoneNumberFormatter(phoneNumber),
+      { 'stepNumber' : '3' }
+    )
+  } catch (err) {
+    next(err)
+  }
+
+  switch (userMessage) {
+    case '1':
+      barberName = 'Julian'
+      break
+    case '2':
+      barberName = 'Anthony'
+      break
+    case '3':
+      barberName = 'Jimmy'
+      break
+  }
+
+  sendTextMessage(
+    `Awesome! ${barberName} will be excited. Press:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`
+  )
+  
+  await database.updateCustomer(
+    phoneNumberFormatter(req.body.From),
+    { 'stepNumber' : '3' }
+  )
+
+  await database.updateCustomer(
+    phoneNumberFormatter(req.body.From),
+    { 'sessionChosenBarber' : barberName }
+  )
+  next()
+}
+
+
 export async function textConfirmAppointmentTime(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8']
@@ -182,107 +342,6 @@ export async function textConfirmAppointmentTime(req, res, next) {
       break
   }
 
-  sendTextMessage(`Okay great! So to confirm \nYou have an appointment with ${req.barber} at ${time} hope you enjoy your day!`)
+  sendTextMessage(`Okay great! So to confirm \nYou have an appointment with ${req.barber} at ${time}\nAlso would you like a graphic design or hair drawing for $5+ today?\nPress (1) for yes`)
 }
 
-export async function textChoseBarber(req, res, next) {
-  const userMessage: string = extractText(req.body.Body)
-  const phoneNumber: string = req.body.From
-  const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
-  const sendTextMessage = getTextMessageTwiml(res)
-  let barberName = '';
-
-  if (!validatedResponse)
-    return sendTextMessage(`You must a valid response 1, 2 or 3\nPress: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`)
-
-  try {
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { 'stepNumber' : '3' }
-    )
-  } catch (err) {
-    next(err)
-  }
-
-  switch (userMessage) {
-    case '1':
-      barberName = 'Julian'
-      break
-    case '2':
-      barberName = 'Anthony'
-      break
-    case '3':
-      barberName = 'Jimmy'
-      break
-  }
-
-  sendTextMessage(
-    `Awesome! ${barberName} will be excited. Press:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`
-  )
-  
-  await database.updateCustomer(
-    phoneNumberFormatter(req.body.From),
-    { 'stepNumber' : '3' }
-  )
-
-  await database.updateCustomer(
-    phoneNumberFormatter(req.body.From),
-    { 'sessionChosenBarber' : barberName }
-  )
-  next()
-}
-
-export async function textGetName(req, res, next) {
-  const userMessage: string = extractText(req.body.Body)
-  const sendTextMessage = getTextMessageTwiml(res)
-
-  try {
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { 'firstName' : userMessage }
-    )
-
-    sendTextMessage(
-      `Thanks, ${userMessage}! Which barber would you like to use today? Press: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`
-    )
-
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { 'stepNumber' : '2' }
-    )
-    next()
-  } catch (err) {
-    next(err)
-  }
-}
-
-export async function textMessageFlow(req, res, next) {
-  const phoneNumber = phoneNumberFormatter(req.body.From)
-
-  try {
-    let customer = await database.findCustomerInDatabase(phoneNumber)
-
-    if (!customer) {
-      const sendTextMessage = getTextMessageTwiml(res)
-      sendTextMessage(
-        `Thank you, this fades of gray appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
-      )
-      customer = await database.createCustomer(phoneNumber)
-    } else {
-      if (customer.get('stepNumber') === '3'){
-        req.barber = customer.get('sessionChosenBarber')
-      }
-    }
-
-    req.customer = customer
-    next()
-  } catch (err) {
-    next(err)
-  }
-}
-
-export function phoneNumberFormatter(phoneNumber: string) {
-  if (phoneNumber[0] === '+') return phoneNumber.slice(2)
-  if (phoneNumber[0] === '1') return phoneNumber.slice(1)
-  return phoneNumber
-}
