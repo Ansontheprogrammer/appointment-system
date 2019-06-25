@@ -119,7 +119,6 @@ export function confirmation(req, res, next) {
 }
 
 export function errorMessage(req, res, next) {
-  console.log(res, 'in booking appointment response')
   // Use the Twilio Node.js SDK to build an XML response
   const twiml = new VoiceResponse()
 
@@ -193,7 +192,7 @@ export async function textChoseBarber(req, res, next) {
   sendTextMessage(
     `Awesome! ${barberName} will be excited. Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm`
   )
-  
+
   await database.updateCustomer(
     phoneNumberFormatter(req.body.From),
     'stepNumber',

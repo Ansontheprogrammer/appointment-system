@@ -64,7 +64,6 @@ export class Database {
   public findBarberInDatabase(phoneNumber: string): Promise<mongoose.Document> {
     return new Promise((resolve, reject) => {
       BarberModel.findOne({ phoneNumber }, function(err, doc) {
-        console.log('inside find one', err, 'err', doc, 'doc')
         if (err) return reject(err)
         if (!doc) return resolve(null)
         else return resolve(doc)
@@ -120,9 +119,7 @@ export class Database {
     })
   }
 
-  public findCustomerInDatabase(
-    phoneNumber: string
-  ): Promise<mongoose.Document> {
+  public findCustomerInDatabase(phoneNumber: string): Promise<mongoose.Document> {
     return new Promise((resolve, reject) => {
       CustomerModel.findOne({ phoneNumber }, function(err, doc) {
         if (err) return reject(err)
@@ -136,18 +133,18 @@ export class Database {
     // Assign step number field before saving
     const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
 
-    console.log(customerInfo, 'customer information')
-
     return new Promise((resolve, reject) => {
       this.hasPersonSignedUp(customerInfo.phoneNumber).then(
         hasPersonSignedUp => {
           if (hasPersonSignedUp)
             return reject('Customer has already signed up.')
+
           const customer = new CustomerModel(customerInfo)
 
           // saving customer to database
           customer.save(function(err, updatedDoc) {
             if (err) reject(err)
+            console.log(updatedDoc, 'updated Doc')
             resolve(updatedDoc)
           })
         }
