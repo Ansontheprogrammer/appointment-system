@@ -18,7 +18,8 @@ const Schema = mongoose.Schema
 const customerSchema = new Schema({
   phoneNumber: { type: String, required: true },
   firstName: { type: String, required: false },
-  stepNumber: { type: String, required: true }
+  stepNumber: { type: String, required: true },
+  sessionChosenBarber: { type: String, required: false }
 })
 
 const barberSchema = new Schema({
@@ -54,6 +55,7 @@ export type CUSTOMER = {
   phoneNumber: string
   firstName: string
   stepNumber?: string
+  sessionChosenBarber?: string
 }
 
 export class Database {
@@ -81,20 +83,13 @@ export class Database {
     })
   }
 
-  public updateBarber(
-    phoneNumber: string,
-    prop,
-    value: string | number | string[]
-  ) {
+  public updateBarber(phoneNumber: string, update: {}) {
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
-      this.findBarberInDatabase(phoneNumber).then(docs => {
-        ;(docs as any)[prop] = value
-        docs.save(function(err, updatedDoc) {
-          if (err) reject(err)
-          resolve(updatedDoc)
-        })
-      }, reject)
+      BarberModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
+        if(err) reject(err)
+        else resolve()
+      })
     })
   }
 

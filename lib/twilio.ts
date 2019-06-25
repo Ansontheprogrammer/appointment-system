@@ -1,6 +1,6 @@
 import config from '../config/config'
 import twilio from 'twilio'
-import { Database } from './database'
+import { Database, CustomerModel } from './database'
 
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -132,10 +132,11 @@ export function errorMessage(req, res, next) {
 /* *************** Text Message Flow ******************* */
 
 function validateMessage(body: string, validResponses: string[]) {
-  const extractedNumber = body.match(/\d/gi)[0] as string
-
-  if (!extractedNumber) return null
-
+  let extractedNumber;
+  extractedNumber = body.match(/\d/gi)
+ 
+  if (!extractedNumber) return false
+  extractedNumber = extractedNumber[0]
   return validResponses.includes(extractedNumber)
 }
 
@@ -145,20 +146,48 @@ export async function textConfirmAppointmentTime(req, res, next) {
   //Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm
   const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
+  let time;
 
   if (!validatedResponse)
     return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
       if(index === 0) return response
-      if(index === validResponses.length - 1) return `or ${response}` 
+      if(index === validResponses.length - 1) return ` or ${response}` 
       return ' ' + response
-    })}\nPress:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`)
+    })}\nPress:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 5pm to 6pm\n(8) for 6pm to 7pm`)
 
-  sendTextMessage(`You chose ${userMessage}`)
+  switch(userMessage){
+    case '1':
+      time = '11am - 12pm'
+      break
+    case '2':
+      time = '12pm - 1pm'
+      break
+    case '3':
+      time = '1pm - 2pm'
+      break
+    case '4':
+      time = '2pm - 3pm'
+      break
+    case '5':
+      time = '3pm - 4pm'
+      break
+    case '6':
+      time = '4pm - 5pm'
+      break
+    case '7':
+      time = '5pm - 6pm'
+      break
+    case '8':
+      time = '6pm - 7pm'
+      break
+  }
+
+  sendTextMessage(`Okay great! So to confirm \nYou have an appointment with ${req.barber} at ${time} hope you enjoy your day!`)
 }
 
 export async function textChoseBarber(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
-
+  const phoneNumber: string = req.body.From
   const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
   const sendTextMessage = getTextMessageTwiml(res)
   let barberName = '';
@@ -194,6 +223,11 @@ export async function textChoseBarber(req, res, next) {
   await database.updateCustomer(
     phoneNumberFormatter(req.body.From),
     { 'stepNumber' : '3' }
+  )
+
+  await database.updateCustomer(
+    phoneNumberFormatter(req.body.From),
+    { 'sessionChosenBarber' : barberName }
   )
   next()
 }
@@ -235,7 +269,9 @@ export async function textMessageFlow(req, res, next) {
       )
       customer = await database.createCustomer(phoneNumber)
     } else {
-      // do something else
+      if (customer.get('stepNumber') === '3'){
+        req.barber = customer.get('sessionChosenBarber')
+      }
     }
 
     req.customer = customer
