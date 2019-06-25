@@ -132,26 +132,26 @@ export function errorMessage(req, res, next) {
 /* *************** Text Message Flow ******************* */
 
 function validateMessage(body: string, validResponses: string[]) {
-  const extractedNumber = body.match(/\d/gi)
-
-  console.log(extractedNumber, 'extractedNumber')
+  const extractedNumber = body.match(/\d/gi)[0] as string
 
   if (!extractedNumber) return null
 
-  console.log(
-    validResponses.find(validResponse => validResponse === extractedNumber[0]),
-    'is user message valid'
-  )
-  return validResponses.find(
-    validResponse => validResponse === extractedNumber[0]
-  )
+  return validResponses.includes(extractedNumber)
 }
 
 export async function textConfirmAppointmentTime(req, res, next) {
-  //Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm
-
   const userMessage: string = extractText(req.body.Body)
+  const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8']
+  //Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm
+  const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
+      if(index === 0) return response
+      if(index === validResponses.length - 1) return `or ${response}` 
+      return ' ' + response
+    })}\nPress:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`)
 
   sendTextMessage(`You chose ${userMessage}`)
 }
@@ -160,12 +160,11 @@ export async function textChoseBarber(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
 
   const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
-  const isUserMessageValid = !!validatedResponse
   const sendTextMessage = getTextMessageTwiml(res)
   let barberName = '';
 
-  if (!isUserMessageValid)
-    return sendTextMessage('You must a valid response 1, 2 or 3')
+  if (!validatedResponse)
+    return sendTextMessage(`You must a valid response 1, 2 or 3\nPress: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`)
 
   try {
     await database.updateCustomer(
@@ -176,7 +175,7 @@ export async function textChoseBarber(req, res, next) {
     next(err)
   }
 
-  switch (validatedResponse) {
+  switch (userMessage) {
     case '1':
       barberName = 'Julian'
       break
@@ -189,7 +188,7 @@ export async function textChoseBarber(req, res, next) {
   }
 
   sendTextMessage(
-    `Awesome! ${barberName} will be excited. Press: \n(1) to book for 11am to 12pm \n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`
+    `Awesome! ${barberName} will be excited. Press:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`
   )
   
   await database.updateCustomer(
@@ -210,7 +209,7 @@ export async function textGetName(req, res, next) {
     )
 
     sendTextMessage(
-      `Thanks, ${userMessage}! Which barber would you like to use today? Press: \n(1) for Julian \n(2) for Anthony \n(3) for Antadre`
+      `Thanks, ${userMessage}! Which barber would you like to use today? Press: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`
     )
 
     await database.updateCustomer(
