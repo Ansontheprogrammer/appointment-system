@@ -160,7 +160,7 @@ export async function textMessageFlow(req, res, next) {
       customer = await database.createCustomer(phoneNumber)
     } else {
       if (customer.get('stepNumber') === '3'){
-        req.barber = customer.get('sessionChosenBarber')
+        req.barber = customer.get('barber')
       }
     }
 
@@ -175,21 +175,32 @@ export async function textGetName(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
   const phoneNumber = phoneNumberFormatter(req.body.From)
+
   try {
-    await database.updateCustomer(
-      phoneNumber,
-      { 'firstName' : userMessage }
-    )
-
-    sendTextMessage(
-      `Thanks, ${userMessage}! What type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`
-    )
-
-    await database.updateCustomer(
-      phoneNumber,
-      { 'stepNumber' : '2' }
-    )
-    next()
+    if(req.customer.get('stepNumber') == '6'){
+      sendTextMessage(
+        `Welcome back, ${req.customer.get('firstName')}! What type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`
+      )
+  
+      await database.updateCustomer(
+        phoneNumber,
+        { 'stepNumber' : '2' }
+      )
+    } else {
+      await database.updateCustomer(
+        phoneNumber,
+        { 'firstName' : userMessage }
+      )
+  
+      sendTextMessage(
+        `Thanks, ${userMessage}! What type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`
+      )
+  
+      await database.updateCustomer(
+        phoneNumber,
+        { 'stepNumber' : '2' }
+      )
+    }
   } catch (err) {
     next(err)
   }
@@ -200,6 +211,7 @@ export async function textChooseService(req, res, next) {
   const sendTextMessage = getTextMessageTwiml(res)
   const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
   const validatedResponse = validateMessage(userMessage, validResponses)
+  let service, total;
 
   if (!validatedResponse)
     return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
@@ -207,22 +219,65 @@ export async function textChooseService(req, res, next) {
       if(index === validResponses.length - 1) return ` or ${response}` 
       return ' ' + response
     })}\nWhat type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`)
+  
+  switch(userMessage){
+    case '1':
+      service = 'Adult Haircut'
+      total = 25
+      break
+    case '2':
+      service = 'Child Haircut'
+      total = 15
+      break
+    case '3':
+      service = 'Haircut and Shave'
+      total = 35
+      break
+    case '4':
+      service = 'Beard Trim'
+      total = 10
+      break
+    case '5':
+      service = 'Dry Shave and Clippers'
+      total = 10
+      break
+    case '6':
+      service = 'Razor Shave'
+      total = 15
+      break
+    case '7':
+      service = 'Hairline or Edge Up'
+      total = 10
+      break
+    case '8':
+      service = 'Mustache Trim'
+      total = 7
+      break
+    case '9':
+      service = 'Shampoo'
+      total = 15
+      break
+  }
 
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { 'firstName' : userMessage }
+      { 'stepNumber' : '3' }
     )
 
     sendTextMessage(
-      `Thanks, ${userMessage}! Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`
+      `Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`
     )
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { 'stepNumber' : '2' }
+      { service }
     )
-    next()
+
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { total }
+    )
   } catch (err) {
     next(err)
   }
@@ -231,22 +286,40 @@ export async function textChooseService(req, res, next) {
 export async function textAdditionalService(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
+  let additionalService;
+  const validResponses = ['1', '2']
+  const validatedResponse = validateMessage(userMessage, validResponses)
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
+      if(index === 0) return response
+      if(index === validResponses.length - 1) return ` or ${response}` 
+      return ' ' + response
+    })}\nWould you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`)
+
+  switch(userMessage){
+    case '1':
+      additionalService = 'Yes'
+      break
+    case '2':
+      additionalService = 'No'
+      break
+  }
 
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { 'firstName' : userMessage }
+      { additionalService } 
+    )
+    
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { 'stepNumber' : '4' }
     )
 
     sendTextMessage(
-      `Thanks, ${userMessage}! Which barber would you like to use today? Press: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`
+      `Okay, Which barber would you like to use today? Press: \n(1) for Julian\n(2) for Anthony\n(3) for Jimmy`
     )
-
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { 'stepNumber' : '2' }
-    )
-    next()
   } catch (err) {
     next(err)
   }
@@ -254,22 +327,13 @@ export async function textAdditionalService(req, res, next) {
 
 export async function textChoseBarber(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
-  const phoneNumber: string = req.body.From
+  const phoneNumber: string = phoneNumberFormatter(req.body.From)
   const validatedResponse = validateMessage(userMessage, ['1', '2', '3'])
   const sendTextMessage = getTextMessageTwiml(res)
   let barberName = '';
 
   if (!validatedResponse)
     return sendTextMessage(`You must a valid response 1, 2 or 3\nPress: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`)
-
-  try {
-    await database.updateCustomer(
-      phoneNumberFormatter(phoneNumber),
-      { 'stepNumber' : '3' }
-    )
-  } catch (err) {
-    next(err)
-  }
 
   switch (userMessage) {
     case '1':
@@ -283,29 +347,51 @@ export async function textChoseBarber(req, res, next) {
       break
   }
 
-  sendTextMessage(
-    `Awesome! ${barberName} will be excited. Press:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 6pm to 7pm\n(8) for 7pm to 8pm`
-  )
-  
+  let availableTimes = [
+    '11am - 12pm',
+    '12pm - 1pm',
+    '1pm - 2pm',
+    '2pm - 3pm',
+    '3pm - 4pm',
+    '4pm - 5pm',
+    '5pm - 6pm',
+    '6pm - 7pm',
+    '7pm - 8pm'
+  ]
   await database.updateCustomer(
-    phoneNumberFormatter(req.body.From),
-    { 'stepNumber' : '3' }
+    phoneNumber,
+    { 'stepNumber' : '5' }
   )
 
   await database.updateCustomer(
-    phoneNumberFormatter(req.body.From),
-    { 'sessionChosenBarber' : barberName }
+    phoneNumber,
+    { barber: barberName}
   )
-  next()
+  
+  await database.findBarberInDatabase(barberName).then(barber => {
+    const schedule = barber.get('appointments').toObject()
+    const timesTaken = schedule.map(customer =>  customer.time);
+
+    // filter out times available from times taken
+    timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1) ) 
+
+    sendTextMessage(
+      `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
+    )
+  })
 }
 
 
 export async function textConfirmAppointmentTime(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8']
-  //Press 1 to book for 11am to 12pm, 2 for 12pm to 1pm, 3 for 1pm to 2pm, 4 for 2pm to 3pm, 5 for 3pm to 4pm, 6 for 4pm to 5pm, 7 for 6pm to 7pm, or 8 for 7pm to 8pm
   const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
+  const service = req.customer.get('service');
+  const barber = req.customer.get('barber');
+  const total = req.customer.get('total');
+  const firstName = req.customer.get('firstName');
+  const phoneNumber = req.customer.get('phoneNumber')
   let time;
 
   if (!validatedResponse)
@@ -342,6 +428,20 @@ export async function textConfirmAppointmentTime(req, res, next) {
       break
   }
 
-  sendTextMessage(`Okay great! So to confirm \nYou have an appointment with ${req.barber} at ${time}\nAlso would you like a graphic design or hair drawing for $5+ today?\nPress (1) for yes`)
+  sendTextMessage(`Awesome! So to confirm \nYou've just made your an appointment\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`)
+  try {
+    await database.addAppointment(barber, { phoneNumber, firstName }, time)
+    
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { 'stepNumber' : '6' }
+    )
+
+    sendTextMessage(
+      `Okay, Which barber would you like to use today? Press: \n(1) for Julian\n(2) for Anthony\n(3) for Jimmy`
+    )
+  } catch (err) {
+    next(err)
+  }
 }
 

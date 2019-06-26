@@ -19,11 +19,11 @@ const customerSchema = new Schema({
   phoneNumber: { type: String, required: true },
   firstName: { type: String, required: false },
   stepNumber: { type: String, required: true },
-  session: {
-    barber: String,
-    service: String,
-    time: String
-  },
+  barber: String,
+  service: String,
+  additionalService: String,
+  time: String,
+  total: Number,
   creditCard: {
     number: String,
     expiration: String,
@@ -37,13 +37,11 @@ const barberSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   zipCode: { type: String, required: true },
-  appointments: {
-    customer: {
-      phoneNumber: String,
-      firstName: String,
-    },
+  appointments: [{
+    phoneNumber: String,
+    firstName: String,
     time: String
-  }
+  }]
 })
 
 export const BarberModel = mongoose.model('barber', barberSchema)
@@ -75,9 +73,9 @@ export class Database {
     return string[0].toUpperCase() + string.slice(1)
   }
 
-  public findBarberInDatabase(phoneNumber: string): Promise<mongoose.Document> {
+  public findBarberInDatabase(firstName: string): Promise<mongoose.Document> {
     return new Promise((resolve, reject) => {
-      BarberModel.findOne({ phoneNumber }, function(err, doc) {
+      BarberModel.findOne({ firstName }, function(err, doc) {
         if (err) return reject(err)
         if (!doc) return resolve(null)
         else return resolve(doc)
@@ -95,14 +93,29 @@ export class Database {
     })
   }
 
-  public updateBarber(phoneNumber: string, update: {}) {
+  public updateBarber(firstName: string, update: {}) {
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
-      BarberModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
+      
+      BarberModel.findOneAndUpdate({ firstName }, update, (err, doc) => {
         if(err) reject(err)
         else resolve()
       })
     })
+  }
+
+  public addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string) {
+    const { phoneNumber, firstName } = customer
+    // finish check to ensure stock list isn't already created.
+    return new Promise((resolve, reject) => {
+			this.findBarberInDatabase(barberFirstName).then(docs => {
+				(docs as any)['appointments'] = (docs as any)['appointments'].concat({firstName, phoneNumber, time})
+				docs.save(function(err, updatedDoc){
+          if(err) reject(err);
+					resolve(updatedDoc);
+				})
+			}, reject)
+		})
   }
 
   public createBarber(barberInfo: BARBER) {
@@ -113,7 +126,7 @@ export class Database {
     barberInfo.email = barberInfo.email.toLowerCase()
 
     return new Promise((resolve, reject) => {
-      this.hasPersonSignedUp(barberInfo.phoneNumber).then(hasPersonSignedUp => {
+      this.hasPersonSignedUp(barberInfo.firstName).then(hasPersonSignedUp => {
         if (hasPersonSignedUp) return reject('Customer has already signed up.')
         const customer = new BarberModel(barberInfo)
 
@@ -160,6 +173,10 @@ export class Database {
   }
 
   public updateCustomer(phoneNumber: string, update: {}) {
+    // if((update as any).session){
+    //   update = (update as any).session
+    // }
+    console.log('updating', update)
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
       CustomerModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
