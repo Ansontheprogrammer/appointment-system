@@ -24,6 +24,7 @@ const customerSchema = new Schema({
   additionalService: String,
   time: String,
   total: Number,
+  completeTextFlow: Boolean,
   creditCard: {
     number: String,
     expiration: String,
@@ -37,11 +38,13 @@ const barberSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   zipCode: { type: String, required: true },
-  appointments: [{
+  appointments: {
     phoneNumber: String,
     firstName: String,
-    time: String
-  }]
+    time: String,
+    calendar: [{
+    }]
+  }
 })
 
 export const BarberModel = mongoose.model('barber', barberSchema)
@@ -172,10 +175,6 @@ export class Database {
   }
 
   public updateCustomer(phoneNumber: string, update: {}) {
-    // if((update as any).session){
-    //   update = (update as any).session
-    // }
-    console.log('updating', update)
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
       CustomerModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
