@@ -65,7 +65,6 @@ export type CUSTOMER = {
   phoneNumber: string
   firstName: string
   stepNumber?: string
-  sessionChosenBarber?: string
 }
 
 export class Database {
