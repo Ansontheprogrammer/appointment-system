@@ -26,20 +26,23 @@ import { Database } from './database'
 //     }, next)
 // }
 
-// export function createDeal(req, res, next) {
-//     /**
-//      * @req body = {
-//      *  title: string;
-//         body: string;
-//         category: string;
-//         companyName: string;
-//         originalPrice: string;
-//         dealPrice: string;
-//         daysAvailable: string[];
-//         timeOfDay: "breakfast" | "lunch" | "dinner";
-//     * }
-//      */
-//     new Database().storeDeal(req.body).then(() => {
-//         res.sendStatus(200)
-//     }, next)
-// }
+export function createBarber(req, res, next) {
+    /**
+     * @req body = {
+     * phoneNumber: string
+        email: string
+        firstName: string
+        lastName: string
+        zipCode: string
+        appointments: [
+            {
+            customer: CUSTOMER
+            time: string
+            }
+        ]
+    * }
+     */
+    new Database().createBarber(req.body).then(() => {
+        res.sendStatus(200)
+    }, next)
+}
