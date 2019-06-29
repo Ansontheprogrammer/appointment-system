@@ -38,13 +38,7 @@ const barberSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   zipCode: { type: String, required: true },
-  appointments: {
-    phoneNumber: String,
-    firstName: String,
-    time: String,
-    calendar: [{
-    }]
-  }
+  appointments: { type: Array }
 })
 
 export const BarberModel = mongoose.model('barber', barberSchema)
@@ -182,7 +176,7 @@ export class Database {
     return new Promise((resolve, reject) => {
       CustomerModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
         if (err) reject(err)
-        else { 
+        else {
           console.log(doc, 'doc');
           resolve()
         }
