@@ -282,7 +282,7 @@ function validateMessage(body: string, validResponses: string[]) {
   return validResponses.includes(extractedNumber)
 }
 
-function extractedNumber(body: string){
+function extractedNumber(body: string) {
   let extractedNumber
   extractedNumber = body.match(/\d/gi)
 
@@ -350,6 +350,7 @@ export async function textGetName(req, res, next) {
       }
 
       sendTextMessage(message)
+
       await database.updateCustomer(
         phoneNumber,
         { 'stepNumber': '2' }
@@ -374,25 +375,15 @@ export async function textChooseService(req, res, next) {
     message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
   }
 
-  // sendTextMessage(message)
-
   console.log('USER RESPONSE', userMessage)
 
-  // if(userMessage.length > 1){
-    userMessage.split(',').forEach(n => {
-      const service = serviceList[n].service
-      const price = serviceList[n].price
-  
-      services.push(service)
-      total += price
-    })
-  // } else {
-  //   const service = serviceList[userMessage].service
-  //   const price = serviceList[userMessage].price
+  userMessage.split(',').forEach(n => {
+    const service = serviceList[n].service
+    const price = serviceList[n].price
 
-  //   services.push(service)
-  //   total += price
-  // }
+    services.push(service)
+    total += price
+  })
 
   console.log('=====================')
   console.log(services, total)
@@ -403,11 +394,6 @@ export async function textChooseService(req, res, next) {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
       { 'service': services, 'total': total, 'stepNumber': '3' }
-    )
-
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { 'stepNumber': '3' }
     )
 
     sendTextMessage(
@@ -423,9 +409,11 @@ export async function textChooseService(req, res, next) {
 export async function textAdditionalService(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
-  let additionalService;
   const validResponses = ['1', '2']
   const validatedResponse = validateMessage(userMessage, validResponses)
+
+  let additionalService
+  let total = req.customer.total
 
   if (!validatedResponse)
     return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
@@ -436,6 +424,7 @@ export async function textAdditionalService(req, res, next) {
 
   switch (userMessage) {
     case '1':
+      total += 5
       additionalService = 'Yes'
       break
     case '2':
@@ -446,7 +435,7 @@ export async function textAdditionalService(req, res, next) {
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { additionalService }
+      { additionalService, total }
     )
 
     await database.updateCustomer(
@@ -501,7 +490,7 @@ export async function textChoseBarber(req, res, next) {
   )
 
   await database.findBarberInDatabase(barberName).then(barber => {
-    if(barber.get('appointments')){
+    if (barber.get('appointments')) {
       const schedule = barber.get('appointments').toObject()
       const timesTaken = schedule.map(customer => customer.time);
 
@@ -509,6 +498,7 @@ export async function textChoseBarber(req, res, next) {
       timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
     }
   })
+
   console.log(availableTimes, 'availableTimes')
   sendTextMessage(
     `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
