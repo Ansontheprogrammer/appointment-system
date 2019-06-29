@@ -80,7 +80,10 @@ export class Database {
       BarberModel.findOne({ firstName }, function (err, doc) {
         if (err) return reject(err)
         if (!doc) return resolve(null)
-        else return resolve(doc)
+        else {
+          console.log(doc, 'doc')
+          return resolve(doc)
+        }
       })
     })
   }
@@ -179,7 +182,10 @@ export class Database {
     return new Promise((resolve, reject) => {
       CustomerModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
         if (err) reject(err)
-        else resolve()
+        else { 
+          console.log(doc, 'doc');
+          resolve()
+        }
       })
     })
   }

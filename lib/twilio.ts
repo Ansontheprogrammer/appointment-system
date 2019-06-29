@@ -43,13 +43,13 @@ export async function phoneAppointmentFlow(req, res, next) {
   const customer = await database.findCustomerInDatabase(phoneNumber)
   if (!!customer) {
     gather.say(
-      `${randomGreeting()} ${customer.get('firstName')}!Shakir Cutz, Welcomes you back. What type of service would you like today? Press: \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo`,
-      { voice: 'Polly.Salli' }
+      `${randomGreeting()} ${customer.get('firstName')}!Barber Sharp, Welcomes you back. What type of service would you like today? Press: \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo`,
+      { voice: 'Polly.Justin' }
     )
   } else {
     gather.say(
-      'Hey, thank you for calling Shakir Cutz!. We would love to service you today. What type of service would you like? Press: \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo',
-      { voice: 'Polly.Salli' }
+      'Hey, thank you for calling Barber Sharp!. We would love to service you today. What type of service would you like? Press: \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo',
+      { voice: 'Polly.Justin' }
     )
   }
 
@@ -108,7 +108,7 @@ export async function chooseService(req, res, next) {
       break
     case '0':
       twiml.say(`${randomWord()}! I'm connecting you to the shop right now.`, {
-        voice: 'Polly.Salli'
+        voice: 'Polly.Justin'
       })
       twiml.dial('9082097544')
       res.set('Content-Type', 'text/xml')
@@ -130,8 +130,8 @@ export async function chooseService(req, res, next) {
   }
 
   gather.say(
-    `${randomWord()}! So you would like a ${service} and your current total is $${total}. Which barber would you like today? Press one for Julian, Press two for Anthony, Press 3 for Jimmy`,
-    { voice: 'Polly.Salli' }
+    `${randomWord()}! So you would like a ${service} and your current total is $${total}. Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
+    { voice: 'Polly.Justin' }
   )
   return res.send(twiml.toString())
 }
@@ -150,13 +150,13 @@ export async function chosenBarber(req, res, next) {
 
   switch (keyPress) {
     case '1':
-      barberName = 'Julian'
+      barberName = 'Kelly'
       break
     case '2':
-      barberName = 'Anthony'
+      barberName = 'Anson'
       break
     case '3':
-      barberName = 'Jimmy'
+      barberName = 'Idris'
       break
   }
 
@@ -188,13 +188,13 @@ export async function chosenBarber(req, res, next) {
   if (!availableTimes.length) {
     twiml.say(
       `${randomWord()} but I'm so sorry! ${barberName} is all booked up for the day. please try back at another time?`,
-      { voice: 'Polly.Salli' }
+      { voice: 'Polly.Justin' }
     )
     return res.send(twiml.toString())
   } else {
     gather.say(
       `${randomWord()}! ${barberName} will be excited. Time to book your appointment. Here is ${barberName}'s current schedule for today. Press:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`,
-      { voice: 'Polly.Salli' }
+      { voice: 'Polly.Justin' }
     )
   }
   return res.send(twiml.toString())
@@ -213,7 +213,7 @@ export async function confirmation(req, res, next) {
   const twiml = new VoiceResponse()
   twiml.say(
     `${randomWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today. Goodbye`,
-    { voice: 'Polly.Salli' }
+    { voice: 'Polly.Justin' }
   )
   res.send(twiml.toString())
 
@@ -230,6 +230,7 @@ export async function confirmation(req, res, next) {
   ]
 
   await database.findBarberInDatabase(barber).then(foundBarber => {
+    console.log(foundBarber, 'foundBarber')
     const schedule = foundBarber.get('appointments').toObject()
     const timesTaken = schedule.map(customer => customer.time);
 
@@ -263,7 +264,7 @@ export function errorMessage(req, res, next) {
   // Use the Twilio Node.js SDK to build an XML response
   const twiml = new VoiceResponse()
 
-  twiml.say('That was an invalid response', { voice: 'Polly.Salli' })
+  twiml.say('That was an invalid response', { voice: 'Polly.Justin' })
   twiml.redirect('/api/phoneAppointmentFlow')
   // Render the response as XML in reply to the webhook request
   res.send(twiml.toString())
@@ -281,6 +282,14 @@ function validateMessage(body: string, validResponses: string[]) {
   return validResponses.includes(extractedNumber)
 }
 
+function extractedNumber(body: string){
+  let extractedNumber
+  extractedNumber = body.match(/\d/gi)
+
+  if (!extractedNumber) return false
+  return extractedNumber
+}
+
 export function phoneNumberFormatter(phoneNumber: string) {
   if (phoneNumber[0] === '+') return phoneNumber.slice(2)
   if (phoneNumber[0] === '1') return phoneNumber.slice(1)
@@ -296,7 +305,7 @@ export async function textMessageFlow(req, res, next) {
     if (!customer) {
       const sendTextMessage = getTextMessageTwiml(res)
       sendTextMessage(
-        `Thank you, this is Shakir Cutz appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
+        `Thank you, this is Barber Sharp appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
       )
       customer = await database.createCustomer(phoneNumber)
     } else {
@@ -365,17 +374,25 @@ export async function textChooseService(req, res, next) {
     message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
   }
 
-  sendTextMessage(message)
+  // sendTextMessage(message)
 
   console.log('USER RESPONSE', userMessage)
 
-  userMessage.split(',').forEach(n => {
-    const service = serviceList[n].service
-    const price = serviceList[n].price
+  // if(userMessage.length > 1){
+    userMessage.split(',').forEach(n => {
+      const service = serviceList[n].service
+      const price = serviceList[n].price
+  
+      services.push(service)
+      total += price
+    })
+  // } else {
+  //   const service = serviceList[userMessage].service
+  //   const price = serviceList[userMessage].price
 
-    services.push(service)
-    total += price
-  })
+  //   services.push(service)
+  //   total += price
+  // }
 
   console.log('=====================')
   console.log(services, total)
@@ -388,16 +405,17 @@ export async function textChooseService(req, res, next) {
       { 'service': services, 'total': total, 'stepNumber': '3' }
     )
 
-    sendTextMessage(
-      `Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`
-    )
-
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
       { 'stepNumber': '3' }
     )
-    next()
+
+    sendTextMessage(
+      `Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`
+    )
+
   } catch (err) {
+    console.error(err, 'error')
     next(err)
   }
 }
@@ -437,7 +455,7 @@ export async function textAdditionalService(req, res, next) {
     )
 
     sendTextMessage(
-      `Okay, Which barber would you like to use today? Press: \n(1) for Julian\n(2) for Anthony\n(3) for Jimmy`
+      `Okay, Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`
     )
   } catch (err) {
     next(err)
@@ -452,17 +470,17 @@ export async function textChoseBarber(req, res, next) {
   let barberName = '';
 
   if (!validatedResponse)
-    return sendTextMessage(`You must a valid response 1, 2 or 3\nPress: \n(1) for Julian\n(2) for Anthony\n(3) for Antadre`)
+    return sendTextMessage(`You must a valid response 1, 2 or 3\nPress: \n(1) for Kelly\n(2) for Anson\n(3) for Antadre`)
 
   switch (userMessage) {
     case '1':
-      barberName = 'Julian'
+      barberName = 'Kelly'
       break
     case '2':
-      barberName = 'Anthony'
+      barberName = 'Anson'
       break
     case '3':
-      barberName = 'Jimmy'
+      barberName = 'Idris'
       break
   }
 
@@ -483,16 +501,18 @@ export async function textChoseBarber(req, res, next) {
   )
 
   await database.findBarberInDatabase(barberName).then(barber => {
-    const schedule = barber.get('appointments').toObject()
-    const timesTaken = schedule.map(customer => customer.time);
+    if(barber.get('appointments')){
+      const schedule = barber.get('appointments').toObject()
+      const timesTaken = schedule.map(customer => customer.time);
 
-    // filter out times available from times taken
-    timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
-
-    sendTextMessage(
-      `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
-    )
+      // filter out times available from times taken
+      timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
+    }
   })
+  console.log(availableTimes, 'availableTimes')
+  sendTextMessage(
+    `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
+  )
 }
 
 
@@ -528,15 +548,13 @@ export async function textConfirmAppointmentTime(req, res, next) {
   ]
 
   await database.findBarberInDatabase(barber).then(foundBarber => {
-    const schedule = foundBarber.get('appointments').toObject()
+    const schedule = foundBarber.get('appointments')
     const timesTaken = schedule.map(customer => customer.time);
-
     // filter out times available from times taken
     timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
   })
 
   time = availableTimes[parseInt(userMessage) - 1]
-
   sendTextMessage(`Awesome! So to confirm \nYou've just made an appointment!\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`)
 
   try {
