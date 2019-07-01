@@ -7,7 +7,8 @@ const steps = {
   '3': twilioLib.textAdditionalService,
   '4': twilioLib.textChoseBarber,
   '5': twilioLib.textConfirmAppointmentTime,
-  '6': twilioLib.textGetName
+  '6': twilioLib.textGetConfirmation,
+  '7': twilioLib.textGetName
 }
 
 export function processFlow(req, res, next) {
