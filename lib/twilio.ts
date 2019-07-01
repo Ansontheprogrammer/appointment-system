@@ -329,8 +329,14 @@ export async function textGetName(req, res, next) {
 
   try {
     if (req.customer.get('stepNumber') == '7') {
+      let message = `What type of service would you like today? Press: `
+
+      for (let prop in serviceList) {
+        message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
+      }
+
       sendTextMessage(
-        `Welcome back, ${req.customer.get('firstName')}! What type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`
+        `Welcome back, ${req.customer.get('firstName')}! ${message}`
       )
 
       await database.updateCustomer(
