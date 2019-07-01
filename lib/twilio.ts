@@ -509,8 +509,6 @@ export async function textChoseBarber(req, res, next) {
       `Uh-oh, it looks that that barber doesn't have any time.`
     )
   }
-
-
 }
 
 export async function textGetConfirmation(req, res, next) {
@@ -578,7 +576,7 @@ export async function textConfirmAppointmentTime(req, res, next) {
   })
 
   time = availableTimes[parseInt(userMessage) - 1]
-  sendTextMessage(`Awesome! So to confirm \nYou've just made an appointment!\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}\nDoes this look correct?\n\nPress:\n(1) for YES\n(2) for NO`)
+  sendTextMessage(`Awesome! Here are your appointment details:\n\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`)
 
   try {
     await database.addAppointment(barber, { phoneNumber, firstName }, time)
