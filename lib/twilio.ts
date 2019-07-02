@@ -204,10 +204,11 @@ export async function confirmation(req, res, next) {
   const keyPress = res.req.body.Digits
   const phoneNumber = phoneNumberFormatter(res.req.body.From)
   const customer = await database.findCustomerInDatabase(phoneNumber)
-  const barber = customer.get('barber');
-  const firstName = customer.get('firstName');
-  const service = customer.get('service');
-  const total = customer.get('total')
+  const barber = customer.barber
+  const date = customer.date
+  const firstName = customer.firstName
+  const service = customer.service
+  const total = customer.total
   let time;
   // Use the Twilio Node.js SDK to build an XML response
   const twiml = new VoiceResponse()
@@ -242,7 +243,7 @@ export async function confirmation(req, res, next) {
 
   try {
 
-    await database.addAppointment(barber, { phoneNumber, firstName }, time)
+    await database.addAppointment(barber, { phoneNumber, firstName }, time, date)
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
@@ -599,7 +600,7 @@ export async function textConfirmAppointmentTime(req, res, next) {
   sendTextMessage(`Awesome! Here are your appointment details:\n\nService: ${service} \nBarber: ${barber}\nDate: ${date}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`)
 
   try {
-    await database.addAppointment(barber, { phoneNumber, firstName }, time)
+    await database.addAppointment(barber, { phoneNumber, firstName }, time, date)
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),

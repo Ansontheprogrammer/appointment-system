@@ -104,7 +104,7 @@ export class Database {
     })
   }
 
-  public addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string) {
+  public addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date: string) {
     const { phoneNumber, firstName } = customer
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
