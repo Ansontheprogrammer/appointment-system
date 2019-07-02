@@ -23,6 +23,7 @@ const customerSchema = new Schema({
   service: [String],
   additionalService: String,
   time: String,
+  date: String,
   total: Number,
   completeTextFlow: Boolean,
   creditCard: {
