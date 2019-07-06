@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Ansontheprogrammer/Sale-Hogs#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
+    "cron": "^1.7.1",
     "express": "^4.16.4",
     "mongoose": "^5.4.20",
     "twilio": "^3.29.2"
