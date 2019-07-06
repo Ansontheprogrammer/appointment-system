@@ -37,20 +37,22 @@ export async function phoneAppointmentFlow(req, res, next) {
   const gather = twiml.gather({
     action: '/api/chooseService',
     method: 'POST',
-    numDigits: 1
+    finishOnKey: '#'
   })
 
   const customer = await database.findCustomerInDatabase(phoneNumber)
   if (!!customer) {
     gather.say(
       `${randomGreeting()} ${customer.get('firstName')}!Barber Sharp, Welcomes you back. What type of service would you like today? Press: \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo`,
-      { voice: 'Polly.Justin' }
+      { voice: 'Polly.Salli' }
     )
   } else {
     gather.say(
       'Hey, thank you for calling Barber Sharp!. We would love to service you today. What type of service would you like? Press: \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo',
-      { voice: 'Polly.Justin' }
+      { voice: 'Polly.Salli' }
     )
+
+    await database.createCustomer(phoneNumber)
   }
 
   // Render the response as XML in reply to the webhook request
@@ -58,82 +60,58 @@ export async function phoneAppointmentFlow(req, res, next) {
 }
 
 export async function chooseService(req, res, next) {
-  const keyPress = res.req.body.Digits
-  // Use the Twilio Node.js SDK to build an XML response
-  const twiml = new VoiceResponse()
-  const gather = twiml.gather({
-    action: '/api/chosenBarber',
-    method: 'POST',
-    numDigits: 1,
-    timeout: 7
-  })
-  let service, total
+   // Use the Twilio Node.js SDK to build an XML response
+   const twiml = new VoiceResponse()
+   const gather = twiml.gather({
+     action: '/api/chosenBarber',
+     method: 'POST',
+     numDigits: 1,
+     timeout: 7
+   })
 
-  switch (keyPress) {
-    case '1':
-      service = 'Adult Haircut'
-      total = 25
-      break
-    case '2':
-      service = 'Child Haircut'
-      total = 15
-      break
-    case '3':
-      service = 'Haircut and Shave'
-      total = 35
-      break
-    case '4':
-      service = 'Beard Trim'
-      total = 10
-      break
-    case '5':
-      service = 'Dry Shave and Clippers'
-      total = 10
-      break
-    case '6':
-      service = 'Razor Shave'
-      total = 15
-      break
-    case '7':
-      service = 'Hairline or Edge Up'
-      total = 10
-      break
-    case '8':
-      service = 'Mustache Trim'
-      total = 7
-      break
-    case '9':
-      service = 'Shampoo'
-      total = 15
-      break
-    case '0':
-      twiml.say(`${randomWord()}! I'm connecting you to the shop right now.`, {
-        voice: 'Polly.Justin'
-      })
-      twiml.dial('9082097544')
-      res.set('Content-Type', 'text/xml')
-      return res.send(twiml.toString())
+  if(res.req.query.redirect) {
+    gather.say(
+      `Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
+      { voice: 'Polly.Salli' }
+    )
+    return res.send(twiml.toString())
+  } else {
+    const keyPress = res.req.body.Digits
+
+  if(keyPress[0] === '0') {
+    twiml.say(`${randomWord()}! I'm connecting you to the shop right now.`, {
+      voice: 'Polly.Salli'
+    })
+    twiml.dial('9082097544')
+    res.set('Content-Type', 'text/xml')
+    return res.send(twiml.toString())
   }
+
+  let services = [], total = 0
+
+  keyPress.split('').forEach(n => {
+    const service = serviceList[n].service
+    const price = serviceList[n].price
+
+    services.push(service)
+    total += price
+  })
 
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { service }
-    )
-
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { total }
+      { service: services, total }
     )
   } catch (err) {
     next(err)
   }
 
   gather.say(
-    `${randomWord()}! So you would like a ${service} and your current total is $${total}. Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
-    { voice: 'Polly.Justin' }
+    `${randomWord()}! So you would like a ${services} and your current total is $${total}. Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
+    { voice: 'Polly.Salli' }
   )
   return res.send(twiml.toString())
+  }
 }
 
 export async function chosenBarber(req, res, next) {
@@ -187,14 +165,16 @@ export async function chosenBarber(req, res, next) {
 
   if (!availableTimes.length) {
     twiml.say(
-      `${randomWord()} but I'm so sorry! ${barberName} is all booked up for the day. please try back at another time?`,
-      { voice: 'Polly.Justin' }
+      `${randomWord()} but I'm so sorry! ${barberName} is all booked up for the day.`,
+      { voice: 'Polly.Salli' }
     )
+    
+    twiml.redirect({ method: 'POST' }, `/api/chooseService?redirect=true`)
     return res.send(twiml.toString())
   } else {
     gather.say(
       `${randomWord()}! ${barberName} will be excited. Time to book your appointment. Here is ${barberName}'s current schedule for today. Press:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`,
-      { voice: 'Polly.Justin' }
+      { voice: 'Polly.Salli' }
     )
   }
   return res.send(twiml.toString())
@@ -213,7 +193,7 @@ export async function confirmation(req, res, next) {
   const twiml = new VoiceResponse()
   twiml.say(
     `${randomWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today. Goodbye`,
-    { voice: 'Polly.Justin' }
+    { voice: 'Polly.Salli' }
   )
   res.send(twiml.toString())
 
@@ -255,7 +235,7 @@ export async function confirmation(req, res, next) {
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
     body:
-      `${randomWord()}! So to confirm \nYou've just made your an appointment\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`,
+      `${randomWord()}! So to confirm \nYou've just made an appointment\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`,
     to: phoneNumber
   })
 }
@@ -264,7 +244,7 @@ export function errorMessage(req, res, next) {
   // Use the Twilio Node.js SDK to build an XML response
   const twiml = new VoiceResponse()
 
-  twiml.say('That was an invalid response', { voice: 'Polly.Justin' })
+  twiml.say('That was an invalid response', { voice: 'Polly.Salli' })
   twiml.redirect('/api/phoneAppointmentFlow')
   // Render the response as XML in reply to the webhook request
   res.send(twiml.toString())
