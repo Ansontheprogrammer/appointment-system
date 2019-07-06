@@ -2,6 +2,7 @@ import config from '../config/config'
 import twilio from 'twilio'
 import { Database, CustomerModel } from './database'
 import { serviceList } from './shopData'
+import { createJob } from './cron'
 
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -219,6 +220,22 @@ export async function confirmation(req, res, next) {
   try {
 
     await database.addAppointment(barber, { phoneNumber, firstName }, time)
+
+    // TEST: Start cron job to send appointment alert message
+    const d = new Date()
+    const seconds = d.getSeconds()
+    const minute = d.getMinutes()
+
+    /*
+    Seconds: 0-59
+    Minutes: 0-59
+    Hours: 0-23
+    Day of Month: 1-31
+    Months: 0-11 (Jan-Dec)
+    Day of Week: 0-6 (Sun-Sat)
+    */
+
+    createJob(`0 ${(minute + 1) % 60} 15 6 6 *`, phoneNumber, client, config)
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
