@@ -184,10 +184,11 @@ export async function confirmation(req, res, next) {
   const keyPress = res.req.body.Digits
   const phoneNumber = phoneNumberFormatter(res.req.body.From)
   const customer = await database.findCustomerInDatabase(phoneNumber)
-  const barber = customer.get('barber');
-  const firstName = customer.get('firstName');
-  const service = customer.get('service');
-  const total = customer.get('total')
+  const barber = customer.barber
+  const date = customer.date
+  const firstName = customer.firstName
+  const service = customer.service
+  const total = customer.total
   let time;
   // Use the Twilio Node.js SDK to build an XML response
   const twiml = new VoiceResponse()
@@ -222,7 +223,7 @@ export async function confirmation(req, res, next) {
 
   try {
 
-    await database.addAppointment(barber, { phoneNumber, firstName }, time)
+    await database.addAppointment(barber, { phoneNumber, firstName }, time, date)
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
@@ -308,7 +309,7 @@ export async function textGetName(req, res, next) {
 
 
   try {
-    if (req.customer.get('stepNumber') == '7') {
+    if (req.customer.get('stepNumber') == '8') {
       let message = `What type of service would you like today? Press: `
 
       for (let prop in serviceList) {
@@ -421,12 +422,7 @@ export async function textAdditionalService(req, res, next) {
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { additionalService, total }
-    )
-
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { 'stepNumber': '4' }
+      { additionalService, total, 'stepNumber': '4' }
     )
 
     sendTextMessage(
@@ -459,6 +455,22 @@ export async function textChoseBarber(req, res, next) {
       break
   }
 
+  sendTextMessage(
+    `Awesome! ${barberName} will be excited. What date would you like to come in?\n\nPlease use format MM-DD-YY`
+  )
+
+  await database.updateCustomer(
+    phoneNumber,
+    { stepNumber: '5', barber: barberName }
+  )
+}
+
+export async function textChooseDate(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const sendTextMessage = getTextMessageTwiml(res)
+  const phoneNumber: string = phoneNumberFormatter(req.body.From)
+  const barberName = req.customer.barber
+
   let availableTimes = [
     '11am - 12pm',
     '12pm - 1pm',
@@ -470,7 +482,6 @@ export async function textChoseBarber(req, res, next) {
     '6pm - 7pm',
     '7pm - 8pm'
   ]
-
 
   await database.findBarberInDatabase(barberName).then(barber => {
     if (barber.get('appointments')) {
@@ -488,13 +499,14 @@ export async function textChoseBarber(req, res, next) {
     )
     await database.updateCustomer(
       phoneNumber,
-      { stepNumber: '5', barber: barberName }
+      { stepNumber: '6', date: userMessage.replace(/,/gi, '-') }
     )
   } else {
     sendTextMessage(
       `Uh-oh, it looks that that barber doesn't have any time.`
     )
   }
+
 }
 
 export async function textGetConfirmation(req, res, next) {
@@ -502,6 +514,8 @@ export async function textGetConfirmation(req, res, next) {
   const validResponses = ['1', '2']
   const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
+
+  console.log('USER CONFIRMATION ', userMessage)
 
   if (!validatedResponse)
     return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
@@ -518,7 +532,7 @@ export async function textGetConfirmation(req, res, next) {
 
   await database.updateCustomer(
     phoneNumberFormatter(req.body.From),
-    { 'stepNumber': '7' }
+    { 'stepNumber': '8' }
   )
 }
 
@@ -528,9 +542,10 @@ export async function textConfirmAppointmentTime(req, res, next) {
   const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8']
   const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
-  const service = req.customer.get('service');
-  const barber = req.customer.get('barber');
-  const total = req.customer.get('total');
+  const service = req.customer.service
+  const barber = req.customer.barber
+  const total = req.customer.total
+  const date = req.customer.date
   const firstName = req.customer.get('firstName');
   const phoneNumber = req.customer.get('phoneNumber')
   let time;
@@ -562,14 +577,14 @@ export async function textConfirmAppointmentTime(req, res, next) {
   })
 
   time = availableTimes[parseInt(userMessage) - 1]
-  sendTextMessage(`Awesome! Here are your appointment details:\n\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`)
+  sendTextMessage(`Awesome! Here are your appointment details:\n\nService: ${service} \nBarber: ${barber}\nDate: ${date}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`)
 
   try {
-    await database.addAppointment(barber, { phoneNumber, firstName }, time)
+    await database.addAppointment(barber, { phoneNumber, firstName }, time, date)
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { 'stepNumber': '6' }
+      { 'stepNumber': '7' }
     )
 
     await database.updateCustomer(
