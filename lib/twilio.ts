@@ -308,9 +308,15 @@ export async function textGetName(req, res, next) {
 
 
   try {
-    if (req.customer.get('stepNumber') == '6') {
+    if (req.customer.get('stepNumber') == '7') {
+      let message = `What type of service would you like today? Press: `
+
+      for (let prop in serviceList) {
+        message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
+      }
+
       sendTextMessage(
-        `Welcome back, ${req.customer.get('firstName')}! What type of service would you like today? Press: \n(1) for Adult Haircut - $25\n(2) for Child Haircut - $15\n(3) for Haircut and Shave - $35\n(4) Beard Trim - $10\n(5) Dry Shave with Clippers - $10\n(6) Razor Shave - $15\n(7) Hairline or Edge Up - $10\n(8) Mustache Trim - $7\n(9) Shampoo - $15`
+        `Welcome back, ${req.customer.get('firstName')}! ${message}`
       )
 
       await database.updateCustomer(
@@ -464,10 +470,7 @@ export async function textChoseBarber(req, res, next) {
     '6pm - 7pm',
     '7pm - 8pm'
   ]
-  await database.updateCustomer(
-    phoneNumber,
-    { stepNumber: '5', barber: barberName }
-  )
+
 
   await database.findBarberInDatabase(barberName).then(barber => {
     if (barber.get('appointments')) {
@@ -479,9 +482,43 @@ export async function textChoseBarber(req, res, next) {
     }
   })
 
-  console.log(availableTimes, 'availableTimes')
-  sendTextMessage(
-    `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
+  if (availableTimes.length > 0) {
+    sendTextMessage(
+      `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
+    )
+    await database.updateCustomer(
+      phoneNumber,
+      { stepNumber: '5', barber: barberName }
+    )
+  } else {
+    sendTextMessage(
+      `Uh-oh, it looks that that barber doesn't have any time.`
+    )
+  }
+}
+
+export async function textGetConfirmation(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const validResponses = ['1', '2']
+  const validatedResponse = validateMessage(userMessage, validResponses)
+  const sendTextMessage = getTextMessageTwiml(res)
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
+      if (index === 0) return response
+      if (index === validResponses.length - 1) return ` or ${response}`
+      return ' ' + response
+    })}\nPress:\n(1) for YES\n(2) for NO`)
+
+  if (userMessage === '1') {
+    sendTextMessage(`Great! We are looking forward to seeing you!`)
+  } else {
+    sendTextMessage(`Okay, let's fix it.`)
+  }
+
+  await database.updateCustomer(
+    phoneNumberFormatter(req.body.From),
+    { 'stepNumber': '7' }
   )
 }
 
@@ -525,7 +562,7 @@ export async function textConfirmAppointmentTime(req, res, next) {
   })
 
   time = availableTimes[parseInt(userMessage) - 1]
-  sendTextMessage(`Awesome! So to confirm \nYou've just made an appointment!\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`)
+  sendTextMessage(`Awesome! Here are your appointment details:\n\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`)
 
   try {
     await database.addAppointment(barber, { phoneNumber, firstName }, time)
