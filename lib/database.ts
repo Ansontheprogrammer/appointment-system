@@ -1,49 +1,13 @@
-import mongoose, { mongo } from 'mongoose'
-import config from '../config/config'
+import admin from 'firebase-admin'
+import { DocumentData } from '@google-cloud/firestore';
 
-const url = config.MONGO_CONNECTION_KEY
+admin.initializeApp({
+  credential: admin.credential.cert('./config/firebaseAdminKey.json')
+});
+
+let db = admin.firestore();
+
 process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
-
-// connecting to mongo and creating schema
-mongoose.connect(url, { useNewUrlParser: true }).then(
-  () => {
-    console.log('connection to database successful')
-  },
-  err => console.error(err)
-)
-
-// *******************SCHEMA DECLARATIONS***************************
-const Schema = mongoose.Schema
-
-const customerSchema = new Schema({
-  phoneNumber: { type: String, required: true },
-  firstName: { type: String, required: false },
-  stepNumber: { type: String, required: true },
-  barber: String,
-  service: [String],
-  additionalService: String,
-  time: String,
-  date: String,
-  total: Number,
-  completeTextFlow: Boolean,
-  creditCard: {
-    number: String,
-    expiration: String,
-    code: String
-  }
-})
-
-const barberSchema = new Schema({
-  phoneNumber: { type: String, required: true },
-  email: { type: String, required: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  zipCode: { type: String, required: true },
-  appointments: { type: Array }
-})
-
-export const BarberModel = mongoose.model('barber', barberSchema)
-export const CustomerModel = mongoose.model('customer', customerSchema)
 
 export type BARBER = {
   phoneNumber: string
@@ -70,53 +34,50 @@ export class Database {
     return string[0].toUpperCase() + string.slice(1)
   }
 
-  public findBarberInDatabase(firstName: string): Promise<mongoose.Document> {
+  public findBarberInDatabase(firstName: string): Promise<DocumentData> {
     return new Promise((resolve, reject) => {
-      BarberModel.findOne({ firstName }, function (err, doc) {
-        if (err) return reject(err)
-        if (!doc) return resolve(null)
-        else {
-          console.log(doc, 'doc')
-          return resolve(doc)
-        }
-      })
+      db.collection('barbers').doc(firstName).get()
+        .then((snapshot) => resolve(snapshot.data()))
+        .catch(reject);
     })
   }
 
-  public findAllBarbers(): Promise<mongoose.Document[]> {
+  public findAllBarbers(): Promise<DocumentData[]> {
     return new Promise((resolve, reject) => {
-      BarberModel.find({}, function (err, docs) {
-        if (err) return reject(err)
-        if (!docs) return resolve(null)
-        else return resolve(docs)
+      db.collection('barbers').get()
+        .then((snapshots) => {
+          // get an array of SnapShots
+          const snapshotData = snapshots.docs.map(snap => snap.data());
+          resolve(snapshotData)
+        })
+        .catch(reject)
       })
-    })
   }
 
   public updateBarber(firstName: string, update: {}) {
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
-
-      BarberModel.findOneAndUpdate({ firstName }, update, (err, doc) => {
-        if (err) reject(err)
-        else resolve()
-      })
+      let docRef = db.collection('barbers').doc(firstName)
+      docRef.set({ update }).then(resolve, reject)
     })
   }
 
-  public addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date: string) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date: string) {
     const { phoneNumber, firstName } = customer
     const appointment = { firstName, phoneNumber, date, time }
     // finish check to ensure stock list isn't already created.
-    return new Promise((resolve, reject) => {
-      this.findBarberInDatabase(barberFirstName).then(docs => {
-        (docs as any)['appointments'].push(appointment)
-        docs.save(function (err, updatedDoc) {
-          if (err) reject(err);
-          resolve(updatedDoc);
-        })
-      }, reject)
-    })
+    let docRef = db.collection('barbers').doc(barberFirstName)
+    
+    try {
+      let barber = await docRef.get()
+      let appointments = barber.get('appointments')
+      if(appointments){
+        let newAppointmentsArray = appointments.concat(appointment)
+        await docRef.set({ appointments: newAppointmentsArray });
+      } else await docRef.set({ appointments: [appointment] })
+    } catch (err) { 
+      throw err 
+    }
   }
 
   public createBarber(barberInfo: BARBER) {
@@ -127,70 +88,47 @@ export class Database {
     barberInfo.email = barberInfo.email.toLowerCase()
 
     return new Promise((resolve, reject) => {
-      this.hasPersonSignedUp(barberInfo.firstName).then(hasPersonSignedUp => {
-        if (hasPersonSignedUp) return reject('Customer has already signed up.')
-        const customer = new BarberModel(barberInfo)
+      this.hasPersonSignedUp(true, barberInfo.firstName).then(hasPersonSignedUp => {
+        if (!!hasPersonSignedUp) return reject('Barber has already signed up.')
+        let docRef = db.collection('barbers').doc(barberInfo.firstName);
+        docRef.set({ barberInfo }).then(resolve, reject)
+      })
+    })
+  }
 
-        // saving customer to database
-        customer.save(function (err, updatedDoc) {
-          if (err) reject(err)
-          resolve()
+  public findCustomerInDatabase(phoneNumber: string): Promise<DocumentData> {
+    return new Promise((resolve, reject) => {
+      db.collection('customers').doc(phoneNumber).get()
+        .then((snapshot) => resolve(snapshot.data()))
+        .catch(reject);
+    })
+  }
+
+  public createCustomer(phoneNumber: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      // Assign step number field before saving
+      const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
+      
+      this.hasPersonSignedUp(false, customerInfo.phoneNumber).then(hasPersonSignedUp => {
+        if (!!hasPersonSignedUp) return reject('Customer has already signed up.')
+
+        let docRef = db.collection('customers').doc(customerInfo.phoneNumber);
+          docRef.set({ customerInfo }).then(resolve, reject)
         })
       })
-    })
-  }
-
-  public findCustomerInDatabase(phoneNumber: string): Promise<mongoose.Document> {
-    return new Promise((resolve, reject) => {
-      CustomerModel.findOne({ phoneNumber }, function (err, doc) {
-        if (err) return reject(err)
-        if (!doc) return resolve(null)
-        else return resolve(doc)
-      })
-    })
-  }
-
-  public createCustomer(phoneNumber: string): Promise<mongoose.Document> {
-    // Assign step number field before saving
-    const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
-
-    return new Promise((resolve, reject) => {
-      this.hasPersonSignedUp(customerInfo.phoneNumber).then(
-        hasPersonSignedUp => {
-          if (hasPersonSignedUp)
-            return reject('Customer has already signed up.')
-
-          const customer = new CustomerModel(customerInfo)
-
-          // saving customer to database
-          customer.save(function (err, updatedDoc) {
-            if (err) reject(err)
-            console.log(updatedDoc, 'updated Doc')
-            resolve(updatedDoc)
-          })
-        }
-      )
-    })
   }
 
   public updateCustomer(phoneNumber: string, update: {}) {
-    // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
-      CustomerModel.findOneAndUpdate({ phoneNumber }, update, (err, doc) => {
-        if (err) reject(err)
-        else {
-          console.log(doc, 'doc');
-          resolve()
-        }
-      })
+        let docRef = db.collection('customers').doc(phoneNumber)
+        docRef.set({ update }).then(resolve, reject)
     })
   }
 
-  public hasPersonSignedUp(phoneNumber: string): Promise<boolean> {
+  private hasPersonSignedUp(barber: boolean, phoneNumber: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.findBarberInDatabase(phoneNumber).then(user => {
-        resolve(!!user)
-      }, reject)
+      if(barber) this.findBarberInDatabase(phoneNumber).then(resolve, reject)
+      else this.findCustomerInDatabase(phoneNumber).then(resolve, reject)
     })
   }
 }
