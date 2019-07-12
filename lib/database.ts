@@ -104,13 +104,12 @@ export class Database {
     })
   }
 
-  public addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date: string) {
+  public addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string) {
     const { phoneNumber, firstName } = customer
-    const appointment = { firstName, phoneNumber, date, time }
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
       this.findBarberInDatabase(barberFirstName).then(docs => {
-        (docs as any)['appointments'].push(appointment)
+        (docs as any)['appointments'] = (docs as any)['appointments'].concat({ firstName, phoneNumber, time })
         docs.save(function (err, updatedDoc) {
           if (err) reject(err);
           resolve(updatedDoc);
