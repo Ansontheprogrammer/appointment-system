@@ -1,6 +1,5 @@
-import config from '../config/config'
 import admin from 'firebase-admin'
-import { DocumentSnapshot, DocumentData } from '@google-cloud/firestore';
+import { DocumentData } from '@google-cloud/firestore';
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
@@ -8,9 +7,7 @@ admin.initializeApp({
 
 let db = admin.firestore();
 
-const url = config.MONGO_CONNECTION_KEY
 process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
-
 
 export type BARBER = {
   phoneNumber: string
@@ -70,6 +67,7 @@ export class Database {
     const appointment = { firstName, phoneNumber, date, time }
     // finish check to ensure stock list isn't already created.
     let docRef = db.collection('barbers').doc(barberFirstName)
+    
     try {
       let barber = await docRef.get()
       let appointments = barber.get('appointments')
@@ -85,9 +83,9 @@ export class Database {
   public createBarber(barberInfo: BARBER) {
     // Assign step number field before saving
     barberInfo = Object.assign(barberInfo, { stepNumber: '1' })
-    // barberInfo.firstName = Database.firstLetterUpperCase(barberInfo.firstName)
-    // barberInfo.lastName = Database.firstLetterUpperCase(barberInfo.lastName)
-    // barberInfo.email = barberInfo.email.toLowerCase()
+    barberInfo.firstName = Database.firstLetterUpperCase(barberInfo.firstName)
+    barberInfo.lastName = Database.firstLetterUpperCase(barberInfo.lastName)
+    barberInfo.email = barberInfo.email.toLowerCase()
 
     return new Promise((resolve, reject) => {
       this.hasPersonSignedUp(true, barberInfo.firstName).then(hasPersonSignedUp => {
@@ -134,5 +132,3 @@ export class Database {
     })
   }
 }
-
-new Database().addAppointment('Anson',{ phoneNumber: '3223', firstName: "Idris"}, "4pm", '08/31')
