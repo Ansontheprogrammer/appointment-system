@@ -462,7 +462,13 @@ export async function textChoseBarber(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
   const phoneNumber: string = phoneNumberFormatter(req.body.From)
+  const validResponses = ['1', '2', '3']
+  const validatedResponse = validateMessage(userMessage, validResponses)
   let barberName
+
+  if (!validatedResponse) {
+    return sendTextMessage(`You must choose a valid response. Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
+  }
 
   switch (userMessage) {
     case '1':
