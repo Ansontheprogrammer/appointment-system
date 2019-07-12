@@ -1,22 +1,13 @@
 import mongoose, { mongo } from 'mongoose'
 import config from '../config/config'
 import admin from 'firebase-admin'
+import { DocumentSnapshot, DocumentData } from '@google-cloud/firestore';
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
 });
 
 let db = admin.firestore();
-
-db.collection('test').get()
-  .then((snapshot) => {
-    snapshot.forEach((doc) => {
-      console.log(doc.id, '=>', doc.data());
-    });
-  })
-  .catch((err) => {
-    console.log('Error getting documents', err);
-  });
 
 const url = config.MONGO_CONNECTION_KEY
 process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
@@ -157,13 +148,11 @@ export class Database {
     })
   }
 
-  public findCustomerInDatabase(phoneNumber: string): Promise<mongoose.Document> {
+  public findCustomerInDatabase(phoneNumber: string): Promise<DocumentData> {
     return new Promise((resolve, reject) => {
-      CustomerModel.findOne({ phoneNumber }, function (err, doc) {
-        if (err) return reject(err)
-        if (!doc) return resolve(null)
-        else return resolve(doc)
-      })
+      db.collection('customers').doc(phoneNumber).get()
+        .then((snapshot) => resolve(snapshot.data()))
+        .catch((err) => reject);
     })
   }
 
@@ -203,4 +192,4 @@ export class Database {
   }
 }
 
-new Database().createCustomer('9082098423')
+new Database().findCustomerInDatabase('9082098423').then(data => console.log(data))
