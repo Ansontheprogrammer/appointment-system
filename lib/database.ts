@@ -1,5 +1,29 @@
 import mongoose, { mongo } from 'mongoose'
 import config from '../config/config'
+import admin from 'firebase-admin'
+
+admin.initializeApp({
+  credential: admin.credential.cert('./config/firebaseAdminKey.json')
+});
+
+let db = admin.firestore();
+let docRef = db.collection('test').doc('alovelace');
+
+let setAda = docRef.set({
+  first: 'Ada',
+  last: 'Lovelace',
+  born: 1815
+});
+
+db.collection('test').get()
+  .then((snapshot) => {
+    snapshot.forEach((doc) => {
+      console.log(doc.id, '=>', doc.data());
+    });
+  })
+  .catch((err) => {
+    console.log('Error getting documents', err);
+  });
 
 const url = config.MONGO_CONNECTION_KEY
 process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
