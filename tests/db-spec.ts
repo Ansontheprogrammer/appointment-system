@@ -1,6 +1,6 @@
 import 'mocha';
 import * as assert from 'assert';
-import { Database, BarberModel, BARBER } from '../lib/database';
+import { Database, BARBER } from '../lib/database';
 import sinon from 'sinon';
 
 describe('Database class', () => {
@@ -45,7 +45,7 @@ describe('Database class', () => {
                 ]
             };
 
-            sandbox.stub(BarberModel, 'findOne')
+            sandbox.stub({}, 'findOne')
             .withArgs({ phoneNumber: '9082097544' })
             .yields(null, expectedBarber)
             

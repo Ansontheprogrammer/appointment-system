@@ -1,6 +1,6 @@
 import config from '../config/config'
 import twilio from 'twilio'
-import { Database, CustomerModel } from './database'
+import { Database } from './database'
 import { serviceList } from './shopData'
 import { createJob } from './cron'
 
