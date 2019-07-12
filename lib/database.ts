@@ -58,7 +58,7 @@ export class Database {
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
       let docRef = db.collection('barbers').doc(firstName)
-      docRef.set({ update }).then(resolve, reject)
+      docRef.update({ ...update }).then(resolve, reject)
     })
   }
 
@@ -91,7 +91,7 @@ export class Database {
       this.hasPersonSignedUp(true, barberInfo.firstName).then(hasPersonSignedUp => {
         if (!!hasPersonSignedUp) return reject('Barber has already signed up.')
         let docRef = db.collection('barbers').doc(barberInfo.firstName);
-        docRef.set({ barberInfo }).then(resolve, reject)
+        docRef.set({ ...barberInfo }).then(resolve, reject)
       })
     })
   }
@@ -113,7 +113,7 @@ export class Database {
         if (!!hasPersonSignedUp) return reject('Customer has already signed up.')
 
         let docRef = db.collection('customers').doc(customerInfo.phoneNumber);
-          docRef.set({ customerInfo }).then(resolve, reject)
+          docRef.set({ ...customerInfo }).then(resolve, reject)
         })
       })
   }
@@ -121,7 +121,7 @@ export class Database {
   public updateCustomer(phoneNumber: string, update: {}) {
     return new Promise((resolve, reject) => {
         let docRef = db.collection('customers').doc(phoneNumber)
-        docRef.set({ update }).then(resolve, reject)
+        docRef.update({ ...update }).then(resolve, reject)
     })
   }
 
