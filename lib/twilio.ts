@@ -525,8 +525,9 @@ export async function textGetConfirmation(req, res, next) {
   const validResponses = ['1', '2']
   const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
-
-  console.log('USER CONFIRMATION ', userMessage)
+  const phoneNumber: string = phoneNumberFormatter(req.body.From)
+  const customer: any = await database.findCustomerInDatabase(phoneNumber)
+  const { barber, service, total, time } = customer
 
   if (!validatedResponse)
     return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
@@ -537,6 +538,26 @@ export async function textGetConfirmation(req, res, next) {
 
   if (userMessage === '1') {
     sendTextMessage(`Great! We are looking forward to seeing you!`)
+
+    // TEST: Start cron job to send appointment alert message -- Break off into own function
+    let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
+    let currDate = new Date(dateWithTimeZone)
+
+    const minutes = currDate.getMinutes()
+
+    const appointmentHour = time.split('-')[0]
+    let alertHour
+
+    if (appointmentHour.includes('pm')) {
+      alertHour = (parseInt(appointmentHour) + 12) - 1
+    } else {
+      alertHour = appointmentHour - 1
+    }
+
+    const reminderMessage = `REMINDER:\nYour appointment is less than an hour away.\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
+
+    createJob(`0 ${minutes + 3} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
+
   } else {
     sendTextMessage(`Okay, let's fix it.`)
   }
