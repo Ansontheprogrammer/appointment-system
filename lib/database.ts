@@ -64,7 +64,6 @@ export class Database {
 
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date: string) {
     const { phoneNumber, firstName } = customer
-    const appointment = { firstName, phoneNumber, date, time }
     // finish check to ensure stock list isn't already created.
     let docRef = db.collection('barbers').doc(barberFirstName)
     
@@ -78,6 +77,7 @@ export class Database {
     } catch (err) { 
       throw err 
     }
+
   }
 
   public createBarber(barberInfo: BARBER) {
