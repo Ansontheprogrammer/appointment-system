@@ -7,13 +7,6 @@ admin.initializeApp({
 });
 
 let db = admin.firestore();
-let docRef = db.collection('test').doc('alovelace');
-
-let setAda = docRef.set({
-  first: 'Ada',
-  last: 'Lovelace',
-  born: 1815
-});
 
 db.collection('test').get()
   .then((snapshot) => {
@@ -174,26 +167,17 @@ export class Database {
     })
   }
 
-  public createCustomer(phoneNumber: string): Promise<mongoose.Document> {
-    // Assign step number field before saving
-    const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
-
+  public createCustomer(phoneNumber: string): Promise<any> {
+    
     return new Promise((resolve, reject) => {
-      this.hasPersonSignedUp(customerInfo.phoneNumber).then(
-        hasPersonSignedUp => {
-          if (hasPersonSignedUp)
-            return reject('Customer has already signed up.')
+      // Assign step number field before saving
+      const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
 
-          const customer = new CustomerModel(customerInfo)
+      let docRef = db.collection('customers').doc(customerInfo.phoneNumber);
 
-          // saving customer to database
-          customer.save(function (err, updatedDoc) {
-            if (err) reject(err)
-            console.log(updatedDoc, 'updated Doc')
-            resolve(updatedDoc)
-          })
-        }
-      )
+      docRef.set({
+        customerInfo,
+      }).then(resolve, reject)
     })
   }
 
@@ -218,3 +202,5 @@ export class Database {
     })
   }
 }
+
+new Database().createCustomer('9082098423')
