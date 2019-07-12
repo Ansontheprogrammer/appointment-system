@@ -48,9 +48,7 @@ export async function phoneAppointmentFlow(req, res, next) {
     { voice: 'Polly.Salli' }
   )
 
-  if (!!customer) {
-    await database.createCustomer(phoneNumber)
-  }
+  if (!customer) await database.createCustomer(phoneNumber)
 
   // Render the response as XML in reply to the webhook request
   res.send(twiml.toString())
@@ -58,6 +56,7 @@ export async function phoneAppointmentFlow(req, res, next) {
 
 export async function chooseService(req, res, next) {
   // Use the Twilio Node.js SDK to build an XML response
+  const keyPress = res.req.body.Digits
   const twiml = new VoiceResponse()
   const gather = twiml.gather({
     action: '/api/chosenBarber',
@@ -72,43 +71,41 @@ export async function chooseService(req, res, next) {
       { voice: 'Polly.Salli' }
     )
     return res.send(twiml.toString())
-  } else {
-    const keyPress = res.req.body.Digits
+  } 
 
-    if (keyPress[0] === '0') {
-      twiml.say(`${randomWord()}! I'm connecting you to the shop right now.`, {
-        voice: 'Polly.Salli'
-      })
-      twiml.dial('9082097544')
-      res.set('Content-Type', 'text/xml')
-      return res.send(twiml.toString())
-    }
-
-    let services = [], total = 0
-
-    keyPress.split('').forEach(n => {
-      const service = serviceList[n].service
-      const price = serviceList[n].price
-
-      services.push(service)
-      total += price
+  if (keyPress[0] === '0') {
+    twiml.say(`${randomWord()}! I'm connecting you to the shop right now.`, {
+      voice: 'Polly.Salli'
     })
-
-    try {
-      await database.updateCustomer(
-        phoneNumberFormatter(req.body.From),
-        { service: services, total }
-      )
-    } catch (err) {
-      next(err)
-    }
-
-    gather.say(
-      `${randomWord()}! So you would like a ${services} and your current total is $${total}. Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
-      { voice: 'Polly.Salli' }
-    )
+    twiml.dial('9082097544')
+    res.set('Content-Type', 'text/xml')
     return res.send(twiml.toString())
   }
+
+  let services = [], total = 0
+
+  keyPress.split('').forEach(n => {
+    const service = serviceList[n].service
+    const price = serviceList[n].price
+
+    services.push(service)
+    total += price
+  })
+
+  try {
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { service: services, total }
+    )
+  } catch (err) {
+    next(err)
+  }
+
+  gather.say(
+    `${randomWord()}! So you would like a ${services} and your current total is $${total}. Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
+    { voice: 'Polly.Salli' }
+  )
+  return res.send(twiml.toString())
 }
 
 export async function chosenBarber(req, res, next) {
@@ -153,6 +150,7 @@ export async function chosenBarber(req, res, next) {
   )
 
   await database.findBarberInDatabase(barberName).then(barber => {
+    console.log(barber, 'found barber')
     const schedule = barber.get('appointments').toObject()
     const timesTaken = schedule.map(customer => customer.time);
 
@@ -162,7 +160,7 @@ export async function chosenBarber(req, res, next) {
 
   if (!availableTimes.length) {
     twiml.say(
-      `${randomWord()} but I'm so sorry! ${barberName} is all booked up for the day.`,
+      `I'm so sorry! ${barberName} is all booked up for the day.`,
       { voice: 'Polly.Salli' }
     )
 
@@ -180,7 +178,7 @@ export async function chosenBarber(req, res, next) {
 export async function confirmation(req, res, next) {
   const keyPress = res.req.body.Digits
   const phoneNumber = phoneNumberFormatter(res.req.body.From)
-  const customer = await database.findCustomerInDatabase(phoneNumber)
+  const customer: any = await database.findCustomerInDatabase(phoneNumber)
   const barber = customer.barber
   const date = customer.date
   const firstName = customer.firstName
@@ -207,14 +205,12 @@ export async function confirmation(req, res, next) {
     '7pm - 8pm'
   ]
 
-  await database.findBarberInDatabase(barber).then(foundBarber => {
-    console.log(foundBarber, 'foundBarber')
-    const schedule = foundBarber.get('appointments').toObject()
-    const timesTaken = schedule.map(customer => customer.time);
+  const foundBarber = await database.findBarberInDatabase(barber)
+  const schedule = foundBarber.get('appointments').toObject()
+  const timesTaken = schedule.map(customer => customer.time);
 
-    // filter out times available from times taken
-    timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
-  })
+  // filter out times available from times taken
+  timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
 
   time = availableTimes[parseInt(keyPress) - 1]
 
@@ -223,9 +219,12 @@ export async function confirmation(req, res, next) {
     await database.addAppointment(barber, { phoneNumber, firstName }, time, date)
 
     // TEST: Start cron job to send appointment alert message
-    const d = new Date()
-    const seconds = d.getSeconds()
-    const minute = d.getMinutes()
+    let dateWithTimeZone = new Date().toLocaleString("en-US", {timeZone: "America/Mexico_City"})
+    let currDate = new Date(dateWithTimeZone)
+
+    const seconds = currDate.getSeconds()
+    const minutes = currDate.getMinutes()
+    const hours = currDate.getHours()
 
     /*
     Seconds: 0-59
@@ -236,16 +235,29 @@ export async function confirmation(req, res, next) {
     Day of Week: 0-6 (Sun-Sat)
     */
 
-    createJob(`0 ${(minute + 1) % 60} 15 6 6 *`, phoneNumber, client, config)
+    let alertHour 
+    const appointmentHour = time.split('-')[0]
+
+    if(appointmentHour.includes('pm')) {
+      alertHour = (parseInt(appointmentHour) + 12) - 1
+    } else {
+      alertHour = appointmentHour - 1
+    }
+
+    console.log('ALERT HOUR: ', alertHour)
+
+    const reminderMessage =  `REMINDER:\nYour appointment is less than an hour away.\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
+
+    createJob(`0 ${minutes + 3} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
 
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
       { time }
     )
-
   } catch (err) {
     next(err)
   }
+
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
     body:
