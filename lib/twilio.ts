@@ -31,6 +31,16 @@ export function extractText(body: string): string {
   return String(body.match(/\w+/gi))
 }
 
+export function callBarbershop(res){
+  const twiml = new VoiceResponse()
+  twiml.say(`${randomWord()}! I'm connecting you to the shop right now.`, {
+    voice: 'Polly.Salli'
+  })
+  twiml.dial(config.BARBERSHOP_PHONE_NUMBER)
+  res.set('Content-Type', 'text/xml')
+  return res.send(twiml.toString())
+}
+
 export async function phoneAppointmentFlow(req, res, next) {
   // Use the Twilio Node.js SDK to build an XML response
   const phoneNumber = phoneNumberFormatter(res.req.body.From)
@@ -44,18 +54,16 @@ export async function phoneAppointmentFlow(req, res, next) {
   const customer = await database.findCustomerInDatabase(phoneNumber)
 
   gather.say(
-    'Thank you for calling Barber Sharp!. We would love to service you today. What type of service would you like? Please choose one or more of the following. Press pound to continue. \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo',
+    'Thank you for calling Barber Sharp!. We would love to service you today. What type of service would you like? Please choose one or more of the following. Press pound when your finish. \n(1) for Adult Haircut\n(2) for Child Haircut\n(3) for Haircut and Shave\n(4) Beard Trim\n(5) Dry Shave with Clippers\n(6) Razor Shave\n(7) Hairline or Edge Up\n(8) Mustache Trim.(9) Shampoo',
     { voice: 'Polly.Salli' }
   )
 
   if (!customer) await database.createCustomer(phoneNumber)
 
-  // Render the response as XML in reply to the webhook request
   res.send(twiml.toString())
 }
 
 export async function chooseService(req, res, next) {
-  // Use the Twilio Node.js SDK to build an XML response
   const keyPress = res.req.body.Digits
   const twiml = new VoiceResponse()
   const gather = twiml.gather({
@@ -65,60 +73,74 @@ export async function chooseService(req, res, next) {
     timeout: 7
   })
 
+  // Handle if we have a redirect, we want to check if key press is truthy first
+  if (!!keyPress) if(keyPress[0] === '0') return callBarbershop(res)
+
   if (res.req.query.redirect) {
+    const barbers = [
+      'Kelly',
+      'Anson',
+      'Idris'
+    ]
+    const barbersWithoutTakenBarber = barbers.filter(barber => barber !== res.req.query.barber)
     gather.say(
-      `Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
+      `Which barber would you like today? ${barbersWithoutTakenBarber.map((barber, index) => `Press ${index + 1} for ${barber}`)}`,
       { voice: 'Polly.Salli' }
     )
     return res.send(twiml.toString())
   }
 
-  if (keyPress[0] === '0') {
-    twiml.say(`${randomWord()}! I'm connecting you to the shop right now.`, {
-      voice: 'Polly.Salli'
-    })
-    twiml.dial('9082097544')
-    res.set('Content-Type', 'text/xml')
-    return res.send(twiml.toString())
-  }
-
   let services = [], total = 0
 
-  keyPress.split('').forEach(n => {
-    const service = serviceList[n].service
-    const price = serviceList[n].price
-
-    services.push(service)
-    total += price
-  })
-
-  try {
-    await database.updateCustomer(
-      phoneNumberFormatter(req.body.From),
-      { service: services, total }
+  if(!!keyPress){
+    keyPress.split('').forEach(n => {
+      const service = serviceList[n].service
+      const price = serviceList[n].price
+  
+      services.push(service)
+      total += price
+    })
+  
+    try {
+      await database.updateCustomer(
+        phoneNumberFormatter(req.body.From),
+        { service: services, total }
+      )
+      gather.say(
+        `${randomWord()}! So you would like a ${services} and your current total is $${total}. Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
+        { voice: 'Polly.Salli' }
+      )
+      return res.send(twiml.toString())
+    } catch (err) { 
+      next(err)
+    }
+  } else {
+    gather.say(
+      `Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
+      { voice: 'Polly.Salli' }
     )
-  } catch (err) {
-    next(err)
-  }
-
-  gather.say(
-    `${randomWord()}! So you would like a ${services} and your current total is $${total}. Which barber would you like today? Press one for Kelly, Press two for Anson, Press 3 for Idris`,
-    { voice: 'Polly.Salli' }
-  )
-  return res.send(twiml.toString())
+    return res.send(twiml.toString())
+  }  
 }
 
 export async function chosenBarber(req, res, next) {
   const keyPress = res.req.body.Digits
   const phoneNumber = phoneNumberFormatter(res.req.body.From)
-  // Use the Twilio Node.js SDK to build an XML response
+  const validResponses = ['1', '2']
   const twiml = new VoiceResponse()
+  let barberName
+  let validatedResponse;
   const gather = twiml.gather({
     action: '/api/confirmation',
     method: 'POST',
     numDigits: 1
   })
-  let barberName
+
+  if(!!keyPress) validatedResponse = validateMessage(keyPress, validResponses)
+
+  if(!!keyPress) if(!validatedResponse) return errorMessage(res, '/api/chooseService')
+
+  if(!!keyPress) if(keyPress[0] === '0') return callBarbershop(res)
 
   switch (keyPress) {
     case '1':
@@ -130,6 +152,12 @@ export async function chosenBarber(req, res, next) {
     case '3':
       barberName = 'Idris'
       break
+  }
+
+  // set barber name if this is a redirect
+  if(keyPress === undefined) {
+    const customer = await new Database().findCustomerInDatabase(phoneNumber)
+    barberName = customer.barber
   }
 
   let availableTimes = [
@@ -144,14 +172,8 @@ export async function chosenBarber(req, res, next) {
     '7pm - 8pm'
   ]
 
-  await database.updateCustomer(
-    phoneNumber,
-    { barber: barberName }
-  )
-
   await database.findBarberInDatabase(barberName).then(barber => {
-    console.log(barber, 'found barber')
-    const schedule = barber.get('appointments').toObject()
+    const schedule = barber.appointments
     const timesTaken = schedule.map(customer => customer.time);
 
     // filter out times available from times taken
@@ -163,13 +185,22 @@ export async function chosenBarber(req, res, next) {
       `I'm so sorry! ${barberName} is all booked up for the day.`,
       { voice: 'Polly.Salli' }
     )
-
-    twiml.redirect({ method: 'POST' }, `/api/chooseService?redirect=true`)
+    twiml.redirect({ method: 'POST' }, `/api/chooseService?redirect=true&barber=${barberName}`)
     return res.send(twiml.toString())
   } else {
+    if(keyPress === undefined){
+      gather.say(
+        `Here is ${barberName}'s current schedule for today. Press:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`,
+        { voice: 'Polly.Salli' }
+      )
+    }
     gather.say(
       `${randomWord()}! ${barberName} will be excited. Time to book your appointment. Here is ${barberName}'s current schedule for today. Press:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`,
       { voice: 'Polly.Salli' }
+    )
+    await database.updateCustomer(
+      phoneNumber,
+      { barber: barberName }
     )
   }
   return res.send(twiml.toString())
@@ -180,18 +211,13 @@ export async function confirmation(req, res, next) {
   const phoneNumber = phoneNumberFormatter(res.req.body.From)
   const customer: any = await database.findCustomerInDatabase(phoneNumber)
   const barber = customer.barber
-  const date = customer.date
   const firstName = customer.firstName
-  const service = customer.service
+  const services = customer.service
   const total = customer.total
   let time;
   // Use the Twilio Node.js SDK to build an XML response
   const twiml = new VoiceResponse()
-  twiml.say(
-    `${randomWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today. Goodbye`,
-    { voice: 'Polly.Salli' }
-  )
-  res.send(twiml.toString())
+  if(!!keyPress) if(keyPress[0] === '0') return callBarbershop(res)
 
   let availableTimes = [
     '11am - 12pm',
@@ -206,7 +232,7 @@ export async function confirmation(req, res, next) {
   ]
 
   const foundBarber = await database.findBarberInDatabase(barber)
-  const schedule = foundBarber.get('appointments').toObject()
+  const schedule = foundBarber.appointments
   const timesTaken = schedule.map(customer => customer.time);
 
   // filter out times available from times taken
@@ -214,17 +240,20 @@ export async function confirmation(req, res, next) {
 
   time = availableTimes[parseInt(keyPress) - 1]
 
-  try {
+  if (time === undefined) return errorMessage(res, '/api/chosenBarber')
 
+  twiml.say(
+    `${randomWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today. Goodbye`,
+    { voice: 'Polly.Salli' }
+  )
+  res.send(twiml.toString())
+
+  try {
     await database.addAppointment(barber, { phoneNumber, firstName }, time)
 
-    // TEST: Start cron job to send appointment alert message
     let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
     let currDate = new Date(dateWithTimeZone)
-
-    const seconds = currDate.getSeconds()
     const minutes = currDate.getMinutes()
-    const hours = currDate.getHours()
 
     /*
     Seconds: 0-59
@@ -238,15 +267,10 @@ export async function confirmation(req, res, next) {
     let alertHour
     const appointmentHour = time.split('-')[0]
 
-    if (appointmentHour.includes('pm')) {
-      alertHour = (parseInt(appointmentHour) + 12) - 1
-    } else {
-      alertHour = appointmentHour - 1
-    }
+    if (appointmentHour.includes('pm')) alertHour = (parseInt(appointmentHour) + 12) - 1
+    else alertHour = appointmentHour - 1
 
-    console.log('ALERT HOUR: ', alertHour)
-
-    const reminderMessage = `REMINDER:\nYour appointment is less than an hour away.\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
+    const reminderMessage = `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(service => `\n${service}`)}\n\nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
 
     createJob(`0 ${minutes + 3} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
 
@@ -261,20 +285,17 @@ export async function confirmation(req, res, next) {
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
     body:
-      `${randomWord()}! So to confirm \nYou've just made an appointment\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`,
+      `${randomWord()}! So to confirm \nYou've just made an appointment\nService: ${services.map(service => `\n${service}`)}\n\nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`,
     to: phoneNumber
   })
 }
 
-export function errorMessage(req, res, next) {
-  // Use the Twilio Node.js SDK to build an XML response
+export function errorMessage(res, redirectUrl: string) {
   const twiml = new VoiceResponse()
 
   twiml.say('That was an invalid response', { voice: 'Polly.Salli' })
-  twiml.redirect('/api/phoneAppointmentFlow')
-  // Render the response as XML in reply to the webhook request
+  twiml.redirect({ method: 'POST' }, redirectUrl)
   res.send(twiml.toString())
-  res.sendStatus(200)
 }
 
 /* *************** Text Message Flow ******************* */
@@ -288,12 +309,13 @@ function validateMessage(body: string, validResponses: string[]) {
   return validResponses.includes(extractedNumber)
 }
 
-function extractedNumber(body: string) {
-  let extractedNumber
-  extractedNumber = body.match(/\d/gi)
-
-  if (!extractedNumber) return false
-  return extractedNumber
+function extractedNumbers(body: string) {
+  const extractedNumbers = body.match(/\d/gi)
+  if(extractedNumbers.length === 1){
+    if(extractedNumbers[0].length > 1) return extractedNumbers[0].split('')
+    else return extractedNumbers
+  } 
+  return extractedNumbers
 }
 
 export function phoneNumberFormatter(phoneNumber: string) {
@@ -315,8 +337,8 @@ export async function textMessageFlow(req, res, next) {
       )
       customer = await database.createCustomer(phoneNumber)
     } else {
-      if (customer.get('stepNumber') === '3') {
-        req.barber = customer.get('barber')
+      if (customer.stepNumber === '3') {
+        req.barber = customer.barber
       }
     }
 
@@ -331,35 +353,35 @@ export async function textGetName(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
   const phoneNumber = phoneNumberFormatter(req.body.From)
+  let message = `Text (reset) at any time to reset your appointment. \n\nWhat type of service would you like today? Press: \n`
 
+  for (let prop in serviceList) {
+    message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
+  }
 
   try {
-    if (req.customer.get('stepNumber') == '7') {
-      let message = `What type of service would you like today? Press: `
+    if (req.customer.stepNumber == '7') {
+      // Revisting customer
+      sendTextMessage(`Welcome back, ${req.customer.firstName}! \n${message}`)
 
-      for (let prop in serviceList) {
-        message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
-      }
-
-      sendTextMessage(
-        `Welcome back, ${req.customer.get('firstName')}! ${message}`
+      await database.updateCustomer(
+        phoneNumber,
+        { 'stepNumber': '2' }
       )
+    } else if(req.customer.stepNumber != '7') {
+      // Customer wants to reset
+      sendTextMessage(`${message}`)
 
       await database.updateCustomer(
         phoneNumber,
         { 'stepNumber': '2' }
       )
     } else {
+      // First time customer is using system
       await database.updateCustomer(
         phoneNumber,
         { 'firstName': userMessage }
       )
-
-      let message = `What type of service would you like today? Press: `
-
-      for (let prop in serviceList) {
-        message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
-      }
 
       sendTextMessage(message)
 
@@ -378,18 +400,9 @@ export async function textGetName(req, res, next) {
 export async function textChooseService(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
-
   let services = [], total = 0
 
-  let message = `What type of service would you like today? Press: `
-
-  for (let prop in serviceList) {
-    message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
-  }
-
-  console.log('USER RESPONSE', userMessage)
-
-  userMessage.split(',').forEach(n => {
+  extractedNumbers(userMessage).forEach(n => {
     const service = serviceList[n].service
     const price = serviceList[n].price
 
@@ -397,25 +410,23 @@ export async function textChooseService(req, res, next) {
     total += price
   })
 
-  console.log('=====================')
-  console.log(services, total)
-  console.log('=====================')
-
-
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
       { 'service': services, 'total': total, 'stepNumber': '3' }
     )
+    sendTextMessage(`Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`)
+  } catch (err) { next(err) }
+}
 
-    sendTextMessage(
-      `Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`
-    )
-
-  } catch (err) {
-    console.error(err, 'error')
-    next(err)
+function resetUser(phoneNumber: string, sendTextMessage: any){
+  let message = `Okay let's start from the top! \n\nWhat type of service would you like today? Press: \n`
+  
+  for (let prop in serviceList) {
+    message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
   }
+  sendTextMessage(message)
+  database.updateCustomer(phoneNumber, { 'stepNumber': '2' })
 }
 
 export async function textAdditionalService(req, res, next) {
@@ -423,9 +434,11 @@ export async function textAdditionalService(req, res, next) {
   const sendTextMessage = getTextMessageTwiml(res)
   const validResponses = ['1', '2']
   const validatedResponse = validateMessage(userMessage, validResponses)
-
+  const phoneNumber = phoneNumberFormatter(req.body.From);
   let additionalService
   let total = req.customer.total
+
+  if(userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
 
   if (!validatedResponse)
     return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
@@ -450,9 +463,7 @@ export async function textAdditionalService(req, res, next) {
       { additionalService, total, 'stepNumber': '4' }
     )
 
-    sendTextMessage(
-      `Okay, Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`
-    )
+    sendTextMessage(`Okay, Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
   } catch (err) {
     next(err)
   }
@@ -465,6 +476,8 @@ export async function textChoseBarber(req, res, next) {
   const validResponses = ['1', '2', '3']
   const validatedResponse = validateMessage(userMessage, validResponses)
   let barberName
+
+  if(userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
 
   if (!validatedResponse) {
     return sendTextMessage(`You must choose a valid response. Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
@@ -495,9 +508,8 @@ export async function textChoseBarber(req, res, next) {
   ]
 
   await database.findBarberInDatabase(barberName).then(barber => {
-    console.log('===BARBER=== ', barber)
-    if (barber.get('appointments')) {
-      const schedule = barber.get('appointments').toObject()
+    if (barber.appointments) {
+      const schedule = barber.appointments
       const timesTaken = schedule.map(customer => customer.time);
 
       // filter out times available from times taken
@@ -506,79 +518,22 @@ export async function textChoseBarber(req, res, next) {
   })
 
   if (availableTimes.length > 0) {
-    sendTextMessage(
-      `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
-    )
+    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`)
     await database.updateCustomer(
       phoneNumber,
       { stepNumber: '5', barber: barberName }
     )
-  } else {
-    sendTextMessage(
-      `Uh-oh, it looks that that barber doesn't have any time.`
-    )
-  }
+  } else sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
 }
-
-export async function textGetConfirmation(req, res, next) {
-  const userMessage: string = extractText(req.body.Body)
-  const validResponses = ['1', '2']
-  const validatedResponse = validateMessage(userMessage, validResponses)
-  const sendTextMessage = getTextMessageTwiml(res)
-  const phoneNumber: string = phoneNumberFormatter(req.body.From)
-  const customer: any = await database.findCustomerInDatabase(phoneNumber)
-  const { barber, service, total, time } = customer
-
-  if (!validatedResponse)
-    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
-      if (index === 0) return response
-      if (index === validResponses.length - 1) return ` or ${response}`
-      return ' ' + response
-    })}\nPress:\n(1) for YES\n(2) for NO`)
-
-  if (userMessage === '1') {
-    sendTextMessage(`Great! We are looking forward to seeing you!`)
-
-    // TEST: Start cron job to send appointment alert message -- Break off into own function
-    let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
-    let currDate = new Date(dateWithTimeZone)
-
-    const minutes = currDate.getMinutes()
-
-    const appointmentHour = time.split('-')[0]
-    let alertHour
-
-    if (appointmentHour.includes('pm')) {
-      alertHour = (parseInt(appointmentHour) + 12) - 1
-    } else {
-      alertHour = appointmentHour - 1
-    }
-
-    const reminderMessage = `REMINDER:\nYour appointment is less than an hour away.\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
-
-    createJob(`0 ${minutes + 3} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
-
-  } else {
-    sendTextMessage(`Okay, let's fix it.`)
-  }
-
-  await database.updateCustomer(
-    phoneNumberFormatter(req.body.From),
-    { 'stepNumber': '7' }
-  )
-}
-
 
 export async function textConfirmAppointmentTime(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8']
   const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
-  const service = req.customer.get('service');
-  const barber = req.customer.get('barber');
-  const total = req.customer.get('total');
-  const firstName = req.customer.get('firstName');
-  const phoneNumber = req.customer.get('phoneNumber')
+  const services = req.customer.service;
+  const barber = req.customer.barber;
+  const total = req.customer.total;
   let time;
 
   if (!validatedResponse)
@@ -601,18 +556,16 @@ export async function textConfirmAppointmentTime(req, res, next) {
   ]
 
   await database.findBarberInDatabase(barber).then(foundBarber => {
-    const schedule = foundBarber.get('appointments')
+    const schedule = foundBarber.appointments
     const timesTaken = schedule.map(customer => customer.time);
     // filter out times available from times taken
     timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
   })
 
   time = availableTimes[parseInt(userMessage) - 1]
-  sendTextMessage(`Awesome! Here are your appointment details:\n\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`)
+  sendTextMessage(`Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service}`)}\n\nBarber: ${barber}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`)
 
   try {
-    await database.addAppointment(barber, { phoneNumber, firstName }, time)
-
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
       { 'stepNumber': '6' }
@@ -627,3 +580,44 @@ export async function textConfirmAppointmentTime(req, res, next) {
   }
 }
 
+export async function textGetConfirmation(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const validResponses = ['1', '2']
+  const validatedResponse = validateMessage(userMessage, validResponses)
+  const sendTextMessage = getTextMessageTwiml(res)
+  const phoneNumber: string = phoneNumberFormatter(req.body.From)
+  const customer: any = await database.findCustomerInDatabase(phoneNumber)
+  const { barber, service, total, time, firstName } = customer
+
+  if(userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
+      if (index === 0) return response
+      if (index === validResponses.length - 1) return ` or ${response}`
+      return ' ' + response
+    })}\nPress:\n(1) for YES\n(2) for NO`)
+
+  if (userMessage === '1') {
+    sendTextMessage(`Great! We are looking forward to seeing you!`)
+    await database.addAppointment(barber, { phoneNumber, firstName }, time)
+
+    let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
+    let currDate = new Date(dateWithTimeZone)
+    const minutes = currDate.getMinutes()
+    const appointmentHour = time.split('-')[0]
+    let alertHour
+
+    if (appointmentHour.includes('pm')) alertHour = (parseInt(appointmentHour) + 12) - 1
+    else alertHour = appointmentHour - 1
+
+    const reminderMessage = `REMINDER:\nYour appointment is less than an hour away.\nService: ${service.map(service => `\n${service}`)} \n\nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
+    createJob(`0 ${minutes + 1} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
+
+  } else sendTextMessage(`Okay, let's fix it.`)
+
+  await database.updateCustomer(
+    phoneNumberFormatter(req.body.From),
+    { 'stepNumber': '7' }
+  )
+}

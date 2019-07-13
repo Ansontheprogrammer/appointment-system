@@ -62,11 +62,10 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date: string) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date?: string) {
     const { phoneNumber, firstName } = customer
-    // finish check to ensure stock list isn't already created.
+    const appointment = { phoneNumber, firstName, time} 
     let docRef = db.collection('barbers').doc(barberFirstName)
-    
     try {
       let barber = await docRef.get()
       let appointments = barber.get('appointments')
