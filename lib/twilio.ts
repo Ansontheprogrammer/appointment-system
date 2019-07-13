@@ -287,12 +287,13 @@ function validateMessage(body: string, validResponses: string[]) {
   return validResponses.includes(extractedNumber)
 }
 
-function extractedNumber(body: string) {
-  let extractedNumber
-  extractedNumber = body.match(/\d/gi)
-
-  if (!extractedNumber) return false
-  return extractedNumber
+function extractedNumbers(body: string) {
+  const extractedNumbers = body.match(/\d/gi)
+  if(extractedNumbers.length === 1){
+    if(extractedNumbers[0].length > 1) return extractedNumbers[0].split('')
+    else return extractedNumbers
+  } 
+  return extractedNumbers
 }
 
 export function phoneNumberFormatter(phoneNumber: string) {
@@ -377,18 +378,9 @@ export async function textGetName(req, res, next) {
 export async function textChooseService(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
-
   let services = [], total = 0
 
-  let message = `What type of service would you like today? Press: `
-
-  for (let prop in serviceList) {
-    message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
-  }
-
-  console.log('USER RESPONSE', userMessage)
-
-  userMessage.split(',').forEach(n => {
+  extractedNumbers(userMessage).forEach(n => {
     const service = serviceList[n].service
     const price = serviceList[n].price
 
@@ -396,25 +388,15 @@ export async function textChooseService(req, res, next) {
     total += price
   })
 
-  console.log('=====================')
-  console.log(services, total)
-  console.log('=====================')
-
-
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
       { 'service': services, 'total': total, 'stepNumber': '3' }
     )
 
-    sendTextMessage(
-      `Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`
-    )
+    sendTextMessage(`Would you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`)
 
-  } catch (err) {
-    console.error(err, 'error')
-    next(err)
-  }
+  } catch (err) { next(err) }
 }
 
 export async function textAdditionalService(req, res, next) {
@@ -449,9 +431,7 @@ export async function textAdditionalService(req, res, next) {
       { additionalService, total, 'stepNumber': '4' }
     )
 
-    sendTextMessage(
-      `Okay, Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`
-    )
+    sendTextMessage(`Okay, Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
   } catch (err) {
     next(err)
   }
@@ -494,7 +474,6 @@ export async function textChoseBarber(req, res, next) {
   ]
 
   await database.findBarberInDatabase(barberName).then(barber => {
-    console.log('===BARBER=== ', barber)
     if (barber.appointments) {
       const schedule = barber.appointments
       const timesTaken = schedule.map(customer => customer.time);
@@ -505,68 +484,13 @@ export async function textChoseBarber(req, res, next) {
   })
 
   if (availableTimes.length > 0) {
-    sendTextMessage(
-      `Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`
-    )
+    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${availableTimes.map((time, index) => `\n(${index + 1}) for ${time}`)}`)
     await database.updateCustomer(
       phoneNumber,
       { stepNumber: '5', barber: barberName }
     )
-  } else {
-    sendTextMessage(
-      `Uh-oh, it looks that that barber doesn't have any time.`
-    )
-  }
+  } else sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
 }
-
-export async function textGetConfirmation(req, res, next) {
-  const userMessage: string = extractText(req.body.Body)
-  const validResponses = ['1', '2']
-  const validatedResponse = validateMessage(userMessage, validResponses)
-  const sendTextMessage = getTextMessageTwiml(res)
-  const phoneNumber: string = phoneNumberFormatter(req.body.From)
-  const customer: any = await database.findCustomerInDatabase(phoneNumber)
-  const { barber, service, total, time } = customer
-
-  if (!validatedResponse)
-    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
-      if (index === 0) return response
-      if (index === validResponses.length - 1) return ` or ${response}`
-      return ' ' + response
-    })}\nPress:\n(1) for YES\n(2) for NO`)
-
-  if (userMessage === '1') {
-    sendTextMessage(`Great! We are looking forward to seeing you!`)
-
-    // TEST: Start cron job to send appointment alert message -- Break off into own function
-    let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
-    let currDate = new Date(dateWithTimeZone)
-
-    const minutes = currDate.getMinutes()
-
-    const appointmentHour = time.split('-')[0]
-    let alertHour
-
-    if (appointmentHour.includes('pm')) {
-      alertHour = (parseInt(appointmentHour) + 12) - 1
-    } else {
-      alertHour = appointmentHour - 1
-    }
-
-    const reminderMessage = `REMINDER:\nYour appointment is less than an hour away.\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
-
-    createJob(`0 ${minutes + 3} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
-
-  } else {
-    sendTextMessage(`Okay, let's fix it.`)
-  }
-
-  await database.updateCustomer(
-    phoneNumberFormatter(req.body.From),
-    { 'stepNumber': '7' }
-  )
-}
-
 
 export async function textConfirmAppointmentTime(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
@@ -627,3 +551,50 @@ export async function textConfirmAppointmentTime(req, res, next) {
   }
 }
 
+export async function textGetConfirmation(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const validResponses = ['1', '2']
+  const validatedResponse = validateMessage(userMessage, validResponses)
+  const sendTextMessage = getTextMessageTwiml(res)
+  const phoneNumber: string = phoneNumberFormatter(req.body.From)
+  const customer: any = await database.findCustomerInDatabase(phoneNumber)
+  const { barber, service, total, time } = customer
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
+      if (index === 0) return response
+      if (index === validResponses.length - 1) return ` or ${response}`
+      return ' ' + response
+    })}\nPress:\n(1) for YES\n(2) for NO`)
+
+  if (userMessage === '1') {
+    sendTextMessage(`Great! We are looking forward to seeing you!`)
+
+    // TEST: Start cron job to send appointment alert message -- Break off into own function
+    let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
+    let currDate = new Date(dateWithTimeZone)
+
+    const minutes = currDate.getMinutes()
+
+    const appointmentHour = time.split('-')[0]
+    let alertHour
+
+    if (appointmentHour.includes('pm')) {
+      alertHour = (parseInt(appointmentHour) + 12) - 1
+    } else {
+      alertHour = appointmentHour - 1
+    }
+
+    const reminderMessage = `REMINDER:\nYour appointment is less than an hour away.\nService: ${service} \nBarber: ${barber}\nTime: ${time}\nTotal: $${total}`
+
+    createJob(`0 ${minutes + 3} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
+
+  } else {
+    sendTextMessage(`Okay, let's fix it.`)
+  }
+
+  await database.updateCustomer(
+    phoneNumberFormatter(req.body.From),
+    { 'stepNumber': '7' }
+  )
+}
