@@ -180,7 +180,6 @@ export async function confirmation(req, res, next) {
   const phoneNumber = phoneNumberFormatter(res.req.body.From)
   const customer: any = await database.findCustomerInDatabase(phoneNumber)
   const barber = customer.barber
-  const date = customer.date
   const firstName = customer.firstName
   const service = customer.service
   const total = customer.total
@@ -206,7 +205,7 @@ export async function confirmation(req, res, next) {
   ]
 
   const foundBarber = await database.findBarberInDatabase(barber)
-  const schedule = foundBarber.get('appointments').toObject()
+  const schedule = foundBarber.appointments
   const timesTaken = schedule.map(customer => customer.time);
 
   // filter out times available from times taken
@@ -315,8 +314,8 @@ export async function textMessageFlow(req, res, next) {
       )
       customer = await database.createCustomer(phoneNumber)
     } else {
-      if (customer.get('stepNumber') === '3') {
-        req.barber = customer.get('barber')
+      if (customer.stepNumber === '3') {
+        req.barber = customer.barber
       }
     }
 
@@ -334,7 +333,7 @@ export async function textGetName(req, res, next) {
 
 
   try {
-    if (req.customer.get('stepNumber') == '7') {
+    if (req.customer.stepNumber == '7') {
       let message = `What type of service would you like today? Press: `
 
       for (let prop in serviceList) {
@@ -342,7 +341,7 @@ export async function textGetName(req, res, next) {
       }
 
       sendTextMessage(
-        `Welcome back, ${req.customer.get('firstName')}! ${message}`
+        `Welcome back, ${req.customer.firstName}! ${message}`
       )
 
       await database.updateCustomer(
@@ -496,8 +495,8 @@ export async function textChoseBarber(req, res, next) {
 
   await database.findBarberInDatabase(barberName).then(barber => {
     console.log('===BARBER=== ', barber)
-    if (barber.get('appointments')) {
-      const schedule = barber.get('appointments').toObject()
+    if (barber.appointments) {
+      const schedule = barber.appointments
       const timesTaken = schedule.map(customer => customer.time);
 
       // filter out times available from times taken
@@ -574,11 +573,11 @@ export async function textConfirmAppointmentTime(req, res, next) {
   const validResponses = ['1', '2', '3', '4', '5', '6', '7', '8']
   const validatedResponse = validateMessage(userMessage, validResponses)
   const sendTextMessage = getTextMessageTwiml(res)
-  const service = req.customer.get('service');
-  const barber = req.customer.get('barber');
-  const total = req.customer.get('total');
-  const firstName = req.customer.get('firstName');
-  const phoneNumber = req.customer.get('phoneNumber')
+  const service = req.customer.service;
+  const barber = req.customer.barber;
+  const total = req.customer.total;
+  const firstName = req.customer.firstName;
+  const phoneNumber = req.customer.phoneNumber
   let time;
 
   if (!validatedResponse)
@@ -601,7 +600,7 @@ export async function textConfirmAppointmentTime(req, res, next) {
   ]
 
   await database.findBarberInDatabase(barber).then(foundBarber => {
-    const schedule = foundBarber.get('appointments')
+    const schedule = foundBarber.appointments
     const timesTaken = schedule.map(customer => customer.time);
     // filter out times available from times taken
     timesTaken.forEach(time => availableTimes.splice(availableTimes.indexOf(time), 1))
@@ -612,7 +611,8 @@ export async function textConfirmAppointmentTime(req, res, next) {
 
   try {
     await database.addAppointment(barber, { phoneNumber, firstName }, time)
-
+    
+    console.log('out of add appointment')
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
       { 'stepNumber': '6' }
