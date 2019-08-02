@@ -13,12 +13,18 @@ export const client: any = twilio(
 export const VoiceResponse = (twilio as any).twiml.VoiceResponse
 export const MessagingResponse = (twilio as any).twiml.MessagingResponse
 export const database = new Database()
+const scheduler = new Scheduler()
 
 const introWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
 const introGreetingWords = ["What's good", "How you doing", "How you been", 'Long time no see']
 
 const randomWord = () => introWords[Math.floor(Math.random() * introWords.length)]
 const randomGreeting = () => introGreetingWords[Math.floor(Math.random() * introGreetingWords.length)]
+
+type BARBER_APPOINTMENTS = { 
+  from: string,
+  duration: number 
+}
 
 export const getTextMessageTwiml = (res: any) => {
   return (message: string) => {
@@ -302,6 +308,41 @@ export function errorMessage(res, redirectUrl: string) {
 
 /* *************** Text Message Flow ******************* */
 
+export function getAvailableTimes(duration: number, interval: number, allocatedTimes: BARBER_APPOINTMENTS[], from: string, to: string){
+  return scheduler.getIntersection({
+    from,
+    to,
+    duration,
+    interval,
+    schedules: [
+      {
+        weekdays: {
+          from: '10:00', to: '20:00',
+        },
+        saturday: {
+          from: '11:00', to: '20:00',
+        },
+        unavailability: [
+          { from: `${from} 13:00`, to: `${from} 14:00` }
+        ],
+        allocated: allocatedTimes
+      }
+    ]
+  })[from]
+}
+
+export function getApproximateTimes(barbersAllocatedTimes: any){
+  return barbersAllocatedTimes
+  .filter(availability => availability.available)
+  .map(availability =>  moment(availability.time, 'HH:mm').format('hh:mm a').slice(0, 2))
+  .map(availability => {
+    if(availability.slice(0, 1) === '0') return availability.slice(1).concat(' ' + 'pm')
+    if(availability === '12') return availability.concat(' ' + 'pm')
+    return availability.concat(' ' + 'am')
+  })
+  .filter((availability, index, self) => self.indexOf(availability) === index)
+}
+
 function validateMessage(body: string, validResponses: string[]) {
   let extractedNumber;
   extractedNumber = body.match(/\d/gi)
@@ -411,8 +452,9 @@ export async function textChooseService(req, res, next) {
   extractedNumbers(userMessage).forEach(n => {
     const service = serviceList[n].service
     const price = serviceList[n].price
-
-    services.push(service)
+    const duration = serviceList[n].duration
+    
+    services.push({service, duration})
     total += price
   })
 
@@ -426,7 +468,6 @@ export async function textChooseService(req, res, next) {
 }
 
 function resetUser(phoneNumber: string, sendTextMessage: any) {
-  console.log('=')
   let message = `Okay let's start from the top! \n\nWhat type of service would you like today? Press: \n`
 
   for (let prop in serviceList) {
@@ -476,7 +517,7 @@ export async function textAdditionalService(req, res, next) {
   }
 }
 
-export async function textChoseBarber(req, res, next) {
+export async function textChoseApproximateTime(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
   const phoneNumber: string = phoneNumberFormatter(req.body.From)
@@ -504,59 +545,69 @@ export async function textChoseBarber(req, res, next) {
       break
   }
 
+  const from = moment().format('YYYY-MM-DD')
+  const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
+  let totalDuration = 0;
+
+  req.customer.service.forEach(service => totalDuration += service.duration)
+  
+  const barbersAllocatedTimes = req.customer.barber;
+  const availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
+  const approximateTimes = getApproximateTimes(availableTimes)
+  
+
+  if (approximateTimes.length > 0) {
+    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
+    await database.updateCustomer(
+      phoneNumber,
+      { stepNumber: '5', barber: barberName }
+    )
+  } else {
+    sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
+  }
+}
+
+
+export async function textChoseExactTime(req, res, next) {
+  const userMessage: string = extractText(req.body.Body)
+  const sendTextMessage = getTextMessageTwiml(res)
+  const phoneNumber: string = phoneNumberFormatter(req.body.From)
+  const validResponses = ['1', '2', '3']
+  const validatedResponse = validateMessage(userMessage, validResponses)
+  let barberName
+
+  if (userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
+
+  if (!validatedResponse) {
+    return sendTextMessage(`You must choose a valid response. Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
+  }
+
+  switch (userMessage) {
+    case '1':
+      barberName = 'Kelly'
+      break
+    case '2':
+      barberName = 'Anson'
+      break
+    case '3':
+      barberName = 'Idris'
+      break
+  }
+
   
   const from = moment().format('YYYY-MM-DD')
   const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
+  let totalDuration = 0;
 
-  const barbersAllocatedTimes = [
-    { from: `${from} 16:00` , duration: 60 },
-    { from: `${from} 18:00` , duration: 15 },
-    { from: `${from} 15:00` , duration: 30 },
-    { from: `${from} 19:00` , duration: 15 },
-    { from: `${from} 17:00` , duration: 30 },
-  ]
-
-  function getAvailableTimes(duration, interval){
-    return scheduler.getIntersection({
-      from,
-      to,
-      duration,
-      interval,
-      schedules: [
-        {
-          weekdays: {
-            from: '10:00', to: '20:00',
-          },
-          saturday: {
-            from: '11:00', to: '20:00',
-          },
-          unavailability: [
-            { from: `${from} 13:00`, to: `${from} 14:00` }
-          ],
-          allocated: barbersAllocatedTimes
-        }
-      ]
-    })[from]
-  }
-
-  const getHourTime = getAvailableTimes(20, 20)
-  .filter(availability => availability.available)
-  .map(availability =>  moment(availability.time, 'HH:mm').format('hh:mm a').slice(0, 2))
-  .map(availability => {
-    if(availability.slice(0, 1) === '0') return availability.slice(1).concat(' ' + 'pm')
-    if(availability === '12') return availability.concat(' ' + 'pm')
-    return availability.concat(' ' + 'am')
-  })
-  .filter((availability, index, self) => self.indexOf(availability) === index)
+  req.customer.service.forEach(service => totalDuration += service.duration)
   
-  const getExactTime = getAvailableTimes(20, 15)
-  .filter(availability => availability.available)
-  .map(availability => moment(availability.time, 'HH:mm').format('hh:mm a'))
+  const barbersAllocatedTimes = req.customer.barber;
+  const availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
+  const approximateTimes = getApproximateTimes(availableTimes)
+  
 
-
-
-  if (getHourTime.length > 0) {
-    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${getHourTime.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
+  if (approximateTimes.length > 0) {
+    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
     await database.updateCustomer(
       phoneNumber,
       { stepNumber: '5', barber: barberName }
@@ -587,17 +638,7 @@ export async function textConfirmAppointmentTime(req, res, next) {
       return ' ' + response
     })}\nPress:\n(1) for 11am to 12pm\n(2) for 12pm to 1pm\n(3) for 1pm to 2pm\n(4) for 2pm to 3pm\n(5) for 3pm to 4pm\n(6) for 4pm to 5pm\n(7) for 5pm to 6pm\n(8) for 6pm to 7pm`)
 
-  let availableTimes = [
-    '11am - 12pm',
-    '12pm - 1pm',
-    '1pm - 2pm',
-    '2pm - 3pm',
-    '3pm - 4pm',
-    '4pm - 5pm',
-    '5pm - 6pm',
-    '6pm - 7pm',
-    '7pm - 8pm'
-  ]
+  let availableTimes = []
 
   await database.findBarberInDatabase(barber).then(foundBarber => {
     const schedule = foundBarber.appointments

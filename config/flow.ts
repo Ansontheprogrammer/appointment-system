@@ -5,7 +5,7 @@ const steps = {
   '1': twilioLib.textGetName,
   '2': twilioLib.textChooseService,
   '3': twilioLib.textAdditionalService,
-  '4': twilioLib.textChoseBarber,
+  '4': twilioLib.textChoseApproximateTime,
   '5': twilioLib.textConfirmAppointmentTime,
   '6': twilioLib.textGetConfirmation,
   '7': twilioLib.textGetName
