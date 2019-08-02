@@ -1,7 +1,7 @@
 {
   "name": "fades-of-gray",
   "version": "1.0.0",
-  "description": "Sales Hogs source files",
+  "description": "Fades of Gray appointment system",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
