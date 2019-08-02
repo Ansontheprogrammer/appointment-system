@@ -504,30 +504,59 @@ export async function textChoseBarber(req, res, next) {
       break
   }
 
+  
+  const from = moment().format('YYYY-MM-DD')
+  const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
 
-  const date = moment().format('YYYY-MM-DD')
+  const barbersAllocatedTimes = [
+    { from: `${from} 16:00` , duration: 60 },
+    { from: `${from} 18:00` , duration: 15 },
+    { from: `${from} 15:00` , duration: 30 },
+    { from: `${from} 19:00` , duration: 15 },
+    { from: `${from} 17:00` , duration: 30 },
+  ]
 
-  const availability = scheduler.getIntersection({
-    from: date,
-    to: moment(date).add(1, 'day').format('YYYY-MM-DD'),
-    duration: 60,
-    interval: 30,
-    schedules: [
-      {
-        weekdays: {
-          from: '10:00', to: '22:00',
-        },
-        saturday: {
-          from: '11:00', to: '20:00',
-        },
-        allocated: []
-      }
-    ]
-  })[date]
+  function getAvailableTimes(duration, interval){
+    return scheduler.getIntersection({
+      from,
+      to,
+      duration,
+      interval,
+      schedules: [
+        {
+          weekdays: {
+            from: '10:00', to: '20:00',
+          },
+          saturday: {
+            from: '11:00', to: '20:00',
+          },
+          unavailability: [
+            { from: `${from} 13:00`, to: `${from} 14:00` }
+          ],
+          allocated: barbersAllocatedTimes
+        }
+      ]
+    })[from]
+  }
+
+  const getHourTime = getAvailableTimes(20, 20)
+  .filter(availability => availability.available)
+  .map(availability =>  moment(availability.time, 'HH:mm').format('hh:mm a').slice(0, 2))
+  .map(availability => {
+    if(availability.slice(0, 1) === '0') return availability.slice(1).concat(' ' + 'pm')
+    if(availability === '12') return availability.concat(' ' + 'pm')
+    return availability.concat(' ' + 'am')
+  })
+  .filter((availability, index, self) => self.indexOf(availability) === index)
+  
+  const getExactTime = getAvailableTimes(20, 15)
+  .filter(availability => availability.available)
+  .map(availability => moment(availability.time, 'HH:mm').format('hh:mm a'))
 
 
-  if (availability.length > 0) {
-    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${availability.map((slot, i) => `\n(${i + 1}) for ${slot.time}`)}`)
+
+  if (getHourTime.length > 0) {
+    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${getHourTime.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
     await database.updateCustomer(
       phoneNumber,
       { stepNumber: '5', barber: barberName }
