@@ -1,5 +1,6 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
+import * as twilioLib from './twilio';
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
@@ -18,7 +19,7 @@ export type BARBER = {
   appointments: [
     {
       customer: CUSTOMER
-      time: string
+      time: twilioLib.BARBER_APPOINTMENTS
     }
   ]
 }
@@ -62,7 +63,7 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date?: string) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: twilioLib.BARBER_APPOINTMENTS, date?: string) {
     const { phoneNumber, firstName } = customer
     const appointment = { phoneNumber, firstName, time} 
     let docRef = db.collection('barbers').doc(barberFirstName)
