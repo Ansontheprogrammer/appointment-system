@@ -4,58 +4,58 @@ import { Database, BARBER } from '../lib/database';
 import sinon from 'sinon';
 
 describe('Database class', () => {
-    const database = new Database();
+    // const database = new Database();
     
-    let sandbox;
+    // let sandbox;
 
-    beforeEach(() => {
-        // stub out all database functions
-        sandbox = sinon.createSandbox()
-    })
+    // beforeEach(() => {
+    //     // stub out all database functions
+    //     sandbox = sinon.createSandbox()
+    // })
 
-    afterEach(() => {
-        // restore all mongo db functions
-        sandbox.restore();
-    })
+    // afterEach(() => {
+    //     // restore all mongo db functions
+    //     sandbox.restore();
+    // })
 
-    describe('firstLetterUpperCase', () => {
-        it('it should change letter to upperCase', () => {
-            const name = Database.firstLetterUpperCase('anson')
-            assert.equal(name, 'Anson');
-        })
-    })
+    // describe('firstLetterUpperCase', () => {
+    //     it('it should change letter to upperCase', () => {
+    //         const name = Database.firstLetterUpperCase('anson')
+    //         assert.equal(name, 'Anson');
+    //     })
+    // })
 
-    describe('findBarberInDatabase', () => {
-        it('it should find barber in mongo db', done => {
-            const expectedBarber: BARBER = {
-                phoneNumber: '9082097544',
-                email: 'ansonervin@gmail.com',
-                firstName: 'Anson',
-                lastName: 'Ervin',
-                zipCode: '07083',
-                appointments: [
-                    {
-                        customer: {
-                            phoneNumber: '9082097544',
-                            firstName: 'Idris',
-                            stepNumber: '1'
-                        },
-                        time: '5pm - 6pm'
-                    }
-                ]
-            };
+    // describe('findBarberInDatabase', () => {
+    //     it('it should find barber in mongo db', done => {
+    //         const expectedBarber: BARBER = {
+    //             phoneNumber: '9082097544',
+    //             email: 'ansonervin@gmail.com',
+    //             firstName: 'Anson',
+    //             lastName: 'Ervin',
+    //             zipCode: '07083',
+    //             appointments: [
+    //                 {
+    //                     customer: {
+    //                         phoneNumber: '9082097544',
+    //                         firstName: 'Idris',
+    //                         stepNumber: '1'
+    //                     },
+    //                     time: '5pm - 6pm'
+    //                 }
+    //             ]
+    //         };
 
-            sandbox.stub({}, 'findOne')
-            .withArgs({ phoneNumber: '9082097544' })
-            .yields(null, expectedBarber)
+    //         sandbox.stub({}, 'findOne')
+    //         .withArgs({ phoneNumber: '9082097544' })
+    //         .yields(null, expectedBarber)
             
-            database.findBarberInDatabase('9082097544').then(barber => {
-                // convert user variable to object
-                assert.deepEqual(barber, expectedBarber);
-                done()
-            }, done);
-        })
-    })
+    //         database.findBarberInDatabase('9082097544').then(barber => {
+    //             // convert user variable to object
+    //             assert.deepEqual(barber, expectedBarber);
+    //             done()
+    //         }, done);
+    //     })
+    // })
     // const deals = [ 
     //     { daysAvailable: [ 'Monday' ],
     //         _id: '5ce2e5288986ad6ae939f8ed',
