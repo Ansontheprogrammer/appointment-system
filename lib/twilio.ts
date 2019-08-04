@@ -21,7 +21,7 @@ const introGreetingWords = ["What's good", "How you doing", "How you been", 'Lon
 const randomWord = () => introWords[Math.floor(Math.random() * introWords.length)]
 const randomGreeting = () => introGreetingWords[Math.floor(Math.random() * introGreetingWords.length)]
 
-type BARBER_APPOINTMENTS = { 
+export type BARBER_APPOINTMENTS = { 
   from: string,
   duration: number 
 }
@@ -332,6 +332,7 @@ export function getAvailableTimes(duration: number, interval: number, allocatedT
 }
 
 export function getApproximateTimes(barbersAllocatedTimes: any){
+  console.log('inside getApprox time', barbersAllocatedTimes)
   return barbersAllocatedTimes
   .filter(availability => availability.available)
   .map(availability =>  moment(availability.time, 'HH:mm').format('hh:mm a').slice(0, 2))
@@ -341,6 +342,12 @@ export function getApproximateTimes(barbersAllocatedTimes: any){
     return availability.concat(' ' + 'am')
   })
   .filter((availability, index, self) => self.indexOf(availability) === index)
+}
+
+export function getExactTimes(barbersAllocatedTimes: any){
+  return barbersAllocatedTimes
+  .filter(availability => availability.available)
+  .map(availability => moment(availability.time, 'HH:mm').format('hh:mm a'))
 }
 
 function validateMessage(body: string, validResponses: string[]) {
@@ -392,6 +399,18 @@ export async function textMessageFlow(req, res, next) {
   }
 }
 
+export function getBarberAppointments(req, approximate: boolean): string[]{
+  const from = moment().format('YYYY-MM-DD')
+  const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
+  let totalDuration = 0;
+  req.customer.service.forEach(service => totalDuration += service.duration)
+  
+  const barbersAllocatedTimes = req.customer.barber.appointments;
+  const availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
+  if(approximate) return getApproximateTimes(availableTimes)
+  else return getExactTimes(availableTimes)
+}
+
 export async function textGetName(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
@@ -436,8 +455,6 @@ export async function textGetName(req, res, next) {
         phoneNumber,
         { 'stepNumber': '2' }
       )
-
-      next()
     }
   } catch (err) {
     next(err)
@@ -474,7 +491,7 @@ function resetUser(phoneNumber: string, sendTextMessage: any) {
     message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
   }
   sendTextMessage(message)
-  database.updateCustomer(phoneNumber, { 'stepNumber': '1' })
+  database.updateCustomer(phoneNumber, { 'stepNumber': '2' })
 }
 
 export async function textAdditionalService(req, res, next) {
@@ -523,8 +540,6 @@ export async function textChoseApproximateTime(req, res, next) {
   const phoneNumber: string = phoneNumberFormatter(req.body.From)
   const validResponses = ['1', '2', '3']
   const validatedResponse = validateMessage(userMessage, validResponses)
-  const scheduler = new Scheduler()
-
   let barberName
 
   if (userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
@@ -545,19 +560,10 @@ export async function textChoseApproximateTime(req, res, next) {
       break
   }
 
-  const from = moment().format('YYYY-MM-DD')
-  const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
-  let totalDuration = 0;
-
-  req.customer.service.forEach(service => totalDuration += service.duration)
-  
-  const barbersAllocatedTimes = req.customer.barber;
-  const availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
-  const approximateTimes = getApproximateTimes(availableTimes)
-  
+  const approximateTimes = getBarberAppointments(req, true)
 
   if (approximateTimes.length > 0) {
-    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
+    sendTextMessage(`Awesome! ${barberName} will be excited. Here are their available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
     await database.updateCustomer(
       phoneNumber,
       { stepNumber: '5', barber: barberName }
@@ -572,14 +578,16 @@ export async function textChoseExactTime(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
   const phoneNumber: string = phoneNumberFormatter(req.body.From)
-  const validResponses = ['1', '2', '3']
+  const barberSchedule = getBarberAppointments(req, true)
+  const validResponses = barberSchedule.map((time, index) => (index + 1).toString())
   const validatedResponse = validateMessage(userMessage, validResponses)
   let barberName
-
+  
+  // converter for approximate times
   if (userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
 
   if (!validatedResponse) {
-    return sendTextMessage(`You must choose a valid response. Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
+    return sendTextMessage(`You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
   }
 
   switch (userMessage) {
@@ -593,24 +601,15 @@ export async function textChoseExactTime(req, res, next) {
       barberName = 'Idris'
       break
   }
-
   
-  const from = moment().format('YYYY-MM-DD')
-  const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
-  let totalDuration = 0;
-
-  req.customer.service.forEach(service => totalDuration += service.duration)
+  const exactTimes = getBarberAppointments(req, false)
+  const chosenApproximateTime = exactTimes[parseInt(userMessage) + 1]
   
-  const barbersAllocatedTimes = req.customer.barber;
-  const availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
-  const approximateTimes = getApproximateTimes(availableTimes)
-  
-
-  if (approximateTimes.length > 0) {
-    sendTextMessage(`Awesome! ${barberName} will be excited. Here are his available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
+  if (exactTimes.length > 0) {
+    sendTextMessage(`Awesome! so which time would you like exactly. Here are their available times\nPress:${exactTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
     await database.updateCustomer(
       phoneNumber,
-      { stepNumber: '5', barber: barberName }
+      { stepNumber: '6', approximateTime: chosenApproximateTime }
     )
   } else {
     sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
