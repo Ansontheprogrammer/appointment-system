@@ -37,7 +37,7 @@ export function getBarberAvailableTimes(req, res, next){
 
 export function bookAppointment(req, res, next){
     const { barberName, datetime, customerName, phoneNumber, services } = req
-    /* 
+    /*    
         Book an appointment based on date and time
         Send a confirmation text
         Set up the chron job
@@ -47,6 +47,7 @@ export function bookAppointment(req, res, next){
 export function walkInAppointment(req, res, next){
     const {  barberName, datetime, customerName, phoneNumber, services } = req
     /* 
+        Get current date time
         Book an appointment based on current date and time
         Send a confirmation text
         Set up the chron job
