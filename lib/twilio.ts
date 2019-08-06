@@ -308,6 +308,7 @@ export function errorMessage(res, redirectUrl: string) {
 
 /* *************** Text Message Flow ******************* */
 
+
 export function getAvailableTimes(duration: number, interval: number, allocatedTimes: BARBER_APPOINTMENTS[], from: string, to: string){
   return scheduler.getIntersection({
     from,
@@ -332,7 +333,6 @@ export function getAvailableTimes(duration: number, interval: number, allocatedT
 }
 
 export function getApproximateTimes(barbersAllocatedTimes: any){
-  console.log('inside getApprox time', barbersAllocatedTimes)
   return barbersAllocatedTimes
   .filter(availability => availability.available)
   .map(availability =>  moment(availability.time, 'HH:mm').format('hh:mm a').slice(0, 2))
@@ -399,7 +399,7 @@ export async function textMessageFlow(req, res, next) {
   }
 }
 
-export function getBarberAppointments(req, approximate: boolean): string[]{
+export function getBarberAppointments(req, approximate?: boolean): string[]{
   const from = moment().format('YYYY-MM-DD')
   const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
   let totalDuration = 0;

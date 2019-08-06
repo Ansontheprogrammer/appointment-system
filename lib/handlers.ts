@@ -26,6 +26,34 @@ import { Database } from './database'
 //     }, next)
 // }
 
+export function getBarberAvailableTimes(req, res, next){
+    const { barberName, datetime } = req
+    /* 
+        The same flow as the text flow
+        res.json with the barbers available times
+        format for getBarberAvailableTimes  - 'YYYY-MM-DD hh:mm'
+    */
+}
+
+export function bookAppointment(req, res, next){
+    const { barberName, datetime, customerName, phoneNumber, services } = req
+    /* 
+        Book an appointment based on date and time
+        Send a confirmation text
+        Set up the chron job
+    */
+}
+
+export function walkInAppointment(req, res, next){
+    const {  barberName, datetime, customerName, phoneNumber, services } = req
+    /* 
+        Book an appointment based on current date and time
+        Send a confirmation text
+        Set up the chron job
+    */
+}
+
+
 export function createBarber(req, res, next) {
     /**
      * @req body = {
