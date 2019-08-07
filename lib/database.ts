@@ -1,5 +1,6 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
+import * as twilioLib from './twilio';
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
@@ -18,7 +19,7 @@ export type BARBER = {
   appointments: [
     {
       customer: CUSTOMER
-      time: string
+      time: twilioLib.BARBER_APPOINTMENTS
     }
   ]
 }
@@ -51,7 +52,7 @@ export class Database {
           resolve(snapshotData)
         })
         .catch(reject)
-      })
+    })
   }
 
   public updateBarber(firstName: string, update: {}) {
@@ -62,19 +63,20 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: string, date?: string) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: twilioLib.BARBER_APPOINTMENTS, date?: string) {
     const { phoneNumber, firstName } = customer
-    const appointment = { phoneNumber, firstName, time} 
+    const appointment = { phoneNumber, firstName, ...time }
     let docRef = db.collection('barbers').doc(barberFirstName)
     try {
       let barber = await docRef.get()
       let appointments = barber.get('appointments')
-      if(appointments){
+      if (appointments) {
         let newAppointmentsArray = appointments.concat(appointment)
         await docRef.set({ appointments: newAppointmentsArray });
+
       } else await docRef.set({ appointments: [appointment] })
-    } catch (err) { 
-      throw err 
+    } catch (err) {
+      throw err
     }
 
   }
@@ -107,26 +109,26 @@ export class Database {
     return new Promise((resolve, reject) => {
       // Assign step number field before saving
       const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
-      
+
       this.hasPersonSignedUp(false, customerInfo.phoneNumber).then(hasPersonSignedUp => {
         if (!!hasPersonSignedUp) return reject('Customer has already signed up.')
 
         let docRef = db.collection('customers').doc(customerInfo.phoneNumber);
-          docRef.set({ ...customerInfo }).then(resolve, reject)
-        })
+        docRef.set({ ...customerInfo }).then(resolve, reject)
       })
+    })
   }
 
   public updateCustomer(phoneNumber: string, update: {}) {
     return new Promise((resolve, reject) => {
-        let docRef = db.collection('customers').doc(phoneNumber)
-        docRef.update({ ...update }).then(resolve, reject)
+      let docRef = db.collection('customers').doc(phoneNumber)
+      docRef.update({ ...update }).then(resolve, reject)
     })
   }
 
   private hasPersonSignedUp(barber: boolean, phoneNumber: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      if(barber) this.findBarberInDatabase(phoneNumber).then(resolve, reject)
+      if (barber) this.findBarberInDatabase(phoneNumber).then(resolve, reject)
       else this.findCustomerInDatabase(phoneNumber).then(resolve, reject)
     })
   }
