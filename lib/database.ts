@@ -17,10 +17,7 @@ export type BARBER = {
   lastName: string
   zipCode: string
   appointments: [
-    {
-      customer: CUSTOMER
-      time: twilioLib.BARBER_APPOINTMENTS
-    }
+    twilioLib.BARBER_APPOINTMENTS
   ]
 }
 
@@ -63,7 +60,7 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: twilioLib.BARBER_APPOINTMENTS, date?: string) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: {from: string, duration: number}, date?: string) {
     const { phoneNumber, firstName } = customer
     const appointment = { phoneNumber, firstName, ...time }
     let docRef = db.collection('barbers').doc(barberFirstName)
