@@ -735,12 +735,12 @@ export async function textGetConfirmation(req, res, next) {
 
     let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
     let currDate = new Date(dateWithTimeZone)
-    const minutes = currDate.getMinutes()
-    const appointmentHour = time.split('-')[0]
-    const alertHour = appointmentHour.includes('pm') ? (parseInt(appointmentHour) + 12) - 1 : appointmentHour - 1
+    const minutes = moment(time, 'h:mm a').format('m');
+    const appointmentHour = time
+    const alertHour = appointmentHour.includes('pm') ? parseInt(appointmentHour) + 12 : appointmentHour - 1
 
     const reminderMessage = UserMessages.generateReminderMessage(service, barber, time, total)
-    createJob(`0 ${minutes + 1} ${alertHour} 9 6 *`, phoneNumber, reminderMessage)
+    createJob(`0 ${minutes} ${alertHour} ${currDate.getDate()} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
 
   } else {
     sendTextMessage(UserMessages.errorConfirmingAppointment)
