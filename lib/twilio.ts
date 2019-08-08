@@ -1,10 +1,10 @@
 import config from '../config/config'
 import twilio from 'twilio'
 import { Database } from './database'
-import { serviceList } from './shopData'
+import { serviceList, SERVICES } from './shopData'
 import { createJob } from './cron'
 import { Scheduler } from '@ssense/sscheduler'
-import moment from 'moment'
+import moment, { duration } from 'moment'
 
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -323,10 +323,10 @@ export function getAvailableTimes(duration: number, interval: number, allocatedT
         saturday: {
           from: '11:00', to: '20:00',
         },
-        // unavailability: [
-        //   { from: `${from} 13:00`, to: `${from} 14:00` }
-        // ],
-        allocated: allocatedTimes
+        unavailability: [
+          { from: `${from} 13:00`, to: `${from} 14:00` }
+        ],
+        allocated: []
       }
     ]
   })[from]
@@ -399,33 +399,23 @@ export async function textMessageFlow(req, res, next) {
   }
 }
 
-export function getBarberAppointments(req, approximate?: boolean): string[] {
+export function getBarberAppointments(req?, approximate?: boolean, services?: SERVICES[], barber?: any): string[] {
   const from = moment().format('YYYY-MM-DD')
   const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
   let totalDuration = 0;
-  req.customer.service.forEach(service => totalDuration += service.duration)
-
-  const barbersAllocatedTimes = req.customer.barber.appointments;
+  let barbersAllocatedTimes;
+  if (!!req) {
+    req.customer.service.forEach(service => totalDuration += service.duration)
+    barbersAllocatedTimes = req.customer.barber.appointments;
+  }
+  else {
+    services.forEach(service => totalDuration += service.duration)
+    barbersAllocatedTimes = barber.appointments;
+  }
   const availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
+  
   if (approximate) return getApproximateTimes(availableTimes)
   else return getExactTimes(availableTimes)
-}
-
-export function getBarberAppointmentsTest(req, barber: any, approximate?: boolean): any {
-  const from = moment().format('YYYY-MM-DD')
-  const to = moment(from).add(1, 'day').format('YYYY-MM-DD')
-
-  let totalDuration = 30;
-  // services.forEach(service => totalDuration += service.duration)
-
-  const barbersAllocatedTimes = barber.appointments;
-  console.log(barbersAllocatedTimes)
-  const availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
-
-  if (approximate) return getApproximateTimes(availableTimes)
-  else return getExactTimes(availableTimes)
-
-  return barbersAllocatedTimes
 }
 
 export async function textGetName(req, res, next) {
