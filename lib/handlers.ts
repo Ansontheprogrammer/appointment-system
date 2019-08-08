@@ -41,8 +41,8 @@ export async function getBarberAvailableTimes(req, res, next) {
         format for getBarberAvailableTimes  - 'YYYY-MM-DD hh:mm'
     */
     
-    const barberInDatabase = await database.findBarberInDatabase(barber)
-    const availableTimes = getBarberAppointments(false, true, services, barberInDatabase)
+    const barberInDatabase = await (database.findBarberInDatabase(barber) as any)
+    const availableTimes = getBarberAppointments(services, barberInDatabase, false)
     
     res.json({ barber, availableTimes })
 }
@@ -77,8 +77,8 @@ export async function walkInAppointment(req, res, next) {
     let total = 0
     services.forEach(service => total += service.price)
 
-    const barberInDatabase = await database.findBarberInDatabase(barber)
-    const firstAvailableTime = getBarberAppointments(false, true, services, barberInDatabase)[0]
+    const barberInDatabase = await (database.findBarberInDatabase(barber) as any)
+    const firstAvailableTime = getBarberAppointments(services, barberInDatabase, false)[0]
     const hour24Format = moment(firstAvailableTime, 'hh:mm a').format('HH:mm')
     const hour12Format = moment(firstAvailableTime, 'hh:mm a').format('hh:mm a')
     const confirmationMessage = `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${hour12Format}\nTotal: $${total}`
@@ -102,7 +102,7 @@ export async function walkInAppointment(req, res, next) {
     const hour = currDate.getHours()
     //====== TESTING DATE ======//
 
-    createJob(`0 ${minutes + 2} ${hour} 6 7 *`, phoneNumber, message)
+    createJob(`0 ${minutes + 2} ${hour} 6 7 *`, phoneNumber, confirmationMessage)
 
     res.sendStatus(200)
 }
