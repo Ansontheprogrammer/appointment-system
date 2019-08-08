@@ -1,6 +1,6 @@
 export type SERVICES = {
     service: string,
-    price: number,
+    price?: number,
     duration: number
 }
 
