@@ -1,5 +1,5 @@
 import { Database } from './database'
-import { getBarberAppointmentsTest } from './twilio'
+import { getBarberAppointments } from './twilio'
 import { client } from './twilio'
 import { createJob } from './cron'
 import config from '../config/config'
@@ -34,17 +34,18 @@ const database = new Database()
 // }
 
 export async function getBarberAvailableTimes(req, res, next) {
-    const { barberName, datetime } = req.body
+    console.log(req.body, 'req.body')
+    const { barber, datetime, services} = req.body
     /* 
         The same flow as the text flow
         res.json with the barbers available times
         format for getBarberAvailableTimes  - 'YYYY-MM-DD hh:mm'
     */
-
-    const barber = await database.findBarberInDatabase(barberName)
-    const availableTimes = getBarberAppointmentsTest(req, barber)
-
-    res.json({ barberName, availableTimes })
+    
+    const barberInDatabase = await database.findBarberInDatabase(barber)
+    const availableTimes = getBarberAppointments(false, true, services, barberInDatabase)
+    
+    res.json({ barber, availableTimes })
 }
 
 export function bookAppointment(req, res, next) {
@@ -59,11 +60,7 @@ export function bookAppointment(req, res, next) {
 }
 
 export async function walkInAppointment(req, res, next) {
-    const { barberName, datetime, customerName, phoneNumber, services = [{
-        service: 'Child Haircut',
-        price: 15,
-        duration: 30,
-    }] } = req.body
+    const { barber, datetime, customerName, phoneNumber, services } = req.body
     /* 
         Get current date time
         Book an appointment based on current date and time
@@ -75,23 +72,30 @@ export async function walkInAppointment(req, res, next) {
         phoneNumber,
         firstName: customerName
     }
+    services.shift()
 
-    const barber = await database.findBarberInDatabase(barberName)
-    const firstAvailableTime = getBarberAppointmentsTest(req, barber)[0]
-    const formattedTime = moment(firstAvailableTime, 'hh:mm a').format('HH:mm')
+    console.log(services[0].duration === {})
+    let total = 0
+    services.forEach(service => total += service.price)
 
-    database.addAppointment(barberName, customer, {
-        from: `${moment().format('YYYY-MM-DD')} ${formattedTime}`,
+    const barberInDatabase = await database.findBarberInDatabase(barber)
+    const firstAvailableTime = getBarberAppointments(false, true, services, barberInDatabase)[0]
+    const hour24Format = moment(firstAvailableTime, 'hh:mm a').format('HH:mm')
+    const hour12Format = moment(firstAvailableTime, 'hh:mm a').format('hh:mm a')
+    const confirmationMessage = `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${hour12Format}\nTotal: $${total}`
+
+    database.addAppointment(barber, customer, {
+        from: `${moment().format('YYYY-MM-DD')} ${hour24Format}`,
         duration: 60
     }, '2019-08-06')
 
     console.log('ALERT HOUR', firstAvailableTime.split(':')[0])
 
-    const message = `Your appointment with ${barberName} is at ${firstAvailableTime}. See you then!`
+    const message = `Your appointment with ${barber} is at ${firstAvailableTime}. See you then!`
 
     client.messages.create({
         from: config.TWILIO_PHONE_NUMBER,
-        body: message,
+        body: confirmationMessage,
         to: phoneNumber
     })
 
@@ -104,7 +108,7 @@ export async function walkInAppointment(req, res, next) {
 
     createJob(`0 ${minutes + 2} ${hour} 6 7 *`, phoneNumber, message)
 
-    res.json({ barberName, firstAvailableTime })
+    res.sendStatus(200)
 }
 
 
