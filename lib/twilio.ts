@@ -26,8 +26,8 @@ const randomGreeting = () => introGreetingWords[Math.floor(Math.random() * intro
 class UserMessageInterface {
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!`;
 
-  public generateConfirmationMessage(services: string[], barberName: string, time: string, total: number){
-    return `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service}`)}\n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`
+  public generateConfirmationMessage(services: SERVICES[], barberName: string, time: string, total: number){
+    return `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`
   }
 
   public generateReminderMessage(services: string[], barberName: string, time: string, total: number){
@@ -342,7 +342,7 @@ export function getAvailableTimes(duration: number, interval: number, allocatedT
 
   if(!!appoximateTime) {
     fromTime = appoximateTime
-    toTime = (parseInt(appoximateTime) + 2).toString()
+    toTime = (parseInt(appoximateTime) + 1).toString()
   }
   else {
     fromTime = timeBarbershopOpens;
@@ -416,13 +416,11 @@ export function getExactTimes(barbersAllocatedTimes: any) {
     .map(availability => {
       let timeAvailableByHour = moment(availability.time, 'HH:mm').format('h')
       let timeAvailable;
-      console.log(timeAvailableByHour, 'timeAvailableByHour')
       // convert am -> pm
       if(timeAvailableByHour.length == 1 && parseInt(timeAvailableByHour) <= parseInt(timeBarbershopCloses)){
         timeAvailable = moment(availability.time, 'HH:mm').format('h:mm a')
         timeAvailable = timeAvailable.slice(0, timeAvailable.length - 3)
         timeAvailable = timeAvailable.concat(' pm')
-        console.log(timeAvailable, 'converting time')
       } else {
         timeAvailable = moment(availability.time, 'HH:mm').format('h:mm a')
       }
@@ -652,11 +650,10 @@ export async function textChoseExactTime(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
   const phoneNumber: string = phoneNumberFormatter(req.body.From)
-  const { service, barber } = req.customer
+  const { service, barber, total } = req.customer
   const barberSchedule = getBarberAppointments(service, barber, true)
   const validResponses = barberSchedule.map((time, index) => (index + 1).toString())
   const validatedResponse = validateMessage(userMessage, validResponses)
-
 
   if (userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
 
@@ -664,10 +661,9 @@ export async function textChoseExactTime(req, res, next) {
 
   let approximateTime = barberSchedule[parseInt(userMessage) - 1]
 
-  console.log(userMessage, 'userMessage',barberSchedule, 'barberSchedule', approximateTime, 'approximateTime')
   const exactTimes = getBarberAppointments(service, barber, false, approximateTime)
 
-  if (exactTimes.length > 0) {  
+  if (exactTimes.length > 1) {  
     sendTextMessage(`Awesome! so which time would you like exactly. Here are their available times\nPress:${exactTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
     await database.updateCustomer(
       phoneNumber,
@@ -675,7 +671,7 @@ export async function textChoseExactTime(req, res, next) {
     )
   } else {
     try {
-      sendTextMessage(`Okay`)
+      sendTextMessage( UserMessages.generateConfirmationMessage(service, barber, approximateTime, total) )
       await database.updateCustomer(
         phoneNumber,
         { stepNumber: '7', approximateTime }
@@ -687,9 +683,9 @@ export async function textChoseExactTime(req, res, next) {
 }
 
 export async function textConfirmAppointmentTime(req, res, next) {
-  const { barber, service, total } = req.customer
+  const { barber, service, total, approximateTime } = req.customer
   const userMessage: string = extractText(req.body.Body)
-  const barberSchedule = getBarberAppointments(service, barber, false)
+  const barberSchedule = getBarberAppointments(service, barber, false, approximateTime)
   const validResponses = barberSchedule.map((time, index) => (index + 1).toString())
   const validatedResponse = validateMessage(userMessage, validResponses)
   const phoneNumber: string = phoneNumberFormatter(req.body.From)
@@ -708,7 +704,7 @@ export async function textConfirmAppointmentTime(req, res, next) {
   try {
     await database.updateCustomer(
       phoneNumberFormatter(req.body.From),
-      { 'stepNumber': '8' }
+      { 'stepNumber': '7' }
     )
 
     await database.updateCustomer(
