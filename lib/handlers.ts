@@ -34,7 +34,6 @@ const database = new Database()
 // }
 
 export async function getBarberAvailableTimes(req, res, next) {
-    console.log(req.body, 'req.body')
     const { barber, datetime, services} = req.body
     /* 
         The same flow as the text flow
@@ -60,7 +59,7 @@ export function bookAppointment(req, res, next) {
 }
 
 export async function walkInAppointment(req, res, next) {
-    const { barber, datetime, customerName, phoneNumber, services } = req.body
+    const { barber, customerName, phoneNumber, services } = req.body
     /* 
         Get current date time
         Book an appointment based on current date and time
@@ -72,9 +71,9 @@ export async function walkInAppointment(req, res, next) {
         phoneNumber,
         firstName: customerName
     }
+
     services.shift()
 
-    console.log(services[0].duration === {})
     let total = 0
     services.forEach(service => total += service.price)
 
@@ -90,9 +89,6 @@ export async function walkInAppointment(req, res, next) {
     }, '2019-08-06')
 
     console.log('ALERT HOUR', firstAvailableTime.split(':')[0])
-
-    const message = `Your appointment with ${barber} is at ${firstAvailableTime}. See you then!`
-
     client.messages.create({
         from: config.TWILIO_PHONE_NUMBER,
         body: confirmationMessage,
