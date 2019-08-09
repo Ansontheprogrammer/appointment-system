@@ -21,43 +21,8 @@ export type BARBER_APPOINTMENTS = {
 }
 
 const barbersInShop = ['Kelly', 'Anson', 'Idris'];
-
-class UserMessageInterface {
-  introWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
-  introGreetingWords = ["What's good", "How you doing", "How you been", 'Long time no see']
-  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!`;
-  
-
-  public generateRandomAgreeWord = () => this.introWords[Math.floor(Math.random() * this.introWords.length)]
-  public generateRandomGreeting = () => this.introGreetingWords[Math.floor(Math.random() * this.introGreetingWords.length)]
-
-
-  public generateConfirmationMessage(services: SERVICES[], barberName: string, time: string, total: number){
-    return `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`
-  }
-
-  public generateReminderMessage(services: string[], barberName: string, time: string, total: number){
-    return `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(service => `\n${service}`)} \n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}`
-  }
-
-  public generateGetBarberAvailableTimesMessage(barberSchedule: string[]){
-    return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`
-  }
-
-  public generateErrorValidatingAppointmentTime(barberSchedule: string[]){
-    return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`
-  }
-  
-  public generateChooseBarberMessage(){
-    return `Which barber would you like today? Press: \n${barbersInShop.map((barber, index) =>  `\n(${index + 1}) for ${barber}`)}`
-  }
-  errorConfirmingAppointment = `Okay, let's fix it.`
-  errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
-}
-
 const timeBarbershopOpens = '10'
 const timeBarbershopCloses = '19'
-const UserMessage = new UserMessageInterface()
 
 export function phoneNumberFormatter(phoneNumber: string) {
     if (phoneNumber[0] === '+') return phoneNumber.slice(2)
@@ -199,6 +164,42 @@ export function createBarber(req, res, next) {
         res.sendStatus(200)
     }, next)
   }
+
+
+class UserMessageInterface {
+  introWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
+  introGreetingWords = ["What's good", "How you doing", "How you been", 'Long time no see']
+  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!`;
+  
+
+  public generateRandomAgreeWord = () => this.introWords[Math.floor(Math.random() * this.introWords.length)]
+  public generateRandomGreeting = () => this.introGreetingWords[Math.floor(Math.random() * this.introGreetingWords.length)]
+
+
+  public generateConfirmationMessage(services: SERVICES[], barberName: string, time: string, total: number){
+    return `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`
+  }
+
+  public generateReminderMessage(services: string[], barberName: string, time: string, total: number){
+    return `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(service => `\n${service}`)} \n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}`
+  }
+
+  public generateGetBarberAvailableTimesMessage(barberSchedule: string[]){
+    return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`
+  }
+
+  public generateErrorValidatingAppointmentTime(barberSchedule: string[]){
+    return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`
+  }
+  
+  public generateChooseBarberMessage(){
+    return `Which barber would you like today? Press: \n${barbersInShop.map((barber, index) =>  `\n(${index + 1}) for ${barber}`)}`
+  }
+  errorConfirmingAppointment = `Okay, let's fix it.`
+  errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
+}
+
+const UserMessage = new UserMessageInterface()
 
 export class PhoneSystem extends UserMessageInterface {
   public async phoneAppointmentFlow(req, res, next) {
