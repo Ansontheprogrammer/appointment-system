@@ -1,7 +1,6 @@
 import bodyParser from 'body-parser'
 import express from 'express'
 import * as twilioLib from './lib/twilio';
-import * as databaseHandler from './lib/handlers';
 import * as flow from './config/flow'
 
 const phoneSystem = new twilioLib.PhoneSystem()
