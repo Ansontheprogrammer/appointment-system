@@ -28,7 +28,7 @@ app.post('/api/walkinAppointment', appSystem.walkInAppointment)
 // Text system
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
-app.post('/api/createBarber', appSystem.createBarber)
+app.post('/api/createBarber', twilioLib.createBarber)
 app.get('/api/ping', (req, res, next) => {
   res.sendStatus(200);
 })
