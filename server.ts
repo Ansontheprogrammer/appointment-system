@@ -4,6 +4,10 @@ import * as twilioLib from './lib/twilio';
 import * as databaseHandler from './lib/handlers';
 import * as flow from './config/flow'
 
+const phoneSystem = new twilioLib.PhoneSystem()
+const textSystem = new twilioLib.TextSystem()
+const appSystem = new twilioLib.AppSystem()
+
 export const app = (express)();
 
 const port = process.env.PORT || 80;
@@ -13,17 +17,18 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 
 // Phone system
-app.post('/api/phoneAppointmentFlow', twilioLib.phoneAppointmentFlow)
-app.post('/api/chooseService', twilioLib.chooseService)
-app.post('/api/chosenBarber', twilioLib.chosenBarber)
-app.post('/api/confirmation', twilioLib.confirmation)
-app.post('/api/bookAppointment', databaseHandler.bookAppointment)
-app.post('/api/getBarberAvailableTimes', databaseHandler.getBarberAvailableTimes)
-app.post('/api/walkinAppointment', databaseHandler.walkInAppointment)
+app.post('/api/phoneAppointmentFlow', phoneSystem.phoneAppointmentFlow)
+app.post('/api/chooseService', phoneSystem.chooseService)
+app.post('/api/chosenBarber', phoneSystem.chosenBarber)
+app.post('/api/confirmation', phoneSystem.confirmation)
+// App system
+app.post('/api/bookAppointment', appSystem.bookAppointment)
+app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
+app.post('/api/walkinAppointment', appSystem.walkInAppointment)
 // Text system
-app.post('/api/textMessageFlow', twilioLib.textMessageFlow, flow.processFlow)
+app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
-app.post('/api/createBarber', databaseHandler.createBarber)
+app.post('/api/createBarber', appSystem.createBarber)
 app.get('/api/ping', (req, res, next) => {
   res.sendStatus(200);
 })
