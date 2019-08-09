@@ -4,7 +4,7 @@ import { Database, BARBER, CUSTOMER, ALLOCATED_TIMES } from './database'
 import { serviceList, SERVICES } from './shopData'
 import { createJob } from './cron'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
-import moment, { duration, Moment } from 'moment'
+import moment from 'moment'
 
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -19,7 +19,9 @@ export type BARBER_APPOINTMENTS = {
   customer: CUSTOMER,
   time: ALLOCATED_TIMES
 }
+
 const barbersInShop = ['Kelly', 'Anson', 'Idris'];
+
 class UserMessageInterface {
   introWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
   introGreetingWords = ["What's good", "How you doing", "How you been", 'Long time no see']
