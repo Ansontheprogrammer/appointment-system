@@ -146,21 +146,9 @@ export function extractedNumbers(body: string) {
 
 export function createBarber(req, res, next) {
     /**
-     * @req body = {
-     * phoneNumber: string
-        email: string
-        firstName: string
-        lastName: string
-        zipCode: string
-        appointments: [
-            {
-            customer: CUSTOMER
-            time: string
-            }
-        ]
-    * }
+     * @req body = BARBER
      */
-    new Database().createBarber(req.body).then(() => {
+    new Database().createBarber((req.body as BARBER)).then(() => {
         res.sendStatus(200)
     }, next)
   }
@@ -473,7 +461,7 @@ export class TextSystem {
       if (!customer) {
         const sendTextMessage = TextSystem.getTextMessageTwiml(res)
         sendTextMessage(
-          `Thank you, this is Barber Sharp appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
+          `${UserMessage.generateRandomGreeting()}, this is Barber Sharp appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
         )
         customer = await database.createCustomer(phoneNumber)
         return
