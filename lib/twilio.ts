@@ -41,12 +41,16 @@ class UserMessageInterface {
     return `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(service => `\n${service}`)} \n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}`
   }
 
+  public generateGetBarberAvailableTimesMessage(barberSchedule: string[]){
+    return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`
+  }
+
   public generateErrorValidatingAppointmentTime(barberSchedule: string[]){
     return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`
   }
   
   public generateChooseBarberMessage(){
-    return `Okay, Which barber would you like to use today? Press: \n${this.barbersInShop.map((barber, index) => index !== this.barbersInShop.length - 1 ? `(${index}) for ${barber}\n` : `(${index}) for ${barber}`)}`
+    return `Which barber would you like today? Press: \n${this.barbersInShop.map((barber, index) => index !== this.barbersInShop.length - 1 ? `(${index}) for ${barber}\n` : `(${index}) for ${barber}`)}`
   }
   errorConfirmingAppointment = `Okay, let's fix it.`
   errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
@@ -207,14 +211,6 @@ export class AppointmentSystemInterface extends UserMessageInterface{
         res.sendStatus(200)
     }, next)
   }
-}
-
-export class BookAppointmentInterface extends AppointmentSystemInterface {
-
-} 
-
-export class WalkInAppointmentInterface extends AppointmentSystemInterface {
-  
 }
 
 export class PhoneSystem extends AppointmentSystemInterface {
@@ -460,8 +456,8 @@ export class PhoneSystem extends AppointmentSystemInterface {
   }
 }
 
-export class TextSystem extends BookAppointmentInterface {
-  private getTextMessageTwiml(res: any){
+export class TextSystem extends AppointmentSystemInterface {
+  public getTextMessageTwiml(res: any){
     return (message: string) => {
       const msg = new MessagingResponse()
       msg.message(message)
@@ -470,14 +466,14 @@ export class TextSystem extends BookAppointmentInterface {
     }
   }
 
-  private resetUser(phoneNumber: string, sendTextMessage: any) {
+  public resetUser(phoneNumber: string, sendTextMessage: any) {
     let message = `Okay let's start from the top! \n\nWhat type of service would you like today? Press: \n`
   
     for (let prop in serviceList) {
       message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
     }
     sendTextMessage(message)
-    database.updateCustomer(phoneNumber, { 'stepNumber': '2' })
+    database.updateCustomer(phoneNumber, { 'stepNumber': '2', appointmentType: null })
   }
 
   public async textMessageFlow(req, res, next) {
@@ -495,9 +491,10 @@ export class TextSystem extends BookAppointmentInterface {
       } else {
         if (customer.stepNumber === '3') {
           req.barber = customer.barber
+          req.appointmentType = customer.appointmentType
         }
       }
-  
+
       req.customer = customer
       next()
     } catch (err) {
@@ -624,9 +621,7 @@ export class TextSystem extends BookAppointmentInterface {
     const validResponses = ['1', '2']
     const validatedResponse = this.validateMessage(userMessage, validResponses)
     const phoneNumber = this.phoneNumberFormatter(req.body.From);
-    let appointmentType
-    let total = req.customer.total
-  
+    const { services, barber} = req.customer
     if (userMessage.toLowerCase() === 'reset') return this.resetUser(phoneNumber, sendTextMessage)
   
     if (!validatedResponse)
@@ -636,84 +631,68 @@ export class TextSystem extends BookAppointmentInterface {
         return ' ' + response
       })}\nIs this for a walkin or to book an appointment? \nPress: \n(1) for Yes\n(2) for No`)
   
-    switch (userMessage) {
-      case '1':
-        total += 5
-        appointmentType = 'Walkin'
-        break
-      case '2':
-        appointmentType = 'Book'
-        break
-    }
+    const appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
   
     if(appointmentType === 'Walkin'){
-      // const getAllBarbers = async () => {
-      //   const allBarbers = await database.findAllBarbers()
-      //   const allBarberFirstAvailableTimes: {name: string, firstAvailable: string}[] = allBarbers.map((barber: BARBER) => {
-      //     const firstAvailableTime = this.getBarberAppointments(services, barber, false)[0]
-      //     return {name: barberName, firstAvailable: firstAvailableTime}
-      //   })
+      try {
+        const allBarbers = await database.findAllBarbers()
+        const allBarberFirstAvailableTimes: {name: string, firstAvailable: string}[] = allBarbers.map((barber: BARBER) => {
+          const firstAvailableTime = this.getBarberAppointments(services, barber, false)[0]
+          return {name: barber.firstName, firstAvailable: firstAvailableTime}
+        })
+        sendTextMessage(`Okay here is the barbers first available time for you. ${allBarberFirstAvailableTimes.map((barberAndAvailablilty, index) => `Press (${index + 1}) for ${barberAndAvailablilty.name} - ${barberAndAvailablilty.firstAvailable}\n`)}`)
         
-      // }
-      
-      
+        await database.updateCustomer(
+          this.phoneNumberFormatter(req.body.From),
+          { appointmentType, 'stepNumber': '1' }
+        )
+      } catch (err) {
+        next(err)
+      }
     } else {
-  
-    }
-    try {
+      sendTextMessage(`Okay, ${this.generateChooseBarberMessage()}`)
+
       await database.updateCustomer(
         this.phoneNumberFormatter(req.body.From),
-        { appointmentType, total, 'stepNumber': '1' }
+        { appointmentType, 'stepNumber': '1' }
       )
-  
-      sendTextMessage(`${this.generateRandomAgreeWord()}, is for a walkin or to book an appointment?`)
-    } catch (err) {
-      next(err)
     }
   }
-  
+}
+
+export class TextBookAppointmentInterface extends TextSystem {
   public async textChoseApproximateTime(req, res, next) {
-    // const userMessage: string = this.extractText(req.body.Body)
-    // const sendTextMessage = this.getTextMessageTwiml(res)
-    // const phoneNumber: string = this.phoneNumberFormatter(req.body.From)
-    // const validResponses = ['1', '2', '3']
-    // const validatedResponse = this.validateMessage(userMessage, validResponses)
-    // let barberName
+    const userMessage: string = this.extractText(req.body.Body)
+    const sendTextMessage = this.getTextMessageTwiml(res)
+    const phoneNumber: string = this.phoneNumberFormatter(req.body.From)
+    const validResponses = this.barbersInShop.map((time, index) => (index + 1).toString())
+    const validatedResponse = this.validateMessage(userMessage, validResponses)
+    let barberName
   
-    // if (userMessage.toLowerCase() === 'reset') return this.resetUser(phoneNumber, sendTextMessage)
+    if (userMessage.toLowerCase() === 'reset') return this.resetUser(phoneNumber, sendTextMessage)
   
-    // if (!validatedResponse) {
-    //   return sendTextMessage(`You must choose a valid response. Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
-    // }
+    if (!validatedResponse) {
+      return sendTextMessage(`You must choose a valid response. ${this.generateChooseBarberMessage()}`)
+    }
   
-    // switch (userMessage) {
-    //   case '1':
-    //     barberName = 'Kelly'
-    //     break
-    //   case '2':
-    //     barberName = 'Anson'
-    //     break
-    //   case '3':
-    //     barberName = 'Idris'
-    //     break
-    // }
+    barberName = this.barbersInShop[parseInt(userMessage) - 1]
   
-    // const approximateTimes = getBarberAppointments(req.customer.service, barberName, true)
+    const barberSchedule = this.getBarberAppointments(req.customer.service, barberName, true)
   
-    // if (approximateTimes.length > 0) {
-    //   sendTextMessage(`Awesome! ${barberName} will be excited. Here are their available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
-    //   try {
-    //     await database.updateCustomer(
-    //       phoneNumber,
-    //       { stepNumber: '5', barber: barberName }
-    //     )
-    //   } catch(err){
-    //     next(err)
-    //   }
+    if (barberSchedule.length > 0) {
+      sendTextMessage(`Awesome! ${barberName} will be excited. ${this.generateGetBarberAvailableTimesMessage(barberSchedule)}`)
+      try {
+        await database.updateCustomer(
+          phoneNumber,
+          { stepNumber: '2', barber: barberName }
+        )
+      } catch(err){
+        next(err)
+      }
       
-    // } else {
-    //   sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
-    // }
+    } else {
+      sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
+    }
   }
   
   
@@ -733,19 +712,20 @@ export class TextSystem extends BookAppointmentInterface {
     let approximateTime = barberSchedule[parseInt(userMessage) - 1]
   
     const exactTimes = this.getBarberAppointments(service, barber, false, approximateTime)
-  
+    
+    // If there is no exact times skip user to confirmation message
     if (exactTimes.length > 1) {  
-      sendTextMessage(`Awesome! so which time would you like exactly. Here are their available times\nPress:${exactTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
+      sendTextMessage(`Awesome! so which time would you like exactly. ${this.generateGetBarberAvailableTimesMessage(exactTimes)}`)
       await database.updateCustomer(
         phoneNumber,
-        { stepNumber: '6', approximateTime }
+        { stepNumber: '3', approximateTime }
       )
     } else {
       try {
         sendTextMessage( this.generateConfirmationMessage(service, barber, approximateTime, total) )
         await database.updateCustomer(
           phoneNumber,
-          { stepNumber: '7', approximateTime }
+          { stepNumber: '4', approximateTime }
         )
       } catch (err) {
         next(err)
@@ -775,7 +755,7 @@ export class TextSystem extends BookAppointmentInterface {
     try {
       await database.updateCustomer(
         this.phoneNumberFormatter(req.body.From),
-        { 'stepNumber': '7' }
+        { 'stepNumber': '4' }
       )
   
       await database.updateCustomer(
@@ -811,15 +791,94 @@ export class TextSystem extends BookAppointmentInterface {
       const alertHour = appointmentHour.includes('pm') ? parseInt(appointmentHour) + 12 : appointmentHour - 1
   
       const reminderMessage = this.generateReminderMessage(service, barber, time, total)
-      createJob(`0 ${minutes} ${alertHour} ${currDate.getDate()} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
+      createJob(`0 ${minutes} ${alertHour - 1} ${currDate.getDate()} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
   
     } else {
       sendTextMessage(this.errorConfirmingAppointment)
     }
   
     await database.updateCustomer(
-      this.phoneNumberFormatter(req.body.From),
-      { 'stepNumber': '8' }
+      phoneNumber,
+      { 'stepNumber': '1',
+        appointmentType: null
+      }
+    )
+  }
+} 
+
+export class TextWalkInAppointmentInterface extends TextSystem {
+  public async textBarberForWalkinAppointment(req, res, next) {
+    const userMessage: string = this.extractText(req.body.Body)
+    const sendTextMessage = this.getTextMessageTwiml(res)
+    const phoneNumber: string = this.phoneNumberFormatter(req.body.From)
+    const validResponses = this.barbersInShop.map((time, index) => (index + 1).toString())
+    const validatedResponse = this.validateMessage(userMessage, validResponses)
+    const { service, total } = req.customer
+    let barberName
+  
+    if (userMessage.toLowerCase() === 'reset') return this.resetUser(phoneNumber, sendTextMessage)
+  
+    if (!validatedResponse) {
+      return sendTextMessage(`You must choose a valid response. ${this.generateChooseBarberMessage()}`)
+    }
+
+    barberName = this.barbersInShop[parseInt(userMessage) - 1]
+    const barber = await database.findBarberInDatabase(barberName);
+    const firstAvailableTime = this.getBarberAppointments(service, (barber as BARBER), false)[0]
+    const confirmationMessage = this.generateConfirmationMessage(service, barberName, firstAvailableTime, total)
+    const time = `${moment().format('YYYY-MM-DD')} ${firstAvailableTime}`
+    sendTextMessage(confirmationMessage)
+  
+    try {
+      await database.updateCustomer(
+        phoneNumber,
+        { 'stepNumber': '2' }
+      )
+  
+      await database.updateCustomer(
+        phoneNumber,
+        { time }
+      )
+    } catch (err) {
+      next(err)
+    }
+  }
+
+  public async textWalkinSendConfirmation(req, res, next) {
+    const userMessage: string = this.extractText(req.body.Body)
+    const validResponses = ['1', '2']
+    const validatedResponse = this.validateMessage(userMessage, validResponses)
+    const sendTextMessage = this.getTextMessageTwiml(res)
+    const phoneNumber: string = this.phoneNumberFormatter(req.body.From)
+    const customer: any = await database.findCustomerInDatabase(phoneNumber)
+    const { barber, service, total, time, firstName } = customer
+  
+    if (userMessage.toLowerCase() === 'reset') return this.resetUser(phoneNumber, sendTextMessage)
+  
+    if (!validatedResponse) return sendTextMessage(this.errorValidatingConfirmingAppointment)
+  
+    if (userMessage === '1') {
+      sendTextMessage(this.confirmedAppointmentMessage)
+      await database.addAppointment(barber, { phoneNumber, firstName }, time)
+  
+      let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
+      let currDate = new Date(dateWithTimeZone)
+      const minutes = moment(time, 'h:mm a').format('m');
+      const appointmentHour = time
+      const alertHour = appointmentHour.includes('pm') ? parseInt(appointmentHour) + 12 : appointmentHour - 1
+  
+      const reminderMessage = this.generateReminderMessage(service, barber, time, total)
+      createJob(`0 ${minutes} ${alertHour - 1} ${currDate.getDate()} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
+  
+    } else {
+      sendTextMessage(this.errorConfirmingAppointment)
+    }
+  
+    await database.updateCustomer(
+      phoneNumber,
+      { 'stepNumber': '1', 
+        appointmentType: null, 
+      }
     )
   }
 }
@@ -884,7 +943,7 @@ export class AppSystem extends AppointmentSystemInterface {
 
     res.sendStatus(200)
   }
-  
+
   public async getBarberAvailableTimes(req, res, next) {
     const { barber, datetime, services} = req.body
     /* 
