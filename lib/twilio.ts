@@ -19,6 +19,7 @@ const introWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet
 const introGreetingWords = ["What's good", "How you doing", "How you been", 'Long time no see']
 const timeBarbershopOpens = '10'
 const timeBarbershopCloses = '19'
+const barbersInShop = ['Kelly', 'Anson', 'Idris'];
 
 const randomWord = () => introWords[Math.floor(Math.random() * introWords.length)]
 const randomGreeting = () => introGreetingWords[Math.floor(Math.random() * introGreetingWords.length)]
@@ -37,7 +38,10 @@ class UserMessageInterface {
   public generateErrorValidatingAppointmentTime(barberSchedule: string[]){
     return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`
   }
-
+  
+  public generateChooseBarber(){
+    return `Okay, Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`
+  }
   errorConfirmingAppointment = `Okay, let's fix it.`
   errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
 }
@@ -453,6 +457,16 @@ export function phoneNumberFormatter(phoneNumber: string) {
   return phoneNumber
 }
 
+function resetUser(phoneNumber: string, sendTextMessage: any) {
+  let message = `Okay let's start from the top! \n\nWhat type of service would you like today? Press: \n`
+
+  for (let prop in serviceList) {
+    message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
+  }
+  sendTextMessage(message)
+  database.updateCustomer(phoneNumber, { 'stepNumber': '2' })
+}
+
 export async function textMessageFlow(req, res, next) {
   const phoneNumber = phoneNumberFormatter(req.body.From)
 
@@ -551,16 +565,6 @@ export async function textChooseService(req, res, next) {
   } catch (err) { next(err) }
 }
 
-function resetUser(phoneNumber: string, sendTextMessage: any) {
-  let message = `Okay let's start from the top! \n\nWhat type of service would you like today? Press: \n`
-
-  for (let prop in serviceList) {
-    message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
-  }
-  sendTextMessage(message)
-  database.updateCustomer(phoneNumber, { 'stepNumber': '2' })
-}
-
 export async function textAdditionalService(req, res, next) {
   const userMessage: string = extractText(req.body.Body)
   const sendTextMessage = getTextMessageTwiml(res)
@@ -595,54 +599,108 @@ export async function textAdditionalService(req, res, next) {
       { additionalService, total, 'stepNumber': '4' }
     )
 
-    sendTextMessage(`Okay, Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
+    sendTextMessage(`${randomWord()}, is for a walkin or to book an appointment? \nPress: \n(1) for WalkIn\n(2) for Book`)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function textGetAppointmentType(req, res, next){
+  const userMessage: string = extractText(req.body.Body)
+  const sendTextMessage = getTextMessageTwiml(res)
+  const validResponses = ['1', '2']
+  const validatedResponse = validateMessage(userMessage, validResponses)
+  const phoneNumber = phoneNumberFormatter(req.body.From);
+  let appointmentType
+  let total = req.customer.total
+
+  if (userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
+
+  if (!validatedResponse)
+    return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
+      if (index === 0) return response
+      if (index === validResponses.length - 1) return ` or ${response}`
+      return ' ' + response
+    })}\nIs this for a walkin or to book an appointment? \nPress: \n(1) for Yes\n(2) for No`)
+
+  switch (userMessage) {
+    case '1':
+      total += 5
+      appointmentType = 'Walkin'
+      break
+    case '2':
+      appointmentType = 'Book'
+      break
+  }
+
+  if(appointmentType === 'Walkin'){
+    const getAllBarbers = async () => {
+      const allBarbers = await database.findAllBarbers()
+      const allBarberFirstAvailableTimes: {name: string, firstAvailable: string}[] = allBarbers.map((barber: BARBER) => {
+        const firstAvailableTime = getBarberAppointments(services, barber, false)[0]
+        return {name: barberName, firstAvailable: firstAvailableTime}
+      })
+      
+    }
+    
+    
+  } else {
+
+  }
+  try {
+    await database.updateCustomer(
+      phoneNumberFormatter(req.body.From),
+      { appointmentType, total, 'stepNumber': '1' }
+    )
+
+    sendTextMessage(`${randomWord()}, is for a walkin or to book an appointment?`)
   } catch (err) {
     next(err)
   }
 }
 
 export async function textChoseApproximateTime(req, res, next) {
-  const userMessage: string = extractText(req.body.Body)
-  const sendTextMessage = getTextMessageTwiml(res)
-  const phoneNumber: string = phoneNumberFormatter(req.body.From)
-  const validResponses = ['1', '2', '3']
-  const validatedResponse = validateMessage(userMessage, validResponses)
-  let barberName
+  // const userMessage: string = extractText(req.body.Body)
+  // const sendTextMessage = getTextMessageTwiml(res)
+  // const phoneNumber: string = phoneNumberFormatter(req.body.From)
+  // const validResponses = ['1', '2', '3']
+  // const validatedResponse = validateMessage(userMessage, validResponses)
+  // let barberName
 
-  if (userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
+  // if (userMessage.toLowerCase() === 'reset') return resetUser(phoneNumber, sendTextMessage)
 
-  if (!validatedResponse) {
-    return sendTextMessage(`You must choose a valid response. Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
-  }
+  // if (!validatedResponse) {
+  //   return sendTextMessage(`You must choose a valid response. Which barber would you like to use today? Press: \n(1) for Kelly\n(2) for Anson\n(3) for Idris`)
+  // }
 
-  switch (userMessage) {
-    case '1':
-      barberName = 'Kelly'
-      break
-    case '2':
-      barberName = 'Anson'
-      break
-    case '3':
-      barberName = 'Idris'
-      break
-  }
+  // switch (userMessage) {
+  //   case '1':
+  //     barberName = 'Kelly'
+  //     break
+  //   case '2':
+  //     barberName = 'Anson'
+  //     break
+  //   case '3':
+  //     barberName = 'Idris'
+  //     break
+  // }
 
-  const approximateTimes = getBarberAppointments(req.customer.service, barberName, true)
+  // const approximateTimes = getBarberAppointments(req.customer.service, barberName, true)
 
-  if (approximateTimes.length > 0) {
-    sendTextMessage(`Awesome! ${barberName} will be excited. Here are their available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
-    try {
-      await database.updateCustomer(
-        phoneNumber,
-        { stepNumber: '5', barber: barberName }
-      )
-    } catch(err){
-      next(err)
-    }
+  // if (approximateTimes.length > 0) {
+  //   sendTextMessage(`Awesome! ${barberName} will be excited. Here are their available times\nPress:${approximateTimes.map((slot, i) => `\n(${i + 1}) for ${slot}`)}`)
+  //   try {
+  //     await database.updateCustomer(
+  //       phoneNumber,
+  //       { stepNumber: '5', barber: barberName }
+  //     )
+  //   } catch(err){
+  //     next(err)
+  //   }
     
-  } else {
-    sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
-  }
+  // } else {
+  //   sendTextMessage(`Uh-oh, it looks that that barber doesn't have any time.`)
+  // }
 }
 
 
