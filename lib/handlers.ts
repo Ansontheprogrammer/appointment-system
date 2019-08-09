@@ -1,5 +1,5 @@
 import { Database } from './database'
-import { AppointmentSystemInterface } from './twilio'
+// import { AppointmentSystemInterface } from './twilio'
 import { client } from './twilio'
 import { createJob } from './cron'
 import config from '../config/config'
