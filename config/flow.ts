@@ -25,7 +25,7 @@ const bookSteps = {
 export function processFlow(req, res, next) {
   // This function will call the necessary step based on the customer's step number
   // If appointment type is not truthy we need to send the user throught the general steps
-  if(!!req.customer.appointmentType){
+  if(req.customer.appointmentType === 'Walkin' || req.customer.appointmentType === 'Book'){
     return req.customer.appointmentType === 'Walkin' ? 
       walkinSteps[req.customer.stepNumber](req, res, next) :
       bookSteps[req.customer.stepNumber](req, res, next)
