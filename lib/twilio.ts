@@ -1,6 +1,6 @@
 import config from '../config/config'
 import twilio from 'twilio'
-import { Database, BARBER, CUSTOMER } from './database'
+import { Database, BARBER, CUSTOMER, ALLOCATED_TIMES } from './database'
 import { serviceList, SERVICES } from './shopData'
 import { createJob } from './cron'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
@@ -17,10 +17,7 @@ const scheduler = new Scheduler()
 
 export type BARBER_APPOINTMENTS = {
   customer: CUSTOMER,
-  time: {
-    from: string,
-    duration: number
-  }
+  time: ALLOCATED_TIMES
 }
 const barbersInShop = ['Kelly', 'Anson', 'Idris'];
 class UserMessageInterface {

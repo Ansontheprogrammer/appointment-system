@@ -27,6 +27,11 @@ export type CUSTOMER = {
   stepNumber?: string
 }
 
+export type ALLOCATED_TIMES = {
+  from: string, 
+  duration: number
+}
+
 export class Database {
   public static firstLetterUpperCase(string) {
     return string[0].toUpperCase() + string.slice(1)
@@ -60,7 +65,7 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: {from: string, duration: number}) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: ALLOCATED_TIMES) {
     const { phoneNumber, firstName } = customer
     const appointment = { phoneNumber, firstName, time }
     let docRef = db.collection('barbers').doc(barberFirstName)
