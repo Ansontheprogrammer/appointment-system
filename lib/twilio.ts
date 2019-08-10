@@ -492,8 +492,6 @@ export class TextSystem {
       message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
     }
     
-    console.log(req.body, 'req')
-
     try {
       if (req.customer.stepNumber == '8') {
         // Revisting customer
