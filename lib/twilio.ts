@@ -157,7 +157,7 @@ export function createBarber(req, res, next) {
 
 class UserMessageInterface {
   introWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
-  introGreetingWords = ["What's good", "How you doing", "How you been", 'Long time no see']
+  introGreetingWords = ["How you doing", "How you been", 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!`;
   
 
@@ -184,7 +184,7 @@ class UserMessageInterface {
   public generateChooseBarberMessage(){
     return `Which barber would you like today? Press: \n${barbersInShop.map((barber, index) =>  `\n(${index + 1}) for ${barber}`)}`
   }
-  errorConfirmingAppointment = `Okay, let's fix it.`
+  errorConfirmingAppointment = `Okay, let's fix it. Just text me when you are ready to restart`
   errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
 }
 
@@ -491,7 +491,9 @@ export class TextSystem {
     for (let prop in serviceList) {
       message += `\n(${prop}) for ${serviceList[prop].service} - $ ${serviceList[prop].price}`
     }
-  
+    
+    console.log(req.body, 'req')
+
     try {
       if (req.customer.stepNumber == '8') {
         // Revisting customer
@@ -584,7 +586,7 @@ export class TextSystem {
         { additionalService, total, 'stepNumber': '4' }
       )
   
-      sendTextMessage(`${UserMessage.generateRandomAgreeWord()}, is for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`)
+      sendTextMessage(`${UserMessage.generateRandomAgreeWord()}, is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`)
     } catch (err) {
       next(err)
     }
