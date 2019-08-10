@@ -34,7 +34,8 @@ export function extractText(body: string): string {
     return String(body.match(/\w+/gi))
   }
 
-export function getAvailableTimes(duration: number, interval: number, allocatedTimes: {from: string, duration: number}[], from: string, to: string, appoximateTime?: string): TimeAvailability[] {
+export function getAvailableTimes(duration: number, interval: number, allocatedTimes: ALLOCATED_TIMES[], from: string, to: string, appoximateTime?: string): TimeAvailability[] {
+    console.log(allocatedTimes, 'allocatedTimes', from, 'from',)
     // set time to get available times through
     let fromTime;
     let toTime;
@@ -894,7 +895,8 @@ export class AppSystem {
   }
 
   public async walkInAppointment(req, res, next) {
-    const { barber, customerName, phoneNumber, services } = req.body
+    const { barber, name, services } = req.body
+    const phoneNumber = phoneNumberFormatter(req.body.phoneNumber)
     /* 
         Get current date time
         Book an appointment based on current date and time
@@ -904,41 +906,49 @@ export class AppSystem {
 
     const customer = {
         phoneNumber,
-        firstName: customerName
+        firstName: name
     }
-
-    services.shift()
-
+  
+    if(!Object.keys(services[0]).length) services.shift()
+    
     let total = 0
     services.forEach(service => total += service.price)
 
+    let duration = 0
+    services.forEach(service => duration += service.duration)
+
     const barberInDatabase = await (database.findBarberInDatabase(barber) as any)
     const firstAvailableTime = getBarberAppointments(services, barberInDatabase, false)[0]
+    if(!firstAvailableTime){
+      // This barber is booked up for the day
+      return res.sendStatus(400)
+    }
     const hour24Format = moment(firstAvailableTime, 'hh:mm a').format('HH:mm')
     const hour12Format = moment(firstAvailableTime, 'hh:mm a').format('hh:mm a')
     const confirmationMessage = `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${hour12Format}\nTotal: $${total}`
+    const walkinDate = `${moment().format('YYYY-MM-DD')} ${hour24Format}`
 
-    database.addAppointment(barber, customer, {
-        from: `${moment().format('YYYY-MM-DD')} ${hour24Format}`,
-        duration: 60
-    })
-
-    console.log('ALERT HOUR', firstAvailableTime.split(':')[0])
     client.messages.create({
-        from: config.TWILIO_PHONE_NUMBER,
-        body: confirmationMessage,
-        to: phoneNumber
+      from: config.TWILIO_PHONE_NUMBER,
+      body: confirmationMessage,
+      to: phoneNumber
     })
+    
+    const time = { from: walkinDate, duration }
+    await database.addAppointment(barber, customer, time)
+    const dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
+    const currDate = new Date(dateWithTimeZone)
+    const currentHour = moment().format('H')
+    let date = currDate.getDate()
 
-    //====== TESTING DATE ======//
-    let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
-    let currDate = new Date(dateWithTimeZone)
-    const minutes = currDate.getMinutes()
-    const hour = currDate.getHours()
-    //====== TESTING DATE ======//
+    // check if barbershop is closed and move the user to make an appointment for the next day
+    if(parseInt(currentHour) > parseInt(timeBarbershopCloses)) date += 1
 
-    createJob(`0 ${minutes + 2} ${hour} 6 7 *`, phoneNumber, confirmationMessage)
-
+    const minutes = moment().format('m')
+    const alertHour = currentHour.includes('pm') ? parseInt(currentHour) + 12 : parseInt(currentHour) - 1
+    const reminderMessage = UserMessage.generateReminderMessage(services, barber, hour12Format, total)
+    createJob(`0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
+  
     res.sendStatus(200)
   }
 
