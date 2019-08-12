@@ -17,7 +17,12 @@ const scheduler = new Scheduler()
 
 export type BARBER_APPOINTMENTS = {
   customer: CUSTOMER,
-  time: ALLOCATED_TIMES
+  details: {
+    time: ALLOCATED_TIMES,
+    total,
+    duration
+  }
+  
 }
 
 const barbersInShop = ['Kelly', 'Anson', 'Idris'];
@@ -28,11 +33,11 @@ const barberShopAvailablilty = {
     // formatted for datetime object
     'Monday': {
       index: 1,
-      nextAvailableDay: 1
+      nextAvailableDay: 2
     },
     'Sunday': {
       index: 0,
-      nextAvailableDay: 2
+      nextAvailableDay: 3
     },
 
   },
@@ -46,8 +51,8 @@ export function phoneNumberFormatter(phoneNumber: string) {
   }
 
 export function extractText(body: string): string {
-    return String(body.match(/\w+/gi))
-  }
+  return String(body.match(/\w+/gi))
+}
 
 export function getAvailableTimes(duration: number, interval: number, allocatedTimes: ALLOCATED_TIMES[], from: string, to: string, appoximateTime?: string): TimeAvailability[] {
     // set time to get available times through
@@ -94,12 +99,12 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, appr
     if(currentTime > parseInt(timeBarbershopCloses)){
       if(currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Monday.index || currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Sunday.index){
         if(currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Monday.index) from = moment(from).add(barberShopAvailablilty.daysClosed.Monday.nextAvailableDay, 'day').format('YYYY-MM-DD')  
-        if(currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Sunday.index) from = moment(from).add(barberShopAvailablilty.daysClosed.Sunday.nextAvailableDay, 'day').format('YYYY-MM-DD') 
+        else if(currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Sunday.index) from = moment(from).add(barberShopAvailablilty.daysClosed.Sunday.nextAvailableDay, 'day').format('YYYY-MM-DD') 
       }
       else from = moment(from).add(1, 'day').format('YYYY-MM-DD')  
     }
     let to = moment(from).add(1, 'day').format('YYYY-MM-DD')
-    const barbersAllocatedTimes = barber.appointments.map(appointment => appointment.time)
+    const barbersAllocatedTimes = barber.appointments.map(appointment => appointment.details.time)
     let totalDuration = 0;
     // sum up total durations
     services.forEach(service => totalDuration += service.duration)
@@ -179,14 +184,15 @@ class UserMessageInterface {
   introGreetingWords = ["How you doing", "How you been", 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nAlso if you would like any grapic designs or hair drawings today for $5+\nText: (Extra)\n\nIf you would like to cancel \nText: (Cancel) \n\nTo book another appointment \nPress:\n (1) for walkin \n(2) to book an appointment`;
   chooseAppointmentTypeMessage = `Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`;
+  friendlyFormat = 'dddd, MMMM Do, h:mm a'
 
   public generateRandomAgreeWord = () => this.introWords[Math.floor(Math.random() * this.introWords.length)]
   public generateRandomGreeting = () => this.introGreetingWords[Math.floor(Math.random() * this.introGreetingWords.length)]
 
 
   public generateConfirmationMessage(services: SERVICES[], barberName: string, time: string, total: number){
-    time = moment(time, 'YYYY-MM-DD HH-mm').format('dddd, MMMM Do, h:mm a')
-    return `${this.generateRandomAgreeWord}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`
+    time = moment(time, 'YYYY-MM-DD HH-mm').format(this.friendlyFormat)
+    return `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`
   }
 
   public generateReminderMessage(services: SERVICES[], barberName: string, time: string, total: number){
@@ -508,13 +514,17 @@ export class TextSystem {
       // Handle if the user would like to cancel the most recent appointment
       if (userMessage.toLowerCase() === 'cancel') {
         const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-        return 
       }
 
       // Handle if the user would like to add additional services 
       if (userMessage.toLowerCase() === 'extra') {
-        const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-        return 
+        const session = Object.assign(req.customer.session, { additionalServices: true, stepNumber: '1' })
+
+        try {
+          await database.updateCustomer(phoneNumber, { session })
+        } catch (err) {
+          next(err)
+        }
       }
 
       // Send user to the next step
@@ -565,6 +575,7 @@ export class TextSystem {
         next(err)
       }
     }
+
     else {
       session = Object.assign(req.customer.session, { 'stepNumber': '3', appointmentType })
       const message = `${UserMessage.generateRandomAgreeWord()}, ${UserMessage.generateAvailableServicesMessage()}`
@@ -726,10 +737,15 @@ export class TextBookAppointmentInterface extends TextSystem {
     if (userMessage.toLowerCase() === 'reset') return TextSystem.resetUser(phoneNumber, sendTextMessage)
   
     if (!validatedResponse) return sendTextMessage(UserMessage.errorValidatingConfirmingAppointment)
-  
+    
     if (userMessage === '1') {
       sendTextMessage(UserMessage.confirmedAppointmentMessage)
-      await database.addAppointment(barber, { phoneNumber, firstName }, {from: time, duration})
+      const appointmentData = {
+        time: {from: time, duration},
+        services, 
+        total
+      }
+      await database.addAppointment(barber, { phoneNumber, firstName }, appointmentData)
       const dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
       const currDate = new Date(dateWithTimeZone)
       const currentTime = parseInt(moment().format('H'))
@@ -774,7 +790,6 @@ export class TextWalkInAppointmentInterface extends TextSystem {
 
     barberName = barbersInShop[parseInt(userMessage) - 1]
     const barber = await database.findBarberInDatabase(barberName);
-    console.log(barber, 'barber')
     const firstAvailableTime = getBarberAppointments(services, (barber as BARBER), false)[0]
 
     if(!firstAvailableTime){
@@ -818,8 +833,12 @@ export class TextWalkInAppointmentInterface extends TextSystem {
 
       const customerInfo = {
         customerData: { phoneNumber, firstName },
-        appointmentData: {from: time, duration}
+        appointmentData: {
+          time: { from: time, duration },
+          services,
+          total
       }
+    }
 
       
       try {
@@ -857,39 +876,62 @@ export class TextWalkInAppointmentInterface extends TextSystem {
 }
 
 export class TextAdditionalServicesInterface {
-  public async textAdditionalService(req, res, next) {
+  public async textStartAdditionalService(req, res, next) {
+    const sendTextMessage = TextSystem.getTextMessageTwiml(res)
+    let barbers
+    /*
+      Check to see if the user has multiple appointments in database 
+      Allow them to choose which one
+      Ask based on how many services to add additional services too?
+    */
+    try {
+      barbers = await database.findAllBarbers()
+
+    const userAppointmentsInSystems = barbers.flatMap(barber => {
+      return barber.appointments.filter(appointments => appointments.phoneNumber === req.customer.phoneNumber)
+    })
+
+    const currentFormattedAppointments = userAppointmentsInSystems.map(appointment => moment(appointment.details.time.from, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+    if(currentFormattedAppointments.length === 0) {
+      sendTextMessage(`You don't have any appointments currently, Would you like to book an appointment? \nText: \n1 for walkin\n2 for to book an appointment`)
+      const session = { additionalServices: false, stepNumber: '1' }
+      await database.updateCustomer(req.customer.phoneNumber, { session })
+    } else {
+      const services = userAppointmentsInSystems[userAppointmentsInSystems.length - 1].details.services.map(service => service.service)
+      const session = { additionalServices: true, stepNumber: '2' }
+      sendTextMessage(`Which service would you like to add additional services too? ${services.map((service, index) => `\n(${index}) ${service}`)}`)
+      await database.updateCustomer(req.customer.phoneNumber, { session })
+    } 
+  } catch (err){
+      next(err)
+    }
+  }
+
+  public async textConfirmAdditionalService(req, res, next) {
     const userMessage: string = extractText(req.body.Body)
     const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-    const validResponses = ['1', '2']
-    const validatedResponse = validateMessage(userMessage, validResponses)
-    let additionalService, total = req.customer.total
-
-  
-    if (!validatedResponse)
-      return sendTextMessage(`You must choose a valid response ${validResponses.map((response, index) => {
-        if (index === 0) return response
-        if (index === validResponses.length - 1) return ` or ${response}`
-        return ' ' + response
-      })}\nWould you like any grapic designs or hair drawings today for $5+\nPress: \n(1) for Yes\n(2) for No`)
-  
-    switch (userMessage) {
-      case '1':
-        total += 5
-        additionalService = 'Yes'
-        break
-      case '2':
-        additionalService = 'No'
-        break
-    }
-  
+    let barbers
     try {
-      await database.updateCustomer(
-        req.customer.phoneNumber,
-        { additionalService, total, 'stepNumber': '4' }
-      )
-  
-      sendTextMessage(`${UserMessage.generateRandomAgreeWord()}, is this for a walkin or to book an appointment? \nPress:\n(1) for Walkin\n(2) for Book`)
-    } catch (err) {
+      barbers = await database.findAllBarbers()
+
+      const userAppointmentsInSystems = barbers
+      .flatMap(barber => barber.appointments.filter(appointments => appointments.phoneNumber === req.customer.phoneNumber))
+      .map(appointment => appointment.details.services)
+
+      const currentFormattedAppointments = userAppointmentsInSystems.map(appointment => moment(appointment.details.time.from, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+      if(currentFormattedAppointments.length === 0) {
+        sendTextMessage(`You don't have any appointments currently, Would you like to book an appointment? \nText: \n1 for walkin\n2 for to book an appointment`)
+        const session = { additionalServices: false, stepNumber: '1' }
+        await database.updateCustomer(req.customer.phoneNumber, { session })
+      } else {
+        const services = userAppointmentsInSystems[userAppointmentsInSystems.length - 1].details.services
+        const session = { additionalServices: true, stepNumber: '2' }
+        sendTextMessage(`Which service would you like to add additional services too? ${services.map((service, index) => `\n(${index}) ${service.service}`)}`)
+        await database.updateCustomer(req.customer.phoneNumber, { session })
+      } 
+      const session = { additionalServices: false, stepNumber: '1' }
+      await database.updateCustomer(req.customer.phoneNumber, { session })
+  } catch (err){
       next(err)
     }
   }
@@ -949,7 +991,7 @@ export class AppSystem {
     })
     
     const time = { from: walkinDate, duration }
-    await database.addAppointment(barber, customer, time)
+    await database.addAppointment(barber, customer, { time })
     const dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
     const currDate = new Date(dateWithTimeZone)
     const currentHour = moment().format('H')

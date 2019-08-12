@@ -65,9 +65,9 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, time: ALLOCATED_TIMES) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: any) {
     const { phoneNumber, firstName } = customer
-    const appointment = { phoneNumber, firstName, time }
+    const appointment = { phoneNumber, firstName, details }
     let docRef = db.collection('barbers').doc(barberFirstName)
     try {
       let barber = await docRef.get()
