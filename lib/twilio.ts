@@ -800,10 +800,11 @@ export class AppSystem {
     const { barber, name, services } = req.body
     const phoneNumber = phoneNumberFormatter(req.body.phoneNumber)
     /* 
-        Get current date time
-        Book an appointment based on current date and time
-        Send a confirmation text
-        Set up the chron job
+        services {
+          service, 
+          duration,
+          price
+        }
     */
 
     const customer = {
