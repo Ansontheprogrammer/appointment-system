@@ -109,13 +109,14 @@ export class Database {
   public createCustomer(phoneNumber: string): Promise<any> {
     return new Promise((resolve, reject) => {
       // Assign step number field before saving
-      const customerInfo = Object.assign({ phoneNumber }, { stepNumber: '1' })
+      const customerInfo = Object.assign({ phoneNumber })
+      const session = { stepNumber: '1', finishedGeneralSteps: false}
 
       this.hasPersonSignedUp(false, customerInfo.phoneNumber).then(hasPersonSignedUp => {
         if (!!hasPersonSignedUp) return reject('Customer has already signed up.')
 
         let docRef = db.collection('customers').doc(customerInfo.phoneNumber);
-        docRef.set({ ...customerInfo }).then(resolve, reject)
+        docRef.set({ ...customerInfo, session }).then(resolve, reject)
       })
     })
   }
