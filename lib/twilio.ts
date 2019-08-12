@@ -867,7 +867,7 @@ export class AppSystem {
     // example 
     // getBarberAppointments(req.customer.session.services, barber).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
 
-    const barberInDatabase = await (database.findBarberInDatabase(barber) as any)
+    const barberInDatabase = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
     const availableTimes = getBarberAppointments(services, barberInDatabase)
     
     res.json({ barber, availableTimes })
