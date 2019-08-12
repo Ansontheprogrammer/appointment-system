@@ -591,7 +591,8 @@ export class TextBookAppointmentInterface extends TextSystem {
       next(err)
     }
 
-    const barberSchedule = getBarberAppointments(req.customer.session.services, barber, '', '2019-08-16').map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+
+    const barberSchedule = getBarberAppointments(req.customer.session.services, barber).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
     const message = `${UserMessage.generateRandomAgreeWord()}! We will let ${barberName} know your coming. ${UserMessage.generateGetBarberAvailableTimesMessage(barberSchedule)}`
 
     if (barberSchedule.length > 0) {
@@ -862,7 +863,7 @@ export class AppSystem {
         res.json with the barbers available times
         format for getBarberAvailableTimes  - 'YYYY-MM-DD hh:mm'
     */
-
+    
     // Format for display 'dddd, MMMM Do, h:mm a'
     // example 
     // getBarberAppointments(req.customer.session.services, barber).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
