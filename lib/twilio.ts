@@ -306,7 +306,7 @@ export class PhoneSystem extends UserMessageInterface {
     const gather = twiml.gather({
       action: '/api/confirmation',
       method: 'POST',
-      numDigits: 1
+      numDigits: 2
     })
   
     if (!!keyPress) validatedResponse = validateMessage(keyPress, validResponses)
@@ -377,7 +377,6 @@ export class PhoneSystem extends UserMessageInterface {
     const availableTimes = getBarberAppointments(customer.phoneSession.services, foundBarber)
    
     time = availableTimes[parseInt(keyPress) - 1]
-  
     if (time === undefined) return this.errorMessage(res, '/api/chosenBarber')
   
     twiml.say(
@@ -393,7 +392,7 @@ export class PhoneSystem extends UserMessageInterface {
     }
 
     try {
-      await database.addAppointment(barber, { phoneNumber, firstName }, { details })
+      await database.addAppointment(barber, { phoneNumber, firstName }, details)
   
       let dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
       let currDate = new Date(dateWithTimeZone)
@@ -828,7 +827,7 @@ export class AppSystem {
     }
     const hour24Format = moment(firstAvailableTime, 'hh:mm a').format('HH:mm')
     const hour12Format = moment(firstAvailableTime, 'hh:mm a').format('hh:mm a')
-    const confirmationMessage = `Awesome! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${hour12Format}\nTotal: $${total}`
+    const confirmationMessage = `${UserMessage.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${hour12Format}\nTotal: $${total}`
     const walkinDate = `${moment().format('YYYY-MM-DD')} ${hour24Format}`
 
     client.messages.create({
