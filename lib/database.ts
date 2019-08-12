@@ -65,7 +65,7 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: any) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: {}) {
     const { phoneNumber, firstName } = customer
     const appointment = { phoneNumber, firstName, details }
     let docRef = db.collection('barbers').doc(barberFirstName)
