@@ -102,7 +102,6 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, appr
 
     if(!!fromTime) from = moment(fromTime).add(1, 'day').format('YYYY-MM-DD')
 
-    console.log(from, 'from')
     let to = moment(from).add(1, 'day').format('YYYY-MM-DD')
     const barbersAllocatedTimes = barber.appointments.map(appointment => appointment.details.time)
     let totalDuration = 0;
@@ -417,7 +416,7 @@ export class PhoneSystem extends UserMessageInterface {
   
     client.messages.create({
       from: config.TWILIO_PHONE_NUMBER,
-      body: UserMessage.generateConfirmationMessage(services, barber, time, total),
+      body: `${UserMessage.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: \n${time}\nTotal: $${total}`,
       to: phoneNumber
     })
   }
