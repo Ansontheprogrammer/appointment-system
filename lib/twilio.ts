@@ -88,7 +88,7 @@ export function getAvailableTimes(duration: number, interval: number, allocatedT
     })[from]
   }
 
-export function getBarberAppointments(services: SERVICES[], barber: BARBER, approximateTime?: string): string[] {
+export function getBarberAppointments(services: SERVICES[], barber: BARBER, approximateTime?: string, fromTime?: string): string[] {
     const currentDateAndTime = moment()
     const currentTime = parseInt(currentDateAndTime.format('H'))
     let from = currentDateAndTime.format('YYYY-MM-DD')
@@ -99,6 +99,10 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, appr
       else if(currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Sunday.index) from = moment(from).add(barberShopAvailablilty.daysClosed.Sunday.nextAvailableDay, 'day').format('YYYY-MM-DD') 
       else from = moment(from).add(1, 'day').format('YYYY-MM-DD')  
     }
+
+    if(!!fromTime) from = moment(fromTime).add(1, 'day').format('YYYY-MM-DD')
+
+    console.log(from, 'from')
     let to = moment(from).add(1, 'day').format('YYYY-MM-DD')
     const barbersAllocatedTimes = barber.appointments.map(appointment => appointment.details.time)
     let totalDuration = 0;
@@ -113,7 +117,7 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, appr
     }
     
     return getApproximateTimes(availableTimes).map(time => moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm'))
-  }
+}
   
 export function getApproximateTimes(barbersAllocatedTimes: TimeAvailability[]) {
     return barbersAllocatedTimes
@@ -447,6 +451,7 @@ export class TextSystem {
 
   public async textMessageFlow(req, res, next) {
     const phoneNumber = phoneNumberFormatter(req.body.From)
+
     try {    
       let customer = await database.findCustomerInDatabase(phoneNumber)
   
@@ -586,7 +591,7 @@ export class TextBookAppointmentInterface extends TextSystem {
       next(err)
     }
 
-    const barberSchedule = getBarberAppointments(req.customer.session.services, barber).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+    const barberSchedule = getBarberAppointments(req.customer.session.services, barber, '', '2019-08-16').map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
     const message = `${UserMessage.generateRandomAgreeWord()}! We will let ${barberName} know your coming. ${UserMessage.generateGetBarberAvailableTimesMessage(barberSchedule)}`
 
     if (barberSchedule.length > 0) {
@@ -785,17 +790,6 @@ export class TextWalkInAppointmentInterface extends TextSystem {
 }
 
 export class AppSystem {
-  public bookAppointment(req, res, next) {
-    const { barberName, datetime, customerName, phoneNumber, services } = req
-    /*    
-        Book an appointment based on date and time
-        Send a confirmation text
-        Set up the chron job
-    */
-
-    res.json({ route: 'book appointment' })
-  }
-
   public async walkInAppointment(req, res, next) {
     const { barber, name, services } = req.body
     const phoneNumber = phoneNumberFormatter(req.body.phoneNumber)
@@ -822,13 +816,14 @@ export class AppSystem {
 
     const barberInDatabase = await (database.findBarberInDatabase(barber) as any)
     const firstAvailableTime = getBarberAppointments(services, barberInDatabase)[0]
+
     if(!firstAvailableTime){
       // This barber is booked up for the day
       return res.sendStatus(400)
     }
+
     const hour24Format = moment(firstAvailableTime, 'hh:mm a').format('HH:mm')
-    const hour12Format = moment(firstAvailableTime, 'hh:mm a').format('hh:mm a')
-    const confirmationMessage = `${UserMessage.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${hour12Format}\nTotal: $${total}`
+    const confirmationMessage = `${UserMessage.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${firstAvailableTime}\nTotal: $${total}`
     const walkinDate = `${moment().format('YYYY-MM-DD')} ${hour24Format}`
 
     client.messages.create({
@@ -838,7 +833,12 @@ export class AppSystem {
     })
     
     const time = { from: walkinDate, duration }
-    await database.addAppointment(barber, customer, { time })
+    const appointmentData = {
+      time,
+      services,
+      total
+    }
+    await database.addAppointment(barber, customer, appointmentData)
     const dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
     const currDate = new Date(dateWithTimeZone)
     const currentHour = moment().format('H')
@@ -849,23 +849,55 @@ export class AppSystem {
 
     const minutes = moment().format('m')
     const alertHour = currentHour.includes('pm') ? parseInt(currentHour) + 12 : parseInt(currentHour) - 1
-    const reminderMessage = UserMessage.generateReminderMessage(services, barber, hour12Format, total)
+    const reminderMessage = UserMessage.generateReminderMessage(services, barber, firstAvailableTime, total)
     createJob(`0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
   
     res.sendStatus(200)
   }
 
   public async getBarberAvailableTimes(req, res, next) {
-    const { barber, datetime, services} = req.body
+    const { barber, date, services} = req.body
     /* 
         The same flow as the text flow
         res.json with the barbers available times
         format for getBarberAvailableTimes  - 'YYYY-MM-DD hh:mm'
     */
-    
+
+    // Format for display 'dddd, MMMM Do, h:mm a'
+    // example 
+    // getBarberAppointments(req.customer.session.services, barber).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+
     const barberInDatabase = await (database.findBarberInDatabase(barber) as any)
     const availableTimes = getBarberAppointments(services, barberInDatabase)
     
     res.json({ barber, availableTimes })
+  }
+
+  public bookAppointment(req, res, next) {
+    const { barberName, datetime, customerName, phoneNumber, services } = req.body
+    /*    
+        Book an appointment based on date and time
+
+        Send a confirmation text
+
+        Set up the chron job
+
+        Format for storage 'YYYY-MM-DD HH:mm'
+
+        Schema for storage {
+          customerData: { phoneNumber, firstName },
+          appointmentData: {
+            time: { from: time, duration },
+            services,
+            total
+          }
+      }
+    */
+
+    // getBarberAppointments(req.customer.session.services, barber, '', date).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+    // database.addAppointment(barberName, { customerData }, appointmentData)
+
+    // if(error) res.sendStatus(400)
+    res.json({ route: 'book appointment' })
   }
 }
