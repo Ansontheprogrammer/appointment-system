@@ -25,7 +25,7 @@ export type BARBER_APPOINTMENTS = {
   
 }
 
-const barbersInShop = ['Kelly', 'Anson', 'Idris'];
+const barbersInShop = ['Anthony', 'Julian', 'Jimmy'];
 const barberShopAvailablilty = {
   open: '10',
   closed: '19',
@@ -222,7 +222,7 @@ export class PhoneSystem extends UserMessageInterface {
       message += `(${prop}) for ${serviceList[prop].service}\n`
     }
     gather.say(
-      `Thank you for calling Barber Sharp!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`,
+      `Thank you for calling Fades of Grey!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`,
     { voice: 'Polly.Salli' }
   )
 
@@ -457,7 +457,7 @@ export class TextSystem {
       if (!customer) {
         const sendTextMessage = TextSystem.getTextMessageTwiml(res)
         sendTextMessage(
-          `${UserMessage.generateRandomGreeting()}, this is Barber Sharp appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
+          `${UserMessage.generateRandomGreeting()}, this is Fades of Grey appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
         )
         customer = await database.createCustomer(phoneNumber)
         return
