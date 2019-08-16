@@ -80,8 +80,8 @@ export class Database {
       let appointments = barber.get('appointments')
       if (appointments) {
         let newAppointmentsArray = appointments.concat(appointment)
-        await docRef.set({ appointments: newAppointmentsArray });
-      } else await docRef.set({ appointments: [appointment] })
+        await docRef.update({ appointments: newAppointmentsArray });
+      } else await docRef.update({ appointments: [appointment] })
     } catch (err) {
       throw err
     }
@@ -90,7 +90,7 @@ export class Database {
 
   public createBarber(barberInfo: BARBER) {
     // Assign step number field before saving
-    barberInfo = Object.assign(barberInfo, { stepNumber: '1' })
+    barberInfo = Object.assign(barberInfo, { appointments: [] })
     barberInfo.name = Database.firstLetterUpperCase(barberInfo.name)
     barberInfo.email = barberInfo.email.toLowerCase()
     return new Promise((resolve, reject) => {

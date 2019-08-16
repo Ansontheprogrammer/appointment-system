@@ -57,19 +57,10 @@ export function extractText(body: string): string {
   return String(body.match(/\w+/gi))
 }
 
-export function getAvailableTimes(duration: number, interval: number, allocatedTimes: ALLOCATED_TIMES[], from: string, to: string, barber: BARBER, appoximateTime?: string): TimeAvailability[] {
-    // set time to get available times through
-    let fromTime;
-    let toTime;
-  
-    if(!!appoximateTime) {
-      fromTime = appoximateTime
-      toTime = (parseInt(appoximateTime) + 1).toString()
-    }
-    else {
-      fromTime = barberShopAvailablilty.open;
-      toTime = barberShopAvailablilty.closed
-    }
+export function getAvailableTimes(duration: number, interval: number, allocatedTimes: ALLOCATED_TIMES[], from: string, to: string, barber: BARBER): TimeAvailability[] {
+    // set time to get available times 
+    let fromTime = barberShopAvailablilty.open;
+    let toTime = barberShopAvailablilty.closed
 
     return scheduler.getIntersection({
       from,
@@ -85,19 +76,18 @@ export function getAvailableTimes(duration: number, interval: number, allocatedT
             from: fromTime, to: toTime,
           },
           unavailability: [
-            barber.unavailabilities.lunch,
+            { from: `${from} ${barber.unavailabilities.lunch.from}`, to: `${from} ${barber.unavailabilities.lunch.to}}` },
             ...barber.unavailabilities.offDays,
             ...barber.unavailabilities.unavailableTimes,
             ...barber.unavailabilities.vacations
           ],
-
           allocated: allocatedTimes
         }
       ]
     })[from]
   }
 
-export function getBarberAppointments(services: SERVICES[], barber: BARBER, approximateTime?: string, fromTime?: string): string[] {
+export function getBarberAppointments(services: SERVICES[], barber: BARBER, date?: string): string[] {
     const currentDateAndTime = moment()
     const currentTime = parseInt(currentDateAndTime.format('H'))
     let from = currentDateAndTime.format('YYYY-MM-DD')
@@ -109,25 +99,22 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, appr
       else from = moment(from).add(1, 'day').format('YYYY-MM-DD')  
     }
 
-    if(!!fromTime) from = moment(fromTime).add(1, 'day').format('YYYY-MM-DD')
+    if(!!date) from = moment(date).add(1, 'day').format('YYYY-MM-DD')
 
     let to = moment(from).add(1, 'day').format('YYYY-MM-DD')
+
     const barbersAllocatedTimes = barber.appointments.map(appointment => appointment.details.time)
     let totalDuration = 0;
     // sum up total durations
     services.forEach(service => totalDuration += service.duration)
 
-    let availableTimes
-    if(!!approximateTime){
-      availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to, barber, approximateTime)
-    } else {
-      availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to, barber)
-    }
-    
-    return getApproximateTimes(availableTimes).map(time => moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm'))
+    let availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to, barber)
+    console.log(availableTimes, 'availableTimes', totalDuration, 15, barbersAllocatedTimes, from, to, barber, 'AvailableTimes params')
+    console.log(formatAllocatedTimes(availableTimes), 'format',formatAllocatedTimes(availableTimes).map(time => moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm')), 'formatted times')
+    return formatAllocatedTimes(availableTimes).map(time => moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm'))
 }
   
-export function getApproximateTimes(barbersAllocatedTimes: TimeAvailability[]) {
+export function formatAllocatedTimes(barbersAllocatedTimes: TimeAvailability[]) {
     return barbersAllocatedTimes
       .filter(availability => availability.available)
       .map(availability => moment(availability.time, 'HH:mm').format('h:mm a'))
@@ -625,10 +612,10 @@ export class TextBookAppointmentInterface extends TextSystem {
   }
   
   public async textConfirmAppointmentTime(req, res, next) {
-    const { barber, services, total, approximateTime } = req.customer.session
+    const { barber, services, total } = req.customer.session
     const userMessage: string = extractText(req.body.Body)
     const barberInDatabase = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    const barberSchedule = getBarberAppointments(services, barberInDatabase, approximateTime)
+    const barberSchedule = getBarberAppointments(services, barberInDatabase)
     const validResponses = barberSchedule.map((time, index) => (index + 1).toString())
     const validatedResponse = validateMessage(userMessage, validResponses)
     const sendTextMessage = TextSystem.getTextMessageTwiml(res)
@@ -865,7 +852,8 @@ export class AppSystem {
   }
 
   public async getBarberAvailableTimes(req, res, next) {
-    const { barber, date, services} = req.body
+    const { barber, fromDate} = req.body
+    let services: any[] = req.body.services
     /* 
         The same flow as the text flow
         res.json with the barbers available times
@@ -877,9 +865,14 @@ export class AppSystem {
     // getBarberAppointments(req.customer.session.services, barber).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
 
     const barberInDatabase = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    const availableTimes = getBarberAppointments(services, barberInDatabase)
-    
-    res.json({ barber, availableTimes })
+    services = services.map(service => {
+      return { 
+        service: service.service, 
+        price: parseInt(service.price),
+        duration: parseInt(service.duration)}
+    })
+    const availableTimes = getBarberAppointments(services, barberInDatabase,  fromDate )
+    res.json({ availableTimes })
   }
 
   public bookAppointment(req, res, next) {
