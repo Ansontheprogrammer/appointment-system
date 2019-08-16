@@ -1,6 +1,7 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
 import * as twilioLib from './twilio';
+import uuid from 'uuid/v1'
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
@@ -67,7 +68,8 @@ export class Database {
 
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: {}) {
     const { phoneNumber, firstName } = customer
-    const appointment = { phoneNumber, firstName, details }
+    
+    const appointment = { phoneNumber, firstName, details, uuid: uuid() }
     let docRef = db.collection('barbers').doc(barberFirstName)
     try {
       let barber = await docRef.get()

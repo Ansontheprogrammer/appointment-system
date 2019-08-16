@@ -25,7 +25,7 @@ export type BARBER_APPOINTMENTS = {
   
 }
 
-const barbersInShop = ['Anthony', 'Julian', 'Jimmy'];
+const barbersInShop = ['Jesse', 'Kelly', 'Jimmy'];
 const barberShopAvailablilty = {
   open: '10',
   closed: '19',
@@ -162,7 +162,7 @@ class UserMessageInterface {
   introGreetingWords = ["How you doing", "How you been", 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book another appointment \nPress:\n(1) for Walkin \n(2) to Book`;
   chooseAppointmentTypeMessage = `Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`;
-  friendlyFormat = 'dddd, MMMM Do, h:mm a'
+  friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
   public generateRandomAgreeWord = () => this.introWords[Math.floor(Math.random() * this.introWords.length)]
   public generateRandomGreeting = () => this.introGreetingWords[Math.floor(Math.random() * this.introGreetingWords.length)]
