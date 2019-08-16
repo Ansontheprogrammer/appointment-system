@@ -14,12 +14,16 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
 export type BARBER = {
   phoneNumber: string
   email: string
-  firstName: string
-  lastName: string
-  zipCode: string
+  name: string
   appointments: [
     twilioLib.BARBER_APPOINTMENTS
-  ]
+  ],
+  unavailabilities: {
+    lunch: ALLOCATED_TIMES
+    offDays: ALLOCATED_TIMES[],
+    vacations: ALLOCATED_TIMES[],
+    unavailableTimes: ALLOCATED_TIMES[]
+  }
 }
 
 export type CUSTOMER = {
@@ -87,14 +91,12 @@ export class Database {
   public createBarber(barberInfo: BARBER) {
     // Assign step number field before saving
     barberInfo = Object.assign(barberInfo, { stepNumber: '1' })
-    barberInfo.firstName = Database.firstLetterUpperCase(barberInfo.firstName)
-    barberInfo.lastName = Database.firstLetterUpperCase(barberInfo.lastName)
+    barberInfo.name = Database.firstLetterUpperCase(barberInfo.name)
     barberInfo.email = barberInfo.email.toLowerCase()
-
     return new Promise((resolve, reject) => {
-      this.hasPersonSignedUp(true, barberInfo.firstName).then(hasPersonSignedUp => {
+      this.hasPersonSignedUp(true, barberInfo.name).then(hasPersonSignedUp => {
         if (!!hasPersonSignedUp) return reject('Barber has already signed up.')
-        let docRef = db.collection('barbers').doc(barberInfo.firstName);
+        let docRef = db.collection('barbers').doc(barberInfo.name);
         docRef.set({ ...barberInfo }).then(resolve, reject)
       })
     })

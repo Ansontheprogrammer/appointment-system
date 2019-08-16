@@ -149,7 +149,7 @@ export function createBarber(req, res, next) {
     new Database().createBarber((req.body as BARBER)).then(() => {
         res.sendStatus(200)
     }, next)
-  }
+}
 
 export async function cancelRecentAppointment(res){
   const sendTextMessage = TextSystem.getTextMessageTwiml(res)
