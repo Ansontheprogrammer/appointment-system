@@ -19,10 +19,10 @@ export type BARBER = {
     twilioLib.BARBER_APPOINTMENTS
   ],
   unavailabilities: {
-    lunch: ALLOCATED_TIMES
-    offDays: ALLOCATED_TIMES[],
-    vacations: ALLOCATED_TIMES[],
-    unavailableTimes: ALLOCATED_TIMES[]
+    lunch: twilioLib.UNAVAILABLETIMES
+    offDays: twilioLib.UNAVAILABLETIMES[],
+    vacations: twilioLib.UNAVAILABLETIMES[],
+    unavailableTimes: twilioLib.UNAVAILABLETIMES[]
   }
 }
 

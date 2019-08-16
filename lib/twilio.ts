@@ -25,6 +25,11 @@ export type BARBER_APPOINTMENTS = {
   
 }
 
+export type UNAVAILABLETIMES = {
+  from: string,
+  to: string
+}
+
 const barbersInShop = ['Jesse', 'Kelly', 'Jimmy'];
 const barberShopAvailablilty = {
   open: '10',
@@ -52,7 +57,7 @@ export function extractText(body: string): string {
   return String(body.match(/\w+/gi))
 }
 
-export function getAvailableTimes(duration: number, interval: number, allocatedTimes: ALLOCATED_TIMES[], from: string, to: string, appoximateTime?: string): TimeAvailability[] {
+export function getAvailableTimes(duration: number, interval: number, allocatedTimes: ALLOCATED_TIMES[], from: string, to: string, barber: BARBER, appoximateTime?: string): TimeAvailability[] {
     // set time to get available times through
     let fromTime;
     let toTime;
@@ -80,8 +85,12 @@ export function getAvailableTimes(duration: number, interval: number, allocatedT
             from: fromTime, to: toTime,
           },
           unavailability: [
-            { from: `${from} 13:00`, to: `${from} 14:00` }
+            barber.unavailabilities.lunch,
+            ...barber.unavailabilities.offDays,
+            ...barber.unavailabilities.unavailableTimes,
+            ...barber.unavailabilities.vacations
           ],
+
           allocated: allocatedTimes
         }
       ]
@@ -110,9 +119,9 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, appr
 
     let availableTimes
     if(!!approximateTime){
-      availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to, approximateTime)
+      availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to, barber, approximateTime)
     } else {
-      availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to)
+      availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to, barber)
     }
     
     return getApproximateTimes(availableTimes).map(time => moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm'))
