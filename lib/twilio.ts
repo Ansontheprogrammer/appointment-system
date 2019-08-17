@@ -99,7 +99,7 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, date
       else from = moment(from).add(1, 'day').format('YYYY-MM-DD')  
     }
 
-    if(!!date) from = moment(date).add(1, 'day').format('YYYY-MM-DD')
+    if(!!date) from = moment(date).format('YYYY-MM-DD')
 
     let to = moment(from).add(1, 'day').format('YYYY-MM-DD')
 
@@ -107,10 +107,8 @@ export function getBarberAppointments(services: SERVICES[], barber: BARBER, date
     let totalDuration = 0;
     // sum up total durations
     services.forEach(service => totalDuration += service.duration)
-
     let availableTimes = getAvailableTimes(totalDuration, 15, barbersAllocatedTimes, from, to, barber)
-    console.log(availableTimes, 'availableTimes', totalDuration, 15, barbersAllocatedTimes, from, to, barber, 'AvailableTimes params')
-    console.log(formatAllocatedTimes(availableTimes), 'format',formatAllocatedTimes(availableTimes).map(time => moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm')), 'formatted times')
+    if(!availableTimes) return []
     return formatAllocatedTimes(availableTimes).map(time => moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm'))
 }
   
@@ -149,7 +147,7 @@ export function createBarber(req, res, next) {
 
 export async function cancelRecentAppointment(res){
   const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-  const url = 'eclipperz.netlify.com?phoneNumber=' + res.customer.phoneNumber
+  const url = 'eclipperz.netlify.com/client?phoneNumber=' + res.customer.phoneNumber
   sendTextMessage(`Here's a link to cancel your appointment ${url}`)
 }
 
@@ -506,9 +504,7 @@ export class TextSystem {
     const { services } = req.customer.session
     let session;
     if(!validatedResponse) return sendTextMessage(`Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`)
-    
     const appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
-    
     // handle if user has already selected services
     if(services) {
       session = Object.assign(req.customer.session, { 'stepNumber': '1', appointmentType, finishedGeneralSteps: true})
@@ -789,13 +785,6 @@ export class AppSystem {
   public async walkInAppointment(req, res, next) {
     const { barber, name, services } = req.body
     const phoneNumber = phoneNumberFormatter(req.body.phoneNumber)
-    /* 
-        services {
-          service, 
-          duration,
-          price
-        }
-    */
 
     const customer = {
         phoneNumber,
@@ -817,10 +806,8 @@ export class AppSystem {
       // This barber is booked up for the day
       return res.sendStatus(400)
     }
-
-    const hour24Format = moment(firstAvailableTime, 'hh:mm a').format('HH:mm')
-    const confirmationMessage = `${UserMessage.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: ${firstAvailableTime}\nTotal: $${total}`
-    const walkinDate = `${moment().format('YYYY-MM-DD')} ${hour24Format}`
+    
+    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, firstAvailableTime, total)
 
     client.messages.create({
       from: config.TWILIO_PHONE_NUMBER,
@@ -828,22 +815,25 @@ export class AppSystem {
       to: phoneNumber
     })
     
-    const time = { from: walkinDate, duration }
+    const time = { from: firstAvailableTime, duration }
     const appointmentData = {
       time,
       services,
       total
     }
+
     await database.addAppointment(barber, customer, appointmentData)
     const dateWithTimeZone = new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" })
     const currDate = new Date(dateWithTimeZone)
     const currentHour = moment().format('H')
     let date = currDate.getDate()
 
-    // check if barbershop is closed and move the user to make an appointment for the next day
-    if(parseInt(currentHour) > parseInt(barberShopAvailablilty.closed)) date += 1
+    // handle if barbershop is closed
+    if(parseInt(currentHour) > parseInt(barberShopAvailablilty.closed)){
+      return res.send('Barbershop is closed').status(400)
+    }
 
-    const minutes = moment().format('m')
+    const minutes = moment(firstAvailableTime, 'HH:mm').format('m')
     const alertHour = currentHour.includes('pm') ? parseInt(currentHour) + 12 : parseInt(currentHour) - 1
     const reminderMessage = UserMessage.generateReminderMessage(services, barber, firstAvailableTime, total)
     createJob(`0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
@@ -852,54 +842,65 @@ export class AppSystem {
   }
 
   public async getBarberAvailableTimes(req, res, next) {
-    const { barber, fromDate} = req.body
-    let services: any[] = req.body.services
-    /* 
-        The same flow as the text flow
-        res.json with the barbers available times
-        format for getBarberAvailableTimes  - 'YYYY-MM-DD hh:mm'
-    */
-    
-    // Format for display 'dddd, MMMM Do, h:mm a'
-    // example 
-    // getBarberAppointments(req.customer.session.services, barber).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
-
+    // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
+    const { barber, fromDate, services} = req.body
+    if(!Object.keys(services[0]).length) services.shift()
     const barberInDatabase = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    services = services.map(service => {
-      return { 
-        service: service.service, 
-        price: parseInt(service.price),
-        duration: parseInt(service.duration)}
-    })
-    const availableTimes = getBarberAppointments(services, barberInDatabase,  fromDate )
+    let availableTimes = getBarberAppointments(services, barberInDatabase, fromDate )
+    availableTimes = availableTimes.map(time => moment(time, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat))
     res.json({ availableTimes })
   }
 
   public bookAppointment(req, res, next) {
-    const { barberName, datetime, customerName, phoneNumber, services } = req.body
-    /*    
-        Book an appointment based on date and time
-
-        Send a confirmation text
-
-        Set up the chron job
-
-        Format for storage 'YYYY-MM-DD HH:mm'
-
-        Schema for storage {
-          customerData: { phoneNumber, firstName },
-          appointmentData: {
-            time: { from: time, duration },
-            services,
-            total
-          }
-      }
+    /* 
+      Formats:
+        Date - MM-DD-YYYY
+        Time - ddd, MMMM Do, h:mm a
     */
 
-    // getBarberAppointments(req.customer.session.services, barber, '', date).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
-    // database.addAppointment(barberName, { customerData }, appointmentData)
+    const { barber, date, time, name, services } = req.body
+    const phoneNumber = phoneNumberFormatter(req.body.phoneNumber)
+    // remove first element if empty
+    if(!Object.keys(services[0]).length) services.shift()
+    const dayOfMonth = moment(date, 'MM-DD-YYYY').format('DD')
+    const month = moment(date, 'MM-DD-YYYY').format('MM')
+    const dateTime = `${date} ${time}`;
+    // format dateTime to set appointment and receive confirmation message
+    const formattedDateTime = moment(dateTime, `MM-DD-YYYY ${UserMessage.friendlyFormat}`).format('YYYY-MM-DD HH:mm')
 
-    // if(error) res.sendStatus(400)
-    res.json({ route: 'book appointment' })
+    let duration = 0;
+    services.forEach(service => duration += service.duration)
+
+    let total = 0;
+    services.forEach(service => total += service.price)
+
+    const customerInfo = {
+      customerData: { phoneNumber, firstName: name },
+      appointmentData: {
+        time: { from: formattedDateTime, duration },
+        services,
+        total
+      }
+    }
+    
+    database.addAppointment(barber, customerInfo.customerData, customerInfo.appointmentData)
+
+    // send confirmation
+    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, formattedDateTime, total)
+
+    client.messages.create({
+      from: config.TWILIO_PHONE_NUMBER,
+      body: confirmationMessage,
+      to: phoneNumber
+    })
+
+    const minutes = moment(dateTime, `MM-DD-YYYY ${UserMessage.friendlyFormat}`).format('mm')
+    const appointmentHour = moment(dateTime, `MM-DD-YYYY ${UserMessage.friendlyFormat}`).format('H')
+    const alertHour = parseInt(appointmentHour) - 1
+    const reminderMessage = UserMessage.generateReminderMessage(services, barber, dateTime, total)
+    console.log(appointmentHour, alertHour, minutes, '========appointment time')
+    createJob(`0 ${minutes} ${alertHour} ${dayOfMonth} ${month} *`, phoneNumber, reminderMessage)
+    
+    res.sendStatus(200)
   }
 }

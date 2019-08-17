@@ -2,6 +2,7 @@ import bodyParser from 'body-parser'
 import express from 'express'
 import * as twilioLib from './lib/twilio';
 import * as flow from './config/flow'
+import cors from 'cors';
 
 const phoneSystem = new twilioLib.PhoneSystem()
 const textSystem = new twilioLib.TextSystem()
@@ -14,6 +15,7 @@ const port = process.env.PORT || 80;
 app.use(express.json());       // to support JSON-encoded bodies
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
+app.use(cors());
 
 // Phone system
 app.post('/api/phoneAppointmentFlow', phoneSystem.phoneAppointmentFlow)
