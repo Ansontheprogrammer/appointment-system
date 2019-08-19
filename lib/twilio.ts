@@ -145,9 +145,9 @@ export function createBarber(req, res, next) {
     }, next)
 }
 
-export async function cancelRecentAppointment(res){
+export async function cancelRecentAppointment(req, res){
   const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-  const url = `eclipperz.netlify.com/client?phoneNumber=${res.customer.phoneNumber}&uuid=${res.customer.uuid}`
+  const url = `eclipperz.netlify.com/client?phoneNumber=${req.customer.phoneNumber}&uuid=${req.customer.uuid}`
   sendTextMessage(`Here's a link to cancel your appointment ${url}`)
 }
 
@@ -471,7 +471,7 @@ export class TextSystem {
 
       // Handle if the user would like to cancel the most recent appointment
       if (userMessage.toLowerCase() === 'remove') {
-        return cancelRecentAppointment(res);
+        return cancelRecentAppointment(req, res);
       }
 
       // Send user to the next step
