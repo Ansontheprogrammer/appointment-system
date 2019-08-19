@@ -161,9 +161,11 @@ class UserMessageInterface {
   public generateRandomAgreeWord = () => this.introWords[Math.floor(Math.random() * this.introWords.length)]
   public generateRandomGreeting = () => this.introGreetingWords[Math.floor(Math.random() * this.introGreetingWords.length)]
 
-  public generateConfirmationMessage(services: SERVICES[], barberName: string, time: string, total: number){
+  public generateConfirmationMessage(services: SERVICES[], barberName: string, time: string, total: number, noConfirmation: boolean){
     time = moment(time, 'YYYY-MM-DD HH-mm').format(this.friendlyFormat)
-    return `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO`
+    const message = `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}`
+    if(noConfirmation) return message
+    else message.concat('\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO')
   }
 
   public generateReminderMessage(services: SERVICES[], barberName: string, time: string, total: number){
@@ -621,7 +623,7 @@ export class TextBookAppointmentInterface extends TextSystem {
     if (!validatedResponse) return sendTextMessage(UserMessage.generateErrorValidatingAppointmentTime(barberSchedule))
     
     const exactTime = barberSchedule[parseInt(userMessage) - 1]
-    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, exactTime, total)
+    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, exactTime, total, false)
     sendTextMessage(confirmationMessage)
     const session = Object.assign(req.customer.session , { stepNumber: '3', time: exactTime })
 
@@ -711,7 +713,7 @@ export class TextWalkInAppointmentInterface extends TextSystem {
       }
       return
     } else {
-      const confirmationMessage = UserMessage.generateConfirmationMessage(services, barberName, firstAvailableTime, total)
+      const confirmationMessage = UserMessage.generateConfirmationMessage(services, barberName, firstAvailableTime, total, false)
       session = Object.assign(req.customer.session, { 'stepNumber': '2', time: firstAvailableTime, barber: barberName  })
 
       sendTextMessage(confirmationMessage)
@@ -807,7 +809,7 @@ export class AppSystem {
       return res.sendStatus(400)
     }
     
-    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, firstAvailableTime, total)
+    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, firstAvailableTime, total, true)
 
     client.messages.create({
       from: config.TWILIO_PHONE_NUMBER,
@@ -886,7 +888,7 @@ export class AppSystem {
     database.addAppointment(barber, customerInfo.customerData, customerInfo.appointmentData)
 
     // send confirmation
-    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, formattedDateTime, total)
+    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, formattedDateTime, total, true)
 
     client.messages.create({
       from: config.TWILIO_PHONE_NUMBER,
@@ -898,7 +900,6 @@ export class AppSystem {
     const appointmentHour = moment(dateTime, `MM-DD-YYYY ${UserMessage.friendlyFormat}`).format('H')
     const alertHour = parseInt(appointmentHour) - 1
     const reminderMessage = UserMessage.generateReminderMessage(services, barber, dateTime, total)
-    console.log(appointmentHour, alertHour, minutes, '========appointment time')
     createJob(`0 ${minutes} ${alertHour} ${dayOfMonth} ${month} *`, phoneNumber, reminderMessage)
     
     res.sendStatus(200)
