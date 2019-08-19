@@ -148,7 +148,7 @@ export function createBarber(req, res, next) {
 export async function cancelRecentAppointment(req, res){
   const sendTextMessage = TextSystem.getTextMessageTwiml(res)
   const url = `eclipperz.netlify.com/client?phoneNumber=${req.customer.phoneNumber}&uuid=${req.customer.uuid}`
-  sendTextMessage(`Here's a link to cancel your appointment ${url}`)
+  sendTextMessage(`Here's a link to cancel your appointment \n${url}`)
 }
 
 class UserMessageInterface {
