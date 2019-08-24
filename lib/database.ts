@@ -11,6 +11,17 @@ let db = admin.firestore();
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
 
+// subscribe to barbers
+export let barbersInShop = [];
+
+db
+  .collection("barbers")
+  .get()
+  .then(snapshot => {
+    const barberData = snapshot.docs.map(doc => doc.id)
+    barbersInShop = barberData
+  })
+
 export type BARBER = {
   phoneNumber: string
   email: string
@@ -52,13 +63,10 @@ export class Database {
 
   public findAllBarbers(): Promise<DocumentData[]> {
     return new Promise((resolve, reject) => {
-      db.collection('barbers').get()
-        .then((snapshots) => {
-          // get an array of SnapShots
-          const snapshotData = snapshots.docs.map(snap => snap.data());
-          resolve(snapshotData)
-        })
-        .catch(reject)
+      db.collection('barbers')
+        .onSnapshot(snapshot => {
+          snapshot.docs.map(doc => doc.data())
+        }, reject)
     })
   }
 
