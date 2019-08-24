@@ -161,7 +161,7 @@ export function sendShopIsClosedMessage(phoneNumber, res){
 class UserMessageInterface {
   agreeWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
   introGreetingWords = ["How you doing", "How you been", 'Long time no see']
-  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book another appointment \nPress:\n(1) for Walkin \n(2) to Book`;
+  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
   chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
@@ -386,27 +386,25 @@ export class PhoneSystem extends UserMessageInterface {
     // Use the Twilio Node.js SDK to build an XML response
     const twiml = new VoiceResponse()
     if (!!keyPress) if (keyPress[0] === '0') return PhoneSystem.callBarbershop(res, next)
-
+    
     const customer: any = await database.findCustomerInDatabase(phoneNumber)
     const barber = customer.phoneSession.barber
     const firstName = customer.firstName
     const services = customer.phoneSession.services
     const total = customer.phoneSession.total
-    let time;
-    let duration = 0;
-    services.forEach(service => duration += service.duration)
-  
+    let time, duration = 0;
     const foundBarber = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    
     const availableTimes = getBarberAppointments(customer.phoneSession.services, foundBarber)
-   
     time = availableTimes[parseInt(keyPress) - 1]
+
     if (time === undefined) return this.errorMessage(res, '/api/chosenBarber')
   
     twiml.say(
       `${UserMessage.generateRandomAgreeWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today`,
       { voice: 'Polly.Salli' }
     )
+    services.forEach(service => duration += service.duration)
+  
     res.send(twiml.toString())
     
     const details = { 
@@ -415,6 +413,8 @@ export class PhoneSystem extends UserMessageInterface {
       total 
     }
 
+    const reminderMessage = UserMessage.generateReminderMessage(services, barber, time, total)
+    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, time, total, true)
     try {
       await database.addAppointment(barber, { phoneNumber, firstName }, details)
   
@@ -423,8 +423,7 @@ export class PhoneSystem extends UserMessageInterface {
 
       const minutes = moment(time, 'h:mm a').format('m');
       const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
-      const alertHour = appointmentHour.includes('pm') ? parseInt(appointmentHour) + 12 : parseInt(appointmentHour) - 1
-      const reminderMessage = UserMessage.generateReminderMessage(services, barber, time, total)
+      const alertHour = parseInt(appointmentHour) - 1
       let date = currDate.getDate()
       createJob(`0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
       await database.updateCustomer(
@@ -437,7 +436,7 @@ export class PhoneSystem extends UserMessageInterface {
   
     client.messages.create({
       from: config.TWILIO_PHONE_NUMBER,
-      body: `${UserMessage.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: \n${time}\nTotal: $${total}`,
+      body: confirmationMessage,
       to: phoneNumber
     })
   }
@@ -665,14 +664,15 @@ export class TextBookAppointmentInterface extends TextSystem {
     const { barber, services, total } = req.customer.session
     const userMessage: string = extractText(req.body.Body)
     const barberInDatabase = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    const barberSchedule = getBarberAppointments(services, barberInDatabase).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+    const barberSchedule = getBarberAppointments(services, barberInDatabase)
+    const formattedBarberSchedule = barberSchedule.map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
     const validResponses = barberSchedule.map((time, index) => (index + 1).toString())
     const validatedResponse = validateMessage(userMessage, validResponses)
     const sendTextMessage = TextSystem.getTextMessageTwiml(res)
   
     if (userMessage.toLowerCase() === 'reset') return TextSystem.resetUser(req.customer.phoneNumber, sendTextMessage)
   
-    if (!validatedResponse) return sendTextMessage(UserMessage.generateErrorValidatingAppointmentTime(barberSchedule))
+    if (!validatedResponse) return sendTextMessage(UserMessage.generateErrorValidatingAppointmentTime(formattedBarberSchedule))
     
     const exactTime = barberSchedule[parseInt(userMessage) - 1]
     const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, exactTime, total, false)
@@ -712,9 +712,6 @@ export class TextBookAppointmentInterface extends TextSystem {
       const currDate = new Date(dateWithTimeZone)
       const currentTime = parseInt(moment().format('H'))
       let date = currDate.getDate()
-
-      // check if barbershop is closed and move the user to make an appointment for the next day
-      if(currentTime > parseInt(barberShopAvailablilty.closed)) date += 1
       const minutes = moment(time, 'h:mm a').format('m');
       const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
       const alertHour = appointmentHour.includes('pm') ? parseInt(appointmentHour) + 12 : parseInt(appointmentHour) - 1
