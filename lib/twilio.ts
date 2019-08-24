@@ -613,7 +613,7 @@ export class TextBookAppointmentInterface extends TextSystem {
     const { barber, services, total } = req.customer.session
     const userMessage: string = extractText(req.body.Body)
     const barberInDatabase = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    const barberSchedule = getBarberAppointments(services, barberInDatabase)
+    const barberSchedule = getBarberAppointments(services, barberInDatabase).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
     const validResponses = barberSchedule.map((time, index) => (index + 1).toString())
     const validatedResponse = validateMessage(userMessage, validResponses)
     const sendTextMessage = TextSystem.getTextMessageTwiml(res)
