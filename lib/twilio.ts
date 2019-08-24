@@ -48,7 +48,6 @@ const barberShopAvailablilty = {
 // store a variable containing if the shop is closed or not.
 const shopIsClosed = (() => {
     const currentTime = new Date().getHours();
-    console.log(currentTime, 'current time')
     return currentTime < parseInt(barberShopAvailablilty.open) || currentTime > parseInt(barberShopAvailablilty.closed)
 })()
 
@@ -150,6 +149,14 @@ export function createBarber(req, res, next) {
     }, next)
 }
 
+export function sendShopIsClosedMessage(phoneNumber, res){
+    client.messages.create({
+        from: config.TWILIO_PHONE_NUMBER,
+        body: "The shop is currently closed\n",
+        to: phoneNumber
+    })
+    sendBookLaterDateLink(phoneNumber)
+}
 
 class UserMessageInterface {
   agreeWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
@@ -204,31 +211,43 @@ export const UserMessage = new UserMessageInterface()
 
 export class PhoneSystem extends UserMessageInterface {
   public async phoneAppointmentFlow(req, res, next) {
-    // Use the Twilio Node.js SDK to build an XML response
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
     const twiml = new VoiceResponse()
+    /*
+        if shop is closed currently send shop is closed message
+        sending twiml before creating gather twiml to avoid latency issues
+    */
+    if(shopIsClosed) {
+        twiml.say(`The shop is closed currently. I'm sending you a link to book an appointment at a later date`, {
+            voice: 'Polly.Salli'
+        })
+        res.send(twiml.toString())
+        sendBookLaterDateLink(phoneNumber)
+        return 
+    }
+
     const gather = twiml.gather({
       action: '/api/chooseService',
       method: 'POST',
       finishOnKey: '#',
-      timeout: 10
+      timeout: 3
     })
     const customer = await database.findCustomerInDatabase(phoneNumber)
     let message = ``
-    
+
     for (let prop in serviceList) {
       message += `(${prop}) for ${serviceList[prop].service}\n`
     }
     gather.say(
       `Thank you for calling Fades of Grey!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`,
-    { voice: 'Polly.Salli' }
-  )
+        { voice: 'Polly.Salli' }
+    )
 
     if (!customer) await database.createCustomer(phoneNumber)
     res.send(twiml.toString())
   }
 
-  private async callBarbershop(res, next) {
+  public static async callBarbershop(res, next) {
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
     try {
       const phoneSession = {}
@@ -249,15 +268,16 @@ export class PhoneSystem extends UserMessageInterface {
   public async chooseService(req, res, next) {
     const keyPress = res.req.body.Digits
     const twiml = new VoiceResponse()
+
+    // Handle if we have a redirect, we want to check if key press is truthy first
+    if (!!keyPress) if (keyPress[0] === '0') return PhoneSystem.callBarbershop(res, next)
+
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
     const gather = twiml.gather({
       action: '/api/chosenBarber',
       method: 'POST',
       numDigits: 1,
     })
-  
-    // Handle if we have a redirect, we want to check if key press is truthy first
-    if (!!keyPress) if (keyPress[0] === '0') return this.callBarbershop(res, next)
   
     if (res.req.query.redirect) {
       const barbersWithoutTakenBarber = barbersInShop.filter(barber => barber !== res.req.query.barber)
@@ -300,10 +320,13 @@ export class PhoneSystem extends UserMessageInterface {
   public async chosenBarber(req, res, next) {
     const keyPress = res.req.body.Digits
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
-    const validResponses = barbersInShop.map((barbers, index) => (index + 1).toString())
     const twiml = new VoiceResponse()
-    let barberName
-    let validatedResponse;
+    // Call shop
+    if (!!keyPress) if (keyPress[0] === '0') return PhoneSystem.callBarbershop(res, next)
+
+    const validResponses = barbersInShop.map((barbers, index) => (index + 1).toString())
+    let barberName, validatedResponse;
+
     const gather = twiml.gather({
       action: '/api/confirmation',
       method: 'POST',
@@ -312,7 +335,6 @@ export class PhoneSystem extends UserMessageInterface {
   
     if (!!keyPress) validatedResponse = validateMessage(keyPress, validResponses)
     if (!!keyPress) if (!validatedResponse) return this.errorMessage(res, '/api/chooseService')
-    if (!!keyPress) if (keyPress[0] === '0') return this.callBarbershop(res, next)
     
     const customer = await new Database().findCustomerInDatabase(phoneNumber)
     // set barber name if this is a redirect
@@ -361,6 +383,10 @@ export class PhoneSystem extends UserMessageInterface {
   public async confirmation(req, res, next) {
     const keyPress = res.req.body.Digits
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
+    // Use the Twilio Node.js SDK to build an XML response
+    const twiml = new VoiceResponse()
+    if (!!keyPress) if (keyPress[0] === '0') return PhoneSystem.callBarbershop(res, next)
+
     const customer: any = await database.findCustomerInDatabase(phoneNumber)
     const barber = customer.phoneSession.barber
     const firstName = customer.firstName
@@ -369,9 +395,6 @@ export class PhoneSystem extends UserMessageInterface {
     let time;
     let duration = 0;
     services.forEach(service => duration += service.duration)
-    // Use the Twilio Node.js SDK to build an XML response
-    const twiml = new VoiceResponse()
-    if (!!keyPress) if (keyPress[0] === '0') return this.callBarbershop(res, next)
   
     const foundBarber = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
     
@@ -434,10 +457,14 @@ export async function cancelRecentAppointment(req, res){
     sendTextMessage(`Here's a link to cancel your appointment \n${url}`)
 }
 
-export async function sendBookLaterDateLink(res){
-    const sendTextMessage = TextSystem.getTextMessageTwiml(res)
+export async function sendBookLaterDateLink(phoneNumber: string){
     const url = `https://eclipperz.netlify.com/cue`
-    sendTextMessage(`Here's a link to book at a later date ${url}`)
+    const message = `Here's a link to book at a later date ${url}`
+    client.messages.create({
+        from: config.TWILIO_PHONE_NUMBER,
+        body: message,
+        to: phoneNumber
+    })
 }
 
 export class TextSystem {
@@ -458,19 +485,10 @@ export class TextSystem {
     database.updateCustomer(phoneNumber, propsToUpdateUser)
   }
 
-  public static sendShopIsClosedMessage(phoneNumber, res){
-    client.messages.create({
-        from: config.TWILIO_PHONE_NUMBER,
-        body: "The shop is currently closed\n",
-        to: phoneNumber
-    })
-    sendBookLaterDateLink(res)
-  }
-
   public async textMessageFlow(req, res, next) {
     const phoneNumber = phoneNumberFormatter(req.body.From)
     // if shop is closed currently send shop is closed message
-    if(shopIsClosed) return TextSystem.sendShopIsClosedMessage(phoneNumber, res)
+    if(shopIsClosed) return sendShopIsClosedMessage(phoneNumber, res)
 
     try {    
       let customer = await database.findCustomerInDatabase(phoneNumber)
@@ -538,7 +556,7 @@ export class TextSystem {
         const session = { 'stepNumber': '2' }
         const propsToUpdateUser = { session }
         database.updateCustomer(phoneNumber, propsToUpdateUser)
-        sendBookLaterDateLink(res)
+        sendBookLaterDateLink(phoneNumber)
         return
     }
 
