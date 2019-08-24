@@ -143,17 +143,12 @@ export function createBarber(req, res, next) {
     }, next)
 }
 
-export async function cancelRecentAppointment(req, res){
-  const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-  const url = `eclipperz.netlify.com/client?phoneNumber=${req.customer.phoneNumber}&uuid=${req.customer.uuid}`
-  sendTextMessage(`Here's a link to cancel your appointment \n${url}`)
-}
 
 class UserMessageInterface {
   agreeWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
   introGreetingWords = ["How you doing", "How you been", 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book another appointment \nPress:\n(1) for Walkin \n(2) to Book`;
-  chooseAppointmentTypeMessage = `Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`;
+  chooseAppointmentTypeMessage = `Is this for a first available time, book an appointment for today or book for a later date? \nPress: \n(1) for First available\n(2) for Book\n(3) for Later date`;
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
   public generateRandomAgreeWord = () => this.agreeWords[Math.floor(Math.random() * this.agreeWords.length)]
@@ -426,6 +421,18 @@ export class PhoneSystem extends UserMessageInterface {
   }
 }
 
+export async function cancelRecentAppointment(req, res){
+    const sendTextMessage = TextSystem.getTextMessageTwiml(res)
+    const url = `eclipperz.netlify.com/client?phoneNumber=${req.customer.phoneNumber}&uuid=${req.customer.uuid}`
+    sendTextMessage(`Here's a link to cancel your appointment \n${url}`)
+}
+
+export async function sendBookLaterDateLink(res){
+    const sendTextMessage = TextSystem.getTextMessageTwiml(res)
+    const url = `https://eclipperz.netlify.com/cue`
+    sendTextMessage(`Here's a link to book at a later date ${url}`)
+}
+
 export class TextSystem {
   public static getTextMessageTwiml(res: any){
     return (message: string) => {
@@ -500,13 +507,19 @@ export class TextSystem {
   public async textGetAppointmentType(req, res, next){
     const userMessage: string = extractText(req.body.Body)
     const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-    const validResponses = ['1', '2']
+    const validResponses = ['1', '2', '3']
     const validatedResponse = validateMessage(userMessage, validResponses)
     const { phoneNumber } = req.customer
     const { services } = req.customer.session
-    let session;
-    if(!validatedResponse) return sendTextMessage(`Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`)
-    const appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
+    let session, appointmentType;
+    if(!validatedResponse) return sendTextMessage(`Is this for the first available time, book an appointment for today or later day? \nPress: \n(1) for First Available\n(2) for Book today\n(3) for Book later date`)
+    if(userMessage === '1' || userMessage === '2'){
+        appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
+    } else {
+        // set appointment type to false if they would like to book at a later date
+        appointmentType = false
+    }
+
     // handle if user has already selected services
     if(services) {
       session = Object.assign(req.customer.session, { 'stepNumber': '1', appointmentType, finishedGeneralSteps: true})
@@ -520,8 +533,15 @@ export class TextSystem {
         next(err)
       }
     }
-
     else {
+      // Send user to website if they want to book at a later date 
+      if(!appointmentType) {
+        const session = { 'stepNumber': '2' }
+        const propsToUpdateUser = { session }
+        database.updateCustomer(phoneNumber, propsToUpdateUser)
+        sendBookLaterDateLink(res)
+        return
+      }
       session = Object.assign(req.customer.session, { 'stepNumber': '3', appointmentType })
       const message = `${UserMessage.generateRandomAgreeWord()}, ${UserMessage.generateAvailableServicesMessage()}`
     
