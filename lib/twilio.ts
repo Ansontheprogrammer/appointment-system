@@ -1,6 +1,6 @@
 import config from '../config/config'
 import twilio from 'twilio'
-import { Database, BARBER, CUSTOMER, ALLOCATED_TIMES } from './database'
+import { Database, BARBER, CUSTOMER, ALLOCATED_TIMES, barbersInShop } from './database'
 import { serviceList, SERVICES } from './shopData'
 import { createJob } from './cron'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
@@ -22,7 +22,6 @@ export type BARBER_APPOINTMENTS = {
     total,
     duration
   }
-  
 }
 
 export type UNAVAILABLETIMES = {
@@ -30,7 +29,6 @@ export type UNAVAILABLETIMES = {
   to: string
 }
 
-const barbersInShop = ['Jesse', 'Kelly', 'Jimmy'];
 const barberShopAvailablilty = {
   open: '10',
   closed: '19',
