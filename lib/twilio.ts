@@ -45,6 +45,12 @@ const barberShopAvailablilty = {
   }
 }
 
+// store a variable containing if the shop is closed or not.
+const shopIsClosed = (() => {
+    const currentTime = new Date().getHours();
+    return currentTime < parseInt(barberShopAvailablilty.open) || currentTime > parseInt(barberShopAvailablilty.closed)
+})()
+
 export function phoneNumberFormatter(phoneNumber: string) {
     if (phoneNumber[0] === '+') return phoneNumber.slice(2)
     if (phoneNumber[0] === '1') return phoneNumber.slice(1)
@@ -143,17 +149,20 @@ export function createBarber(req, res, next) {
     }, next)
 }
 
-export async function cancelRecentAppointment(req, res){
-  const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-  const url = `eclipperz.netlify.com/client?phoneNumber=${req.customer.phoneNumber}&uuid=${req.customer.uuid}`
-  sendTextMessage(`Here's a link to cancel your appointment \n${url}`)
+export function sendShopIsClosedMessage(phoneNumber, res){
+    client.messages.create({
+        from: config.TWILIO_PHONE_NUMBER,
+        body: "The shop is currently closed\n",
+        to: phoneNumber
+    })
+    sendBookLaterDateLink(phoneNumber)
 }
 
 class UserMessageInterface {
   agreeWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
   introGreetingWords = ["How you doing", "How you been", 'Long time no see']
-  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book another appointment \nPress:\n(1) for Walkin \n(2) to Book`;
-  chooseAppointmentTypeMessage = `Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`;
+  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
+  chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
   public generateRandomAgreeWord = () => this.agreeWords[Math.floor(Math.random() * this.agreeWords.length)]
@@ -202,31 +211,43 @@ export const UserMessage = new UserMessageInterface()
 
 export class PhoneSystem extends UserMessageInterface {
   public async phoneAppointmentFlow(req, res, next) {
-    // Use the Twilio Node.js SDK to build an XML response
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
     const twiml = new VoiceResponse()
+    /*
+        if shop is closed currently send shop is closed message
+        sending twiml before creating gather twiml to avoid latency issues
+    */
+    if(shopIsClosed) {
+        twiml.say(`The shop is closed currently. I'm sending you a link to book an appointment at a later date`, {
+            voice: 'Polly.Salli'
+        })
+        res.send(twiml.toString())
+        sendBookLaterDateLink(phoneNumber)
+        return 
+    }
+
     const gather = twiml.gather({
       action: '/api/chooseService',
       method: 'POST',
       finishOnKey: '#',
-      timeout: 10
+      timeout: 3
     })
     const customer = await database.findCustomerInDatabase(phoneNumber)
     let message = ``
-    
+
     for (let prop in serviceList) {
       message += `(${prop}) for ${serviceList[prop].service}\n`
     }
     gather.say(
       `Thank you for calling Fades of Grey!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`,
-    { voice: 'Polly.Salli' }
-  )
+        { voice: 'Polly.Salli' }
+    )
 
     if (!customer) await database.createCustomer(phoneNumber)
     res.send(twiml.toString())
   }
 
-  private async callBarbershop(res, next) {
+  public static async callBarbershop(res, next) {
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
     try {
       const phoneSession = {}
@@ -247,15 +268,16 @@ export class PhoneSystem extends UserMessageInterface {
   public async chooseService(req, res, next) {
     const keyPress = res.req.body.Digits
     const twiml = new VoiceResponse()
+
+    // Handle if we have a redirect, we want to check if key press is truthy first
+    if (!!keyPress) if (keyPress[0] === '0') return PhoneSystem.callBarbershop(res, next)
+
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
     const gather = twiml.gather({
       action: '/api/chosenBarber',
       method: 'POST',
       numDigits: 1,
     })
-  
-    // Handle if we have a redirect, we want to check if key press is truthy first
-    if (!!keyPress) if (keyPress[0] === '0') return this.callBarbershop(res, next)
   
     if (res.req.query.redirect) {
       const barbersWithoutTakenBarber = barbersInShop.filter(barber => barber !== res.req.query.barber)
@@ -298,10 +320,13 @@ export class PhoneSystem extends UserMessageInterface {
   public async chosenBarber(req, res, next) {
     const keyPress = res.req.body.Digits
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
-    const validResponses = barbersInShop.map((barbers, index) => (index + 1).toString())
     const twiml = new VoiceResponse()
-    let barberName
-    let validatedResponse;
+    // Call shop
+    if (!!keyPress) if (keyPress[0] === '0') return PhoneSystem.callBarbershop(res, next)
+
+    const validResponses = barbersInShop.map((barbers, index) => (index + 1).toString())
+    let barberName, validatedResponse;
+
     const gather = twiml.gather({
       action: '/api/confirmation',
       method: 'POST',
@@ -310,7 +335,6 @@ export class PhoneSystem extends UserMessageInterface {
   
     if (!!keyPress) validatedResponse = validateMessage(keyPress, validResponses)
     if (!!keyPress) if (!validatedResponse) return this.errorMessage(res, '/api/chooseService')
-    if (!!keyPress) if (keyPress[0] === '0') return this.callBarbershop(res, next)
     
     const customer = await new Database().findCustomerInDatabase(phoneNumber)
     // set barber name if this is a redirect
@@ -359,29 +383,28 @@ export class PhoneSystem extends UserMessageInterface {
   public async confirmation(req, res, next) {
     const keyPress = res.req.body.Digits
     const phoneNumber = phoneNumberFormatter(res.req.body.From)
+    // Use the Twilio Node.js SDK to build an XML response
+    const twiml = new VoiceResponse()
+    if (!!keyPress) if (keyPress[0] === '0') return PhoneSystem.callBarbershop(res, next)
+    
     const customer: any = await database.findCustomerInDatabase(phoneNumber)
     const barber = customer.phoneSession.barber
     const firstName = customer.firstName
     const services = customer.phoneSession.services
     const total = customer.phoneSession.total
-    let time;
-    let duration = 0;
-    services.forEach(service => duration += service.duration)
-    // Use the Twilio Node.js SDK to build an XML response
-    const twiml = new VoiceResponse()
-    if (!!keyPress) if (keyPress[0] === '0') return this.callBarbershop(res, next)
-  
+    let time, duration = 0;
     const foundBarber = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    
     const availableTimes = getBarberAppointments(customer.phoneSession.services, foundBarber)
-   
     time = availableTimes[parseInt(keyPress) - 1]
+
     if (time === undefined) return this.errorMessage(res, '/api/chosenBarber')
   
     twiml.say(
       `${UserMessage.generateRandomAgreeWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today`,
       { voice: 'Polly.Salli' }
     )
+    services.forEach(service => duration += service.duration)
+  
     res.send(twiml.toString())
     
     const details = { 
@@ -390,6 +413,8 @@ export class PhoneSystem extends UserMessageInterface {
       total 
     }
 
+    const reminderMessage = UserMessage.generateReminderMessage(services, barber, time, total)
+    const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, time, total, true)
     try {
       await database.addAppointment(barber, { phoneNumber, firstName }, details)
   
@@ -398,8 +423,7 @@ export class PhoneSystem extends UserMessageInterface {
 
       const minutes = moment(time, 'h:mm a').format('m');
       const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
-      const alertHour = appointmentHour.includes('pm') ? parseInt(appointmentHour) + 12 : parseInt(appointmentHour) - 1
-      const reminderMessage = UserMessage.generateReminderMessage(services, barber, time, total)
+      const alertHour = parseInt(appointmentHour) - 1
       let date = currDate.getDate()
       createJob(`0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`, phoneNumber, reminderMessage)
       await database.updateCustomer(
@@ -412,7 +436,7 @@ export class PhoneSystem extends UserMessageInterface {
   
     client.messages.create({
       from: config.TWILIO_PHONE_NUMBER,
-      body: `${UserMessage.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barber}\nTime: \n${time}\nTotal: $${total}`,
+      body: confirmationMessage,
       to: phoneNumber
     })
   }
@@ -424,6 +448,22 @@ export class PhoneSystem extends UserMessageInterface {
     twiml.redirect({ method: 'POST' }, redirectUrl)
     res.send(twiml.toString())
   }
+}
+
+export async function cancelRecentAppointment(req, res){
+    const sendTextMessage = TextSystem.getTextMessageTwiml(res)
+    const url = `eclipperz.netlify.com/client?phoneNumber=${req.customer.phoneNumber}&uuid=${req.customer.uuid}`
+    sendTextMessage(`Here's a link to cancel your appointment \n${url}`)
+}
+
+export async function sendBookLaterDateLink(phoneNumber: string){
+    const url = `https://eclipperz.netlify.com/cue`
+    const message = `Here's a link to book at a later date ${url}`
+    client.messages.create({
+        from: config.TWILIO_PHONE_NUMBER,
+        body: message,
+        to: phoneNumber
+    })
 }
 
 export class TextSystem {
@@ -446,10 +486,12 @@ export class TextSystem {
 
   public async textMessageFlow(req, res, next) {
     const phoneNumber = phoneNumberFormatter(req.body.From)
+    // if shop is closed currently send shop is closed message
+    if(shopIsClosed) return sendShopIsClosedMessage(phoneNumber, res)
 
     try {    
       let customer = await database.findCustomerInDatabase(phoneNumber)
-  
+      
       if (!customer) {
         const sendTextMessage = TextSystem.getTextMessageTwiml(res)
         sendTextMessage(
@@ -500,13 +542,23 @@ export class TextSystem {
   public async textGetAppointmentType(req, res, next){
     const userMessage: string = extractText(req.body.Body)
     const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-    const validResponses = ['1', '2']
+    const validResponses = ['1', '2', '3']
     const validatedResponse = validateMessage(userMessage, validResponses)
     const { phoneNumber } = req.customer
     const { services } = req.customer.session
-    let session;
-    if(!validatedResponse) return sendTextMessage(`Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`)
-    const appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
+    let session, appointmentType;
+    if(!validatedResponse) return sendTextMessage(`Would you like to book the first available time, book an appointment for today or later day? \nPress: \n(1) for First Available\n(2) for Book an appointment today\n(3) for Book later date`)
+    if(userMessage === '1' || userMessage === '2'){
+        appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
+    } else {
+        // Send user to website if they want to book at a later date 
+        const session = { 'stepNumber': '2' }
+        const propsToUpdateUser = { session }
+        database.updateCustomer(phoneNumber, propsToUpdateUser)
+        sendBookLaterDateLink(phoneNumber)
+        return
+    }
+
     // handle if user has already selected services
     if(services) {
       session = Object.assign(req.customer.session, { 'stepNumber': '1', appointmentType, finishedGeneralSteps: true})
@@ -520,7 +572,6 @@ export class TextSystem {
         next(err)
       }
     }
-
     else {
       session = Object.assign(req.customer.session, { 'stepNumber': '3', appointmentType })
       const message = `${UserMessage.generateRandomAgreeWord()}, ${UserMessage.generateAvailableServicesMessage()}`
@@ -605,7 +656,7 @@ export class TextBookAppointmentInterface extends TextSystem {
         next(err)
       } 
       // the barber is booked for the day
-      sendTextMessage('Uh oh! Looks like the barber is booked up for the day. Would you like to try another barber for a walkin or book an appointment? Press: \n(1) for Walkin \n(2) for Book')
+      sendTextMessage('Uh oh! Looks like the barber is booked up for the day. Would you like to try another barber for their first available time, book an appointment or book at a later date? Press: \n(1) for first available time \n(2) to book appointment for today\n(3) to book appointment for later date ')
     }
   }
   
@@ -613,14 +664,15 @@ export class TextBookAppointmentInterface extends TextSystem {
     const { barber, services, total } = req.customer.session
     const userMessage: string = extractText(req.body.Body)
     const barberInDatabase = await (database.findBarberInDatabase(barber) as Promise<BARBER>)
-    const barberSchedule = getBarberAppointments(services, barberInDatabase).map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
+    const barberSchedule = getBarberAppointments(services, barberInDatabase)
+    const formattedBarberSchedule = barberSchedule.map(time => moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat))
     const validResponses = barberSchedule.map((time, index) => (index + 1).toString())
     const validatedResponse = validateMessage(userMessage, validResponses)
     const sendTextMessage = TextSystem.getTextMessageTwiml(res)
   
     if (userMessage.toLowerCase() === 'reset') return TextSystem.resetUser(req.customer.phoneNumber, sendTextMessage)
   
-    if (!validatedResponse) return sendTextMessage(UserMessage.generateErrorValidatingAppointmentTime(barberSchedule))
+    if (!validatedResponse) return sendTextMessage(UserMessage.generateErrorValidatingAppointmentTime(formattedBarberSchedule))
     
     const exactTime = barberSchedule[parseInt(userMessage) - 1]
     const confirmationMessage = UserMessage.generateConfirmationMessage(services, barber, exactTime, total, false)
@@ -660,9 +712,6 @@ export class TextBookAppointmentInterface extends TextSystem {
       const currDate = new Date(dateWithTimeZone)
       const currentTime = parseInt(moment().format('H'))
       let date = currDate.getDate()
-
-      // check if barbershop is closed and move the user to make an appointment for the next day
-      if(currentTime > parseInt(barberShopAvailablilty.closed)) date += 1
       const minutes = moment(time, 'h:mm a').format('m');
       const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
       const alertHour = appointmentHour.includes('pm') ? parseInt(appointmentHour) + 12 : parseInt(appointmentHour) - 1
