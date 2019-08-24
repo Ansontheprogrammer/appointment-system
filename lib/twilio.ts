@@ -516,8 +516,12 @@ export class TextSystem {
     if(userMessage === '1' || userMessage === '2'){
         appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
     } else {
-        // set appointment type to false if they would like to book at a later date
-        appointmentType = false
+        // Send user to website if they want to book at a later date 
+        const session = { 'stepNumber': '2' }
+        const propsToUpdateUser = { session }
+        database.updateCustomer(phoneNumber, propsToUpdateUser)
+        sendBookLaterDateLink(res)
+        return
     }
 
     // handle if user has already selected services
@@ -534,14 +538,6 @@ export class TextSystem {
       }
     }
     else {
-      // Send user to website if they want to book at a later date 
-      if(!appointmentType) {
-        const session = { 'stepNumber': '2' }
-        const propsToUpdateUser = { session }
-        database.updateCustomer(phoneNumber, propsToUpdateUser)
-        sendBookLaterDateLink(res)
-        return
-      }
       session = Object.assign(req.customer.session, { 'stepNumber': '3', appointmentType })
       const message = `${UserMessage.generateRandomAgreeWord()}, ${UserMessage.generateAvailableServicesMessage()}`
     
@@ -625,7 +621,7 @@ export class TextBookAppointmentInterface extends TextSystem {
         next(err)
       } 
       // the barber is booked for the day
-      sendTextMessage('Uh oh! Looks like the barber is booked up for the day. Would you like to try another barber for a walkin or book an appointment? Press: \n(1) for Walkin \n(2) for Book')
+      sendTextMessage('Uh oh! Looks like the barber is booked up for the day. Would you like to try another barber for their first available time, book an appointment or book at a later date? Press: \n(1) for first available time \n(2) to book appointment for today\n(3) to book appointment for later date ')
     }
   }
   
