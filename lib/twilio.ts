@@ -45,6 +45,13 @@ const barberShopAvailablilty = {
   }
 }
 
+// store a variable containing if the shop is closed or not.
+const shopIsClosed = (() => {
+    const currentTime = new Date().getHours();
+    console.log(currentTime, 'current time')
+    return currentTime < parseInt(barberShopAvailablilty.open) || currentTime > parseInt(barberShopAvailablilty.closed)
+})()
+
 export function phoneNumberFormatter(phoneNumber: string) {
     if (phoneNumber[0] === '+') return phoneNumber.slice(2)
     if (phoneNumber[0] === '1') return phoneNumber.slice(1)
@@ -148,7 +155,7 @@ class UserMessageInterface {
   agreeWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
   introGreetingWords = ["How you doing", "How you been", 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book another appointment \nPress:\n(1) for Walkin \n(2) to Book`;
-  chooseAppointmentTypeMessage = `Is this for a first available time, book an appointment for today or book for a later date? \nPress: \n(1) for First available\n(2) for Book\n(3) for Later date`;
+  chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
   public generateRandomAgreeWord = () => this.agreeWords[Math.floor(Math.random() * this.agreeWords.length)]
@@ -451,12 +458,23 @@ export class TextSystem {
     database.updateCustomer(phoneNumber, propsToUpdateUser)
   }
 
+  public static sendShopIsClosedMessage(phoneNumber, res){
+    client.messages.create({
+        from: config.TWILIO_PHONE_NUMBER,
+        body: "The shop is currently closed\n",
+        to: phoneNumber
+    })
+    sendBookLaterDateLink(res)
+  }
+
   public async textMessageFlow(req, res, next) {
     const phoneNumber = phoneNumberFormatter(req.body.From)
+    // if shop is closed currently send shop is closed message
+    if(shopIsClosed) return TextSystem.sendShopIsClosedMessage(phoneNumber, res)
 
     try {    
       let customer = await database.findCustomerInDatabase(phoneNumber)
-  
+      
       if (!customer) {
         const sendTextMessage = TextSystem.getTextMessageTwiml(res)
         sendTextMessage(
@@ -512,7 +530,7 @@ export class TextSystem {
     const { phoneNumber } = req.customer
     const { services } = req.customer.session
     let session, appointmentType;
-    if(!validatedResponse) return sendTextMessage(`Is this for the first available time, book an appointment for today or later day? \nPress: \n(1) for First Available\n(2) for Book today\n(3) for Book later date`)
+    if(!validatedResponse) return sendTextMessage(`Would you like to book the first available time, book an appointment for today or later day? \nPress: \n(1) for First Available\n(2) for Book an appointment today\n(3) for Book later date`)
     if(userMessage === '1' || userMessage === '2'){
         appointmentType = userMessage === '1' ? 'Walkin' : 'Book'
     } else {
