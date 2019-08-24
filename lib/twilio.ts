@@ -152,23 +152,25 @@ export async function cancelRecentAppointment(req, res){
 }
 
 class UserMessageInterface {
-  introWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
+  agreeWords = ['Great', 'Thanks', 'Fantastic', "Awesome", 'Amazing', 'Sweet', 'Okay', 'Phenominal'];
   introGreetingWords = ["How you doing", "How you been", 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book another appointment \nPress:\n(1) for Walkin \n(2) to Book`;
   chooseAppointmentTypeMessage = `Is this for a walkin or to book an appointment? \nPress: \n(1) for Walkin\n(2) for Book`;
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
-  public generateRandomAgreeWord = () => this.introWords[Math.floor(Math.random() * this.introWords.length)]
+  public generateRandomAgreeWord = () => this.agreeWords[Math.floor(Math.random() * this.agreeWords.length)]
   public generateRandomGreeting = () => this.introGreetingWords[Math.floor(Math.random() * this.introGreetingWords.length)]
 
   public generateConfirmationMessage(services: SERVICES[], barberName: string, time: string, total: number, noConfirmation: boolean){
+    if(!services.length || !barberName || !time || !total ) throw Error('ERR - error creating confirmation message')
     time = moment(time, 'YYYY-MM-DD HH-mm').format(this.friendlyFormat)
     const message = `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(service => `\n${service.service}`)}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}`
     if(noConfirmation) return message
-    else message.concat('\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO')
+    else return message.concat('\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO')
   }
 
   public generateReminderMessage(services: SERVICES[], barberName: string, time: string, total: number){
+    if(!services.length || !barberName || !time || !total ) throw Error('ERR - error creating reminder message')
     time = moment(time, 'YYYY-MM-DD HH-mm').format('dddd, MMMM Do, h:mm a')
     return `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(service => `\n${service.service}`)} \n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}`
   }
@@ -198,7 +200,7 @@ class UserMessageInterface {
   errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
 }
 
-const UserMessage = new UserMessageInterface()
+export const UserMessage = new UserMessageInterface()
 
 export class PhoneSystem extends UserMessageInterface {
   public async phoneAppointmentFlow(req, res, next) {
