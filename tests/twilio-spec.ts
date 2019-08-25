@@ -21,7 +21,13 @@ describe('User message interface', () => {
             duration: 30,
         },
     ]
-
+    const sampleBarberAvailableTimes = [
+        'Sat, August 24th, 4:30pm',
+        'Sat, August 24th, 4:45pm',
+        'Sat, August 24th, 5:00pm',
+        'Sat, August 24th, 5:15pm',
+        'Sat, August 24th, 5:30pm',
+    ]
     const sampleBarber = 'Kelly'
     const sampleTime = '2023-09-09 13:00'
     const sampleTotal = 40
@@ -103,5 +109,75 @@ Total: $40`
             }
             assert.equal(servicesMessage, message)
         })
+    })
+    describe('generateGetBarberAvailableTimesMessage', () => {
+        it('should be able to generate a message containing all of the barbers available times', () => {
+            const availableTimesMessage = twilio.UserMessage.generateGetBarberAvailableTimesMessage(sampleBarberAvailableTimes)
+            let message = `Here are their available times\nPress:${sampleBarberAvailableTimes.map((slot, i) => `\n\n(${i + 1}) \n${slot}`)}`
+            assert.equal(availableTimesMessage, message)
+        })
+        it('should not generate correct message', () => {
+            const availableTimesMessage = twilio.UserMessage.generateGetBarberAvailableTimesMessage(sampleBarberAvailableTimes)
+            let message = `Here are their available times\nPress:${[]}`
+            assert.equal(availableTimesMessage === message, false)
+        })
+    })
+    describe('generateErrorValidatingAppointmentTime', () => {
+        const sampleBarberAvailableTimes = [
+            'Sat, August 24th, 4:30pm',
+            'Sat, August 24th, 4:45pm',
+            'Sat, August 24th, 5:00pm',
+            'Sat, August 24th, 5:15pm',
+            'Sat, August 24th, 5:30pm',
+        ]
+        it('should be able to generate a message containing all of the barbers available times', () => {
+            const availableTimesMessage = twilio.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+            let message = `You must choose a valid response. Here are their available times\nPress:${sampleBarberAvailableTimes.map((slot, i) => `\n\n(${i + 1}) \n${slot}`)}`
+            assert.equal(availableTimesMessage, message)
+        })
+        it('should not generate correct message', () => {
+            const availableTimesMessage = twilio.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+            let message = `Here are their available times\nPress:${[]}`
+            assert.equal(availableTimesMessage === message, false)
+        })
+    })
+    describe('generateErrorValidatingAppointmentTime', () => {
+        const sampleBarberAvailableTimes = [
+            'Sat, August 24th, 4:30pm',
+            'Sat, August 24th, 4:45pm',
+            'Sat, August 24th, 5:00pm',
+            'Sat, August 24th, 5:15pm',
+            'Sat, August 24th, 5:30pm',
+        ]
+        it('should be able to generate a message containing all of the barbers available times', () => {
+            const availableTimesMessage = twilio.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+            let message = `You must choose a valid response. Here are their available times\nPress:${sampleBarberAvailableTimes.map((slot, i) => `\n\n(${i + 1}) \n${slot}`)}`
+            assert.equal(availableTimesMessage, message)
+        })
+        it('should not generate correct message', () => {
+            const availableTimesMessage = twilio.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+            let message = `Here are their available times\nPress:${[]}`
+            assert.equal(availableTimesMessage === message, false)
+        })
+    })
+    it('confirmedAppointmentMessage', () => {
+        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
+        assert.equal(twilio.UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
+    })
+    it('chooseAppointmentTypeMessage', () => {
+        const chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
+        assert.equal(twilio.UserMessage.chooseAppointmentTypeMessage, chooseAppointmentTypeMessage)
+    })
+    it('friendlyFormat', () => {
+        const friendlyFormat = 'ddd, MMMM Do, h:mm a'
+        assert.equal(twilio.UserMessage.friendlyFormat, friendlyFormat)
+    })
+    it('errorConfirmingAppointmentMessage', () => {
+        const errorConfirmingAppointmentMessage = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) for first available appointment time\n(2) to book an appointment for today\n(3) for later date`
+        assert.equal(twilio.UserMessage.errorConfirmingAppointment, errorConfirmingAppointmentMessage)
+    })
+    it('errorValidatingConfirmingAppointment', () => {
+        const errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
+        assert.equal(twilio.UserMessage.errorValidatingConfirmingAppointment, errorValidatingConfirmingAppointment)
     })
 })

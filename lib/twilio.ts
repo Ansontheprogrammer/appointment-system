@@ -203,7 +203,7 @@ class UserMessageInterface {
     return `Which barber would you like today? Press: \n${barbersInShop.map((barber, index) =>  `\n(${index + 1}) for ${barber}`)}`
   }
 
-  errorConfirmingAppointment = `Okay, let's fix it. Just text me when you are ready to restart. \n(1) for Walkin\n(2) for Book`
+  errorConfirmingAppointment = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) for first available appointment time\n(2) to book an appointment for today\n(3) for later date`
   errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
 }
 
