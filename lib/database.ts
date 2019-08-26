@@ -7,7 +7,7 @@ admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
 });
 
-let db = admin.firestore();
+export const db = admin.firestore();
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
 
