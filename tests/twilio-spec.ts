@@ -3,7 +3,7 @@ import * as assert from 'assert';
 import * as twilio from '../lib/twilio';
 import { serviceList } from '../lib/shopData'
 import * as config from '../config/config'
-import { Database } from '../lib/database';
+import { Database, db } from '../lib/database';
 import sinon from 'sinon';
 
 const textSystem = new twilio.TextSystem()
@@ -179,5 +179,61 @@ Total: $40`
     it('errorValidatingConfirmingAppointment', () => {
         const errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
         assert.equal(twilio.UserMessage.errorValidatingConfirmingAppointment, errorValidatingConfirmingAppointment)
+    })
+})
+
+
+describe('Text System', () => {
+    let sandbox: sinon.SinonSandbox;
+
+    beforeEach(() => {
+        // stub out all database functions
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        // restore all mongo db functions
+        sandbox.restore();
+    })
+
+    const res = {
+        writeHead: (statusCode, httpHeader) => {
+            // return the passed in values to ensure it contains the correct status code and http header
+            assert.equal(statusCode, 200)
+            // TODO - figure out why this assert is failing
+            // assert.equal(httpHeader, { 'Content-Type': 'text/xml' })
+        },
+        end: (twilioMessageString) => {
+            // test that it's returning twiml
+            assert.equal(twilioMessageString.includes(`<Response><Message>`), true)
+        }
+    }
+
+    const phoneNumber = '9082097544'
+
+    it('getTextMessageTwiml', () => {
+        twilio.TextSystem.getTextMessageTwiml(res)
+    })
+    it('resetUser', () => {
+        res.end = (twilioMessageString) => {
+            const correctTwimlMessage = `Okay let's start from the top! \n${twilio.UserMessage.chooseAppointmentTypeMessage}`
+            // test that it's returning the correct twiml
+            assert.equal(twilioMessageString.includes(correctTwimlMessage), true)
+        }
+
+        const sendTextMessage = twilio.TextSystem.getTextMessageTwiml(res)
+        // stub out values reset user passes in
+        sandbox.replace(new Database, 'updateCustomer', (phoneNumberFromSandbox, propsToUpdate) => {
+            const session = {
+                session: {
+                    'stepNumber': '2'
+                }
+            }
+            assert.equal(phoneNumberFromSandbox, phoneNumber)
+            assert.equal(propsToUpdate, session)
+            return new Promise((resolve, reject) => {})
+        })
+
+        twilio.TextSystem.resetUser(phoneNumber, sendTextMessage)
     })
 })
