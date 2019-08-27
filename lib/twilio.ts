@@ -46,10 +46,11 @@ const barberShopAvailablilty = {
 }
 
 // store a variable containing if the shop is closed or not.
-const shopIsClosed = (() => {
+export const getShopIsClosedStatus = ((closed?: boolean) => {
+    if(closed) return true
     const currentTime = new Date().getHours();
     return currentTime < parseInt(barberShopAvailablilty.open) || currentTime > parseInt(barberShopAvailablilty.closed)
-})()
+})
 
 export function phoneNumberFormatter(phoneNumber: string) {
     if (phoneNumber[0] === '+') return phoneNumber.slice(2)
@@ -217,7 +218,8 @@ export class PhoneSystem extends UserMessageInterface {
         if shop is closed currently send shop is closed message
         sending twiml before creating gather twiml to avoid latency issues
     */
-    if(shopIsClosed) {
+    if(getShopIsClosedStatus
+    (false)) {
         twiml.say(`The shop is closed currently. I'm sending you a link to book an appointment at a later date`, {
             voice: 'Polly.Salli'
         })
@@ -487,7 +489,8 @@ export class TextSystem {
   public async textMessageFlow(req, res, next) {
     const phoneNumber = phoneNumberFormatter(req.body.From)
     // if shop is closed currently send shop is closed message
-    if(shopIsClosed) return sendShopIsClosedMessage(phoneNumber, res)
+    if(getShopIsClosedStatus
+    (false)) return sendShopIsClosedMessage(phoneNumber, res)
 
     try {    
       let customer = await database.findCustomerInDatabase(phoneNumber)
