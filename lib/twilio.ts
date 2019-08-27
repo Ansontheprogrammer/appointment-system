@@ -150,7 +150,7 @@ export function createBarber(req, res, next) {
     }, next)
 }
 
-export function sendShopIsClosedMessage(phoneNumber, res){
+export function sendShopIsClosedMessage(phoneNumber){
     client.messages.create({
         from: config.TWILIO_PHONE_NUMBER,
         body: "The shop is currently closed\n",
@@ -489,8 +489,10 @@ export class TextSystem {
   public async textMessageFlow(req, res, next) {
     const phoneNumber = phoneNumberFormatter(req.body.From)
     // if shop is closed currently send shop is closed message
-    if(getShopIsClosedStatus
-    (false)) return sendShopIsClosedMessage(phoneNumber, res)
+    if(getShopIsClosedStatus(false)) {
+      console.log('message called')
+      return sendShopIsClosedMessage(phoneNumber)
+    }
 
     try {    
       let customer = await database.findCustomerInDatabase(phoneNumber)
