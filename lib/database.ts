@@ -14,13 +14,15 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
 // subscribe to barbers
 export let barbersInShop = [];
 
-db
+export const setBarbersInShop = (() => {
+  db
   .collection("barbers")
   .get()
   .then(snapshot => {
     const barberData = snapshot.docs.map(doc => doc.id)
     barbersInShop = barberData
   })
+})()
 
 export type BARBER = {
   phoneNumber: string
@@ -82,10 +84,27 @@ export class Database {
     const { phoneNumber, firstName } = customer
     
     const appointment = { phoneNumber, firstName, details, uuid: uuid() }
-    let docRef = db.collection('barbers').doc(barberFirstName)
+    
     try {
+      // // confirm that the customer does not have this time chosen by anyother barber
+      // let barberAppointments;
+      // await db
+      // .collection("barbers")
+      // .get()
+      // .then(snapshot => {
+      //   barberAppointments = snapshot.docs
+      //   .map(doc => [doc.get('appointments'), doc.id])
+      //   .map((data: any) => [data[0].map(appointment => appointment.details), data[1]])
+      //   // .filter((barberData) => {
+      //   //   return barberData[0].find(details => details === (details as any).time)
+      //   // })
+      // })
+      
+      // console.log(barberAppointments[0][0], 'barberAppointments')
+      
+      let docRef = await db.collection('barbers').doc(barberFirstName)
       let barber = await docRef.get()
-      let appointments = barber.get('appointments')
+      let appointments = await barber.get('appointments')
       if (appointments) {
         let newAppointmentsArray = appointments.concat(appointment)
         await docRef.update({ appointments: newAppointmentsArray });

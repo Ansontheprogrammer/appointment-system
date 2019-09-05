@@ -19,8 +19,8 @@ export type BARBER_APPOINTMENTS = {
   customer: CUSTOMER,
   details: {
     time: ALLOCATED_TIMES,
-    total,
-    duration
+    total: number,
+    duration: number
   }
 }
 
