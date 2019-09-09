@@ -1204,12 +1204,19 @@ export class AppSystem {
   }
 
   public async notifyBarber(req, res, next) {
-    const { client, phoneNumber, barberName } = req.body
-
+    const { customer, barberName } = req.body
+    const { phoneNumber, name } = customer
+    let date = customer.date
+    date = moment(date, 'YYYY-MM-DD HH:mm').format('ddd, MMM Do, h:mm a')
+    const message = `${name} just canceled their appointment for ${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
     const barberData = await database.findBarberInDatabase(barberName)
 
-    // TODO: Add barber phone number to db
-    res.send({ client, phoneNumber, barberName })
+    client.messages.create({
+      from: config.TWILIO_PHONE_NUMBER,
+      body: message,
+      to: '9082097544'
+    })
+    res.sendStatus(200)
   }
 
   public async getBarberAvailableTimes(req, res, next) {
