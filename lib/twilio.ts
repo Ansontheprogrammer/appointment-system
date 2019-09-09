@@ -1209,7 +1209,7 @@ export class AppSystem {
     const barberData = await database.findBarberInDatabase(barberName)
 
     // TODO: Add barber phone number to db
-    res.send({ msg: 'notify text' })
+    res.send({ client, phoneNumber, barberName })
   }
 
   public async getBarberAvailableTimes(req, res, next) {
