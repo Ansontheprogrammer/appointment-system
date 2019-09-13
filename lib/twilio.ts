@@ -10,6 +10,7 @@ import {
 import { serviceList, SERVICES } from './shopData'
 import { createJob } from './cron'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
+import { formatToCronTime } from '../utils'
 import moment from 'moment'
 
 export const client: any = twilio(
@@ -1140,6 +1141,7 @@ export class AppSystem {
     const barberInDatabase = await (database.findBarberInDatabase(
       barber
     ) as any)
+
     const firstAvailableTime = getBarberAppointments(
       services,
       barberInDatabase
@@ -1172,30 +1174,25 @@ export class AppSystem {
     }
 
     await database.addAppointment(barber, customer, appointmentData)
-    const dateWithTimeZone = new Date().toLocaleString('en-US', {
-      timeZone: 'America/Mexico_City'
-    })
-    const currDate = new Date(dateWithTimeZone)
+
     const currentHour = moment().format('H')
-    let date = currDate.getDate()
 
     // handle if barbershop is closed
     if (parseInt(currentHour) > parseInt(barberShopAvailablilty.closed)) {
       return res.send('Barbershop is closed').status(400)
     }
 
-    const minutes = moment(firstAvailableTime, 'HH:mm').format('m')
-    const alertHour = currentHour.includes('pm')
-      ? parseInt(currentHour) + 12
-      : parseInt(currentHour) - 1
     const reminderMessage = UserMessage.generateReminderMessage(
       services,
       barber,
       firstAvailableTime,
       total
     )
+
+    console.log('TEST: ', formatToCronTime(firstAvailableTime))
+
     createJob(
-      `0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`,
+      formatToCronTime(firstAvailableTime),
       phoneNumber,
       reminderMessage
     )
@@ -1248,8 +1245,7 @@ export class AppSystem {
     const phoneNumber = phoneNumberFormatter(req.body.phoneNumber)
     // remove first element if empty
     if (!Object.keys(services[0]).length) services.shift()
-    const dayOfMonth = moment(date, 'MM-DD-YYYY').format('DD')
-    const month = moment(date, 'MM-DD-YYYY').format('MM')
+
     const dateTime = `${date} ${time}`
     // format dateTime to set appointment and receive confirmation message
     const formattedDateTime = moment(
@@ -1293,26 +1289,14 @@ export class AppSystem {
       to: phoneNumber
     })
 
-    const minutes = moment(
-      dateTime,
-      `MM-DD-YYYY ${UserMessage.friendlyFormat}`
-    ).format('mm')
-    const appointmentHour = moment(
-      dateTime,
-      `MM-DD-YYYY ${UserMessage.friendlyFormat}`
-    ).format('H')
-    const alertHour = parseInt(appointmentHour) - 1
     const reminderMessage = UserMessage.generateReminderMessage(
       services,
       barber,
       dateTime,
       total
     )
-    createJob(
-      `0 ${minutes} ${alertHour} ${dayOfMonth} ${month} *`,
-      phoneNumber,
-      reminderMessage
-    )
+
+    createJob(formatToCronTime(formattedDateTime), phoneNumber, reminderMessage)
 
     res.sendStatus(200)
   }
