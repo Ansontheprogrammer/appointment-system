@@ -268,7 +268,7 @@ export async function sendBookLaterDateLink(phoneNumber: string) {
   })
 }
 
-export async notifyBarber(req, res, next) {
+export async function notifyBarber(req, res, next) {
     const { customer, barberName } = req.body
     const { phoneNumber, name } = customer
     let date = customer.date
