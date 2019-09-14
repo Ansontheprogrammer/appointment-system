@@ -1,7 +1,7 @@
 import { phoneNumberFormatter, 
   shopIsClosed, 
   validateMessage, 
-  } from '../utils'
+  } from '../../config/utils'
 import { 
   database, 
   getBarberAppointments, 

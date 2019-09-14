@@ -2,7 +2,7 @@ import { phoneNumberFormatter,
   shopIsClosed, 
   extractText, 
   validateMessage, 
-  extractedNumbers} from '../utils'
+  extractedNumbers} from '../../config/utils'
 import { 
   database, 
   getBarberAppointments, 

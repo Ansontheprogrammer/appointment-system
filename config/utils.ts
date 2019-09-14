@@ -1,4 +1,4 @@
-import * as twilioLib from './twilio'
+import * as twilioLib from '../lib/twilio'
 
 // store a variable containing if the shop is closed or not.
 export const shopIsClosed = (() => {
