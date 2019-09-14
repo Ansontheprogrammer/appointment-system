@@ -336,8 +336,7 @@ export class TextBookAppointmentInterface extends TextSystem {
           appointmentData
         )
         const currDate = getDate()
-        const currentTime = parseInt(moment().format('H'))
-        let date = currDate.getDate()
+        let date = currDate.date()
         const minutes = moment(time, 'h:mm a').format('m')
         const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
         const alertHour = appointmentHour.includes('pm')
@@ -350,7 +349,7 @@ export class TextBookAppointmentInterface extends TextSystem {
           total
         )
         createJob(
-          `0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`,
+          `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
           phoneNumber,
           reminderMessage
         )
@@ -471,7 +470,7 @@ export class TextBookAppointmentInterface extends TextSystem {
   
         const currDate = getDate()
         const currentTime = parseInt(moment().format('H'))
-        let date = currDate.getDate()
+        let date = currDate.date()
   
         // check if barbershop is closed and move the user to make an appointment for the next day
         if (currentTime > parseInt(barberShopAvailablilty.closed)) date += 1
@@ -488,7 +487,7 @@ export class TextBookAppointmentInterface extends TextSystem {
           total
         )
         createJob(
-          `0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`,
+          `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
           phoneNumber,
           reminderMessage
         )
