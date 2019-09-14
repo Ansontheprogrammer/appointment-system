@@ -3,10 +3,8 @@ import * as assert from 'assert';
 import * as twilioLib from '../lib/twilio';
 import serviceList from '../lib/shopData'
 import { TextSystem } from '../lib/flow/smsFlow'
-import { Database, db } from '../lib/database';
+import { Database } from '../lib/database';
 import sinon from 'sinon';
-
-const textSystem = new TextSystem()
 
 describe('User message interface', () => {
     const sampleServices = [
