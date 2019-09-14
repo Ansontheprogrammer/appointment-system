@@ -8,6 +8,7 @@ import serviceList from './shopData'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
+import { getDate } from '../config/utils';
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
@@ -67,7 +68,7 @@ export function getBarberAppointments(
   const currentDateAndTime = moment()
   const currentTime = parseInt(currentDateAndTime.format('H'))
   let from = currentDateAndTime.format('YYYY-MM-DD')
-  const currentDayOfTheWeek = new Date().getDay()
+  const currentDayOfTheWeek = getDate().getDay()
   // check if barbershop is closed and move the user to make an appointment for the next day
   if (
     currentTime > parseInt(barberShopAvailablilty.closed) ||

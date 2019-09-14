@@ -1,6 +1,7 @@
 import { phoneNumberFormatter, 
   shopIsClosed, 
-  validateMessage, 
+  validateMessage,
+  getDate, 
   } from '../../config/utils'
 import { 
   database, 
@@ -295,10 +296,7 @@ export default class PhoneSystem extends UserMessageInterface {
       try {
         await database.addAppointment(barber, { phoneNumber, firstName }, details)
   
-        let dateWithTimeZone = new Date().toLocaleString('en-US', {
-          timeZone: 'America/Mexico_City'
-        })
-        let currDate = new Date(dateWithTimeZone)
+        let currDate = getDate()
   
         const minutes = moment(time, 'h:mm a').format('m')
         const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')

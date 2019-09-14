@@ -3,7 +3,8 @@ import {
   extractText, 
   validateMessage, 
   extractedNumbers,
-  shopIsClosed
+  shopIsClosed,
+  getDate
 } from '../../config/utils'
 import { 
   database, 
@@ -334,10 +335,7 @@ export class TextBookAppointmentInterface extends TextSystem {
           { phoneNumber, firstName },
           appointmentData
         )
-        const dateWithTimeZone = new Date().toLocaleString('en-US', {
-          timeZone: 'America/Mexico_City'
-        })
-        const currDate = new Date(dateWithTimeZone)
+        const currDate = getDate()
         const currentTime = parseInt(moment().format('H'))
         let date = currDate.getDate()
         const minutes = moment(time, 'h:mm a').format('m')
@@ -471,10 +469,7 @@ export class TextBookAppointmentInterface extends TextSystem {
           next(err)
         }
   
-        const dateWithTimeZone = new Date().toLocaleString('en-US', {
-          timeZone: 'America/Mexico_City'
-        })
-        const currDate = new Date(dateWithTimeZone)
+        const currDate = getDate()
         const currentTime = parseInt(moment().format('H'))
         let date = currDate.getDate()
   
