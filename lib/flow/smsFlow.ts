@@ -43,19 +43,14 @@ export class TextSystem {
   
     public async textMessageFlow(req, res, next) {
       const phoneNumber = phoneNumberFormatter(req.body.From)
-
+      
       try {
         let customer = await database.findCustomerInDatabase(phoneNumber)
-        const userMessage: string = extractText(req.body.Body)
 
-        // Handle if the user would like to cancel the most recent appointment
-        if (userMessage.toLowerCase() === 'remove') {
-          return cancelRecentAppointment(req, res)
-        }
-        // Send user a message if they would like to continue in the flow and the shop is closed
-        if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
-  
         if (!customer) {
+          // Send user a message if they would like to continue in the flow and the shop is closed
+          if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
+  
           const sendTextMessage = TextSystem.getTextMessageTwiml(res)
           sendTextMessage(
             `${UserMessage.generateRandomGreeting()}, this is Fades of Grey appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
@@ -64,14 +59,20 @@ export class TextSystem {
           return
         } else {
           req.customer = customer
+          const userMessage: string = extractText(req.body.Body)
 
+          // Handle if the user would like to cancel the most recent appointment
+          if (userMessage.toLowerCase() === 'remove') {
+            return cancelRecentAppointment(req, res)
+          }
           // Handle if the user would like to reset the flow
           if (userMessage.toLowerCase() === 'reset') {
             const sendTextMessage = TextSystem.getTextMessageTwiml(res)
             return TextSystem.resetUser(req.customer.phoneNumber, sendTextMessage)
           }
     
-          
+          // Send user a message if they would like to continue in the flow and the shop is closed
+          if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
           
           // Send user to the next step
           next()
