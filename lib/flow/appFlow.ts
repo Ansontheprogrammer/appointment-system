@@ -87,15 +87,6 @@ export class AppSystem {
     res.sendStatus(200)
   }
 
-  public async notifyBarber(req, res, next) {
-    const { client, phoneNumber, barberName } = req.body
-
-    const barberData = await database.findBarberInDatabase(barberName)
-
-    // TODO: Add barber phone number to db
-    res.send({ client, phoneNumber, barberName })
-  }
-
   public async getBarberAvailableTimes(req, res, next) {
     // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
     const { barber, fromDate, services } = req.body

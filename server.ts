@@ -3,11 +3,10 @@ import express from 'express'
 import PhoneSystem from './lib/flow/phoneFlow'
 import { TextSystem } from './lib/flow/smsFlow'
 import { AppSystem } from './lib/flow/appFlow'
-import { createBarber } from './lib/twilio'
+import { createBarber, notifyBarber } from './lib/twilio'
 
 import * as flow from './config/flow'
 import cors from 'cors'
-import { apps } from 'firebase-admin'
 
 const phoneSystem = new PhoneSystem()
 const textSystem = new TextSystem()
@@ -31,7 +30,7 @@ app.post('/api/confirmation', phoneSystem.confirmation)
 app.post('/api/bookAppointment', appSystem.bookAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
-app.post('/api/notifyBarber', appSystem.notifyBarber)
+app.post('/api/notifyBarber', notifyBarber)
 // Text system
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
