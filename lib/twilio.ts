@@ -283,7 +283,7 @@ export async function notifyBarber(req, res, next) {
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
     body: message,
-    to: '9082097544'
+    to: barberData.phoneNumber
   })
   res.sendStatus(200)
 }
