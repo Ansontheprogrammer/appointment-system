@@ -207,8 +207,10 @@ export class UserMessageInterface {
     total: number
   ) {
 
-    if (!services.length || !barberName || !time || !total)
+    if (!services.length || !barberName || !time || !total) {
       throw Error('ERR - error creating reminder message')
+    }
+
     time = moment(time, 'YYYY-MM-DD HH:mm').format('dddd, MMMM Do, h:mm a')
     return `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(
       service => `\n${service.service}`
@@ -250,7 +252,7 @@ export const UserMessage = new UserMessageInterface()
 
 export async function cancelRecentAppointment(req, res) {
   const { phoneNumber, uuid } = req.customer
-  const url = `eclipperz.netlify.com/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
+  const url = `fadesofgray.netlify.com/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
   const message = `Here's a link to cancel your appointment \n${url}`
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
@@ -260,7 +262,7 @@ export async function cancelRecentAppointment(req, res) {
 }
 
 export async function sendBookLaterDateLink(phoneNumber: string) {
-  const url = `https://eclipperz.netlify.com/cue`
+  const url = `https://fadesofgray.netlify.com/cue`
   const message = `Here's a link to book at a later date ${url}`
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
