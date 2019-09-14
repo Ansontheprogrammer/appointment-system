@@ -2,13 +2,13 @@ import * as twilioLib from '../lib/twilio'
 import { DETAILS } from '../lib'
 
 // store a variable containing if the shop is closed or not.
-export const shopIsClosed = (() => {
+export const shopIsClosed = () => {
     const currentTime = new Date().getHours()
     return (
       currentTime < parseInt(twilioLib.barberShopAvailablilty.open) ||
       currentTime > parseInt(twilioLib.barberShopAvailablilty.closed)
     )
-  })()
+  }
   
   export function phoneNumberFormatter(phoneNumber: string) {
     if (phoneNumber[0] === '+') return phoneNumber.slice(2)

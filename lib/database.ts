@@ -10,8 +10,6 @@ admin.initializeApp({
 
 export const db = admin.firestore();
 
-process.env.GOOGLE_APPLICATION_CREDENTIALS = './config/credentials.json'
-
 // subscribe to barbers
 export let barbersInShop = [];
 

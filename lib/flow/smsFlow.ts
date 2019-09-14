@@ -1,17 +1,20 @@
-import { phoneNumberFormatter, 
-  shopIsClosed, 
+import { 
+  phoneNumberFormatter, 
   extractText, 
   validateMessage, 
-  extractedNumbers} from '../../config/utils'
+  extractedNumbers,
+  shopIsClosed
+} from '../../config/utils'
 import { 
   database, 
   getBarberAppointments, 
   UserMessage, 
-  sendShopIsClosedMessage, 
+  sendshopIsClosedMessage, 
   cancelRecentAppointment, 
-  sendBookLaterDateLink
+  sendBookLaterDateLink,
+  MessagingResponse,
+  barberShopAvailablilty
 } from '../twilio'
-import { barberShopAvailablilty, MessagingResponse } from '../twilio'
 import { barbersInShop } from '../database'
 import serviceList from '../shopData'
 import moment from 'moment';
@@ -40,8 +43,8 @@ export class TextSystem {
   
     public async textMessageFlow(req, res, next) {
       const phoneNumber = phoneNumberFormatter(req.body.From)
-      // if shop is closed currently send shop is closed message
-      if (shopIsClosed) return sendShopIsClosedMessage(phoneNumber, res)
+
+      if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
   
       try {
         let customer = await database.findCustomerInDatabase(phoneNumber)
@@ -53,25 +56,25 @@ export class TextSystem {
           )
           customer = await database.createCustomer(phoneNumber)
           return
+        } else {
+          req.customer = customer
+  
+          const userMessage: string = extractText(req.body.Body)
+          // Handle if the user would like to reset the flow
+    
+          if (userMessage.toLowerCase() === 'reset') {
+            const sendTextMessage = TextSystem.getTextMessageTwiml(res)
+            return TextSystem.resetUser(req.customer.phoneNumber, sendTextMessage)
+          }
+    
+          // Handle if the user would like to cancel the most recent appointment
+          if (userMessage.toLowerCase() === 'remove') {
+            return cancelRecentAppointment(req, res)
+          }
+    
+          // Send user to the next step
+          next()
         }
-  
-        req.customer = customer
-  
-        const userMessage: string = extractText(req.body.Body)
-        // Handle if the user would like to reset the flow
-  
-        if (userMessage.toLowerCase() === 'reset') {
-          const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-          return TextSystem.resetUser(req.customer.phoneNumber, sendTextMessage)
-        }
-  
-        // Handle if the user would like to cancel the most recent appointment
-        if (userMessage.toLowerCase() === 'remove') {
-          return cancelRecentAppointment(req, res)
-        }
-  
-        // Send user to the next step
-        next()
       } catch (err) {
         next(err)
       }

@@ -27,7 +27,7 @@ export default class PhoneSystem extends UserMessageInterface {
           if shop is closed currently send shop is closed message
           sending twiml before creating gather twiml to avoid latency issues
       */
-      if (shopIsClosed) {
+      if (shopIsClosed()) {
         twiml.say(
           `The shop is closed currently. I'm sending you a link to book an appointment at a later date`,
           {

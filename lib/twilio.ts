@@ -7,7 +7,6 @@ import {
 import serviceList from './shopData'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
-import { formatToCronTime } from '../utils'
 import moment from 'moment'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -149,7 +148,7 @@ export function createBarber(req, res, next) {
   }, next)
 }
 
-export function sendShopIsClosedMessage(phoneNumber, res) {
+export function sendshopIsClosedMessage(phoneNumber, res) {
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
     body: 'The shop is currently closed\n',
