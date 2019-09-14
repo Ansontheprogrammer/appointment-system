@@ -233,7 +233,7 @@ class UserMessageInterface {
     this.agreeWords[Math.floor(Math.random() * this.agreeWords.length)]
   public generateRandomGreeting = () =>
     this.introGreetingWords[
-      Math.floor(Math.random() * this.introGreetingWords.length)
+    Math.floor(Math.random() * this.introGreetingWords.length)
     ]
 
   public generateConfirmationMessage(
@@ -245,7 +245,7 @@ class UserMessageInterface {
   ) {
     if (!services.length || !barberName || !time || !total)
       throw Error('ERR - error creating confirmation message')
-    time = moment(time, 'YYYY-MM-DD HH-mm').format(this.friendlyFormat)
+    time = moment(time, 'YYYY-MM-DD HH:mm').format(this.friendlyFormat)
     const message = `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(
       service => `\n${service.service}`
     )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}`
@@ -262,9 +262,11 @@ class UserMessageInterface {
     time: string,
     total: number
   ) {
+
+    console.log('TIME: ', time)
     if (!services.length || !barberName || !time || !total)
       throw Error('ERR - error creating reminder message')
-    time = moment(time, 'YYYY-MM-DD HH-mm').format('dddd, MMMM Do, h:mm a')
+    time = moment(time, 'YYYY-MM-DD HH:mm').format('dddd, MMMM Do, h:mm a')
     return `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(
       service => `\n${service.service}`
     )} \n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}`
@@ -1292,7 +1294,7 @@ export class AppSystem {
     const reminderMessage = UserMessage.generateReminderMessage(
       services,
       barber,
-      dateTime,
+      formattedDateTime,
       total
     )
 
