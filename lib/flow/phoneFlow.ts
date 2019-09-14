@@ -19,7 +19,7 @@ import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 
-export class PhoneSystem extends UserMessageInterface {
+export default class PhoneSystem extends UserMessageInterface {
     public async phoneAppointmentFlow(req, res, next) {
       const phoneNumber = phoneNumberFormatter(res.req.body.From)
       const twiml = new VoiceResponse()

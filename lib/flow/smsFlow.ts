@@ -189,7 +189,7 @@ export class TextSystem {
     }
   }
   
-  export class TextBookAppointmentInterface extends TextSystem {
+export class TextBookAppointmentInterface extends TextSystem {
     public async textChoseApproximateTime(req, res, next) {
       const userMessage: string = extractText(req.body.Body)
       const sendTextMessage = TextSystem.getTextMessageTwiml(res)
