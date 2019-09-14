@@ -301,9 +301,9 @@ export default class PhoneSystem extends UserMessageInterface {
         const minutes = moment(time, 'h:mm a').format('m')
         const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
         const alertHour = parseInt(appointmentHour) - 1
-        let date = currDate.getDate()
+        let date = currDate.date()
         createJob(
-          `0 ${minutes} ${alertHour} ${date} ${currDate.getMonth()} *`,
+          `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
           phoneNumber,
           reminderMessage
         )
