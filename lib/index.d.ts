@@ -24,6 +24,15 @@ export type CUSTOMER = {
     }
   }
 
+  export type DETAILS = {
+    services: any[],
+    time: { 
+      duration: number, 
+      from: string 
+    },
+    total: number
+  }
+
   export type BARBER_APPOINTMENTS = {
     customer: CUSTOMER
     details: {
