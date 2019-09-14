@@ -1,13 +1,17 @@
 import bodyParser from 'body-parser'
 import express from 'express'
-import * as twilioLib from './lib/twilio'
+import PhoneSystem from './lib/flow/phoneFlow'
+import { TextSystem } from './lib/flow/smsFlow'
+import { AppSystem } from './lib/flow/appFlow'
+import { createBarber } from './lib/twilio'
+
 import * as flow from './config/flow'
 import cors from 'cors'
 import { apps } from 'firebase-admin'
 
-const phoneSystem = new twilioLib.PhoneSystem()
-const textSystem = new twilioLib.TextSystem()
-const appSystem = new twilioLib.AppSystem()
+const phoneSystem = new PhoneSystem()
+const textSystem = new TextSystem()
+const appSystem = new AppSystem()
 
 export const app = express()
 
@@ -31,7 +35,7 @@ app.post('/api/notifyBarber', appSystem.notifyBarber)
 // Text system
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
-app.post('/api/createBarber', twilioLib.createBarber)
+app.post('/api/createBarber', createBarber)
 app.get('/api/ping', (req, res, next) => {
   res.sendStatus(200)
 })

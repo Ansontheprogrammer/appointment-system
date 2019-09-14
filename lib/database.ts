@@ -1,6 +1,6 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
-import * as twilioLib from './twilio';
+import * as types from './';
 import uuid from 'uuid/v1'
 
 admin.initializeApp({
@@ -23,32 +23,6 @@ export const setBarbersInShop = (() => {
     barbersInShop = barberData
   })
 })()
-
-export type BARBER = {
-  phoneNumber: string
-  email: string
-  name: string
-  appointments: [
-    twilioLib.BARBER_APPOINTMENTS
-  ],
-  unavailabilities: {
-    lunch: twilioLib.UNAVAILABLETIMES
-    offDays: twilioLib.UNAVAILABLETIMES[],
-    vacations: twilioLib.UNAVAILABLETIMES[],
-    unavailableTimes: twilioLib.UNAVAILABLETIMES[]
-  }
-}
-
-export type CUSTOMER = {
-  phoneNumber: string
-  firstName: string
-  stepNumber?: string
-}
-
-export type ALLOCATED_TIMES = {
-  from: string, 
-  duration: number
-}
 
 export class Database {
   public static firstLetterUpperCase(string) {
@@ -86,22 +60,6 @@ export class Database {
     const appointment = { phoneNumber, firstName, details, uuid: uuid() }
     
     try {
-      // // confirm that the customer does not have this time chosen by anyother barber
-      // let barberAppointments;
-      // await db
-      // .collection("barbers")
-      // .get()
-      // .then(snapshot => {
-      //   barberAppointments = snapshot.docs
-      //   .map(doc => [doc.get('appointments'), doc.id])
-      //   .map((data: any) => [data[0].map(appointment => appointment.details), data[1]])
-      //   // .filter((barberData) => {
-      //   //   return barberData[0].find(details => details === (details as any).time)
-      //   // })
-      // })
-      
-      // console.log(barberAppointments[0][0], 'barberAppointments')
-      
       let docRef = await db.collection('barbers').doc(barberFirstName)
       let barber = await docRef.get()
       let appointments = await barber.get('appointments')
@@ -115,7 +73,7 @@ export class Database {
 
   }
 
-  public createBarber(barberInfo: BARBER) {
+  public createBarber(barberInfo: types.BARBER) {
     // Assign step number field before saving
     barberInfo = Object.assign(barberInfo, { appointments: [] })
     barberInfo.name = Database.firstLetterUpperCase(barberInfo.name)
