@@ -63,12 +63,8 @@ export class AppSystem {
     }
 
     await database.addAppointment(barber, customer, appointmentData)
-    const dateWithTimeZone = new Date().toLocaleString('en-US', {
-      timeZone: 'America/Mexico_City'
-    })
-    const currDate = new Date(dateWithTimeZone)
+
     const currentHour = moment().format('H')
-    let date = currDate.getDate()
 
     // handle if barbershop is closed
     if (parseInt(currentHour) > parseInt(barberShopAvailablilty.closed)) {

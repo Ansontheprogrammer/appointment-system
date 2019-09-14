@@ -11,3 +11,16 @@ export const formatToCronTime = time => {
 
   return `0 ${minutes} ${alertHour} ${dayOfMonth} ${month} *`
 }
+
+export const testCronDate = () => {
+  const dateWithTimeZone = new Date().toLocaleString('en-US', {
+    timeZone: 'America/Mexico_City'
+  })
+  const currDate = new Date(dateWithTimeZone)
+  const currentHour = moment().format('H')
+  const dayOfMonth = currDate.getDate()
+  const minutes = currDate.getMinutes()
+  const month = currDate.getMonth()
+
+  return `0 ${minutes + 2} ${currentHour} ${dayOfMonth} ${month} *`
+}
