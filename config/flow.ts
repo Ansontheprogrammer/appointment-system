@@ -2,6 +2,7 @@ import { TextSystem, TextBookAppointmentInterface, TextWalkInAppointmentInterfac
 const textSystem = new TextSystem
 const textWalkinSystem = new TextWalkInAppointmentInterface();
 const textBookSystem = new TextBookAppointmentInterface();
+
 const steps = {
   // This object will contain the appropriate function in respect to the customer's step number
   '1': textSystem.textGetName,
