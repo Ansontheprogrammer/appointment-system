@@ -2,6 +2,7 @@ import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
 import * as types from './';
 import uuid from 'uuid/v1'
+import { validateAppointmentDetails } from '../config/utils';
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
@@ -54,8 +55,13 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: {}) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS) {
     const { phoneNumber, firstName } = customer
+    const areAppointmentDetailsCorrect = validateAppointmentDetails(details);
+
+    if(!areAppointmentDetailsCorrect.correct){
+      throw Error(areAppointmentDetailsCorrect.msg)
+    }
     
     const appointment = { phoneNumber, firstName, details, uuid: uuid() }
     
