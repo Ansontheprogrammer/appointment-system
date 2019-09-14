@@ -1,4 +1,5 @@
 import * as twilioLib from '../lib/twilio'
+import { DETAILS } from '../lib'
 
 // store a variable containing if the shop is closed or not.
 export const shopIsClosed = (() => {
@@ -35,4 +36,16 @@ export const shopIsClosed = (() => {
       else return extractedNumbers
     }
     return extractedNumbers
+  }
+
+  export function validateAppointmentDetails(details: DETAILS): { correct: boolean, msg?: string} {
+    const errorMessages = {
+      invaildDate: 'Date was invaild'
+    }
+    if(details.time.from === 'Invalid date'){
+      return { correct: false, msg: errorMessages.invaildDate }
+    }
+    else {
+      return { correct: true }
+    }
   }
