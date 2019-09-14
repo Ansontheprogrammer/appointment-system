@@ -8,7 +8,7 @@ import { serviceList } from './shopData'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
-
+import * as utils from './utils'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
@@ -18,7 +18,113 @@ export const MessagingResponse = (twilio as any).twiml.MessagingResponse
 export const database = new Database()
 const scheduler = new Scheduler()
 
-const barberShopAvailablilty = {
+export function getAvailableTimes(
+  duration: number,
+  interval: number,
+  allocatedTimes: types.ALLOCATED_TIMES[],
+  from: string,
+  to: string,
+  barber: types.BARBER
+): TimeAvailability[] {
+  // set time to get available times
+  let fromTime = barberShopAvailablilty.open
+  let toTime = barberShopAvailablilty.closed
+
+  return scheduler.getIntersection({
+    from,
+    to,
+    duration,
+    interval,
+    schedules: [
+      {
+        weekdays: {
+          from: fromTime,
+          to: toTime
+        },
+        saturday: {
+          from: fromTime,
+          to: toTime
+        },
+        unavailability: [
+          {
+            from: `${from} ${barber.unavailabilities.lunch.from}`,
+            to: `${from} ${barber.unavailabilities.lunch.to}}`
+          },
+          ...barber.unavailabilities.offDays,
+          ...barber.unavailabilities.unavailableTimes,
+          ...barber.unavailabilities.vacations
+        ],
+        allocated: allocatedTimes
+      }
+    ]
+  })[from]
+}
+
+export function getBarberAppointments(
+  services: types.SERVICES[],
+  barber: types.BARBER,
+  date?: string
+): string[] {
+  const currentDateAndTime = moment()
+  const currentTime = parseInt(currentDateAndTime.format('H'))
+  let from = currentDateAndTime.format('YYYY-MM-DD')
+  const currentDayOfTheWeek = new Date().getDay()
+  // check if barbershop is closed and move the user to make an appointment for the next day
+  if (
+    currentTime > parseInt(barberShopAvailablilty.closed) ||
+    currentTime < parseInt(barberShopAvailablilty.open)
+  ) {
+    if (currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Monday.index)
+      from = moment(from)
+        .add(barberShopAvailablilty.daysClosed.Monday.nextAvailableDay, 'day')
+        .format('YYYY-MM-DD')
+    else if (
+      currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Sunday.index
+    )
+      from = moment(from)
+        .add(barberShopAvailablilty.daysClosed.Sunday.nextAvailableDay, 'day')
+        .format('YYYY-MM-DD')
+    else
+      from = moment(from)
+        .add(1, 'day')
+        .format('YYYY-MM-DD')
+  }
+
+  if (!!date) from = moment(date).format('YYYY-MM-DD')
+
+  let to = moment(from)
+    .add(1, 'day')
+    .format('YYYY-MM-DD')
+
+  const barbersAllocatedTimes = barber.appointments.map(
+    appointment => appointment.details.time
+  )
+  let totalDuration = 0
+  // sum up total durations
+  services.forEach(service => (totalDuration += service.duration))
+  let availableTimes = getAvailableTimes(
+    totalDuration,
+    15,
+    barbersAllocatedTimes,
+    from,
+    to,
+    barber
+  )
+  if (!availableTimes) return []
+  return formatAllocatedTimes(availableTimes).map(time =>
+    moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm')
+  )
+}
+
+export function formatAllocatedTimes(
+  barbersAllocatedTimes: TimeAvailability[]
+) {
+  return barbersAllocatedTimes
+    .filter(availability => availability.available)
+    .map(availability => moment(availability.time, 'HH:mm').format('h:mm a'))
+}
+
+export const barberShopAvailablilty = {
   open: '10',
   closed: '19',
   daysClosed: {
