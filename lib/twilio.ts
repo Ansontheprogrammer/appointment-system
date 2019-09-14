@@ -8,7 +8,6 @@ import serviceList from './shopData'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
-import * as utils from '../config/utils'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
