@@ -7,6 +7,7 @@ import {
 import serviceList from './shopData'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
+import { formatToCronTime } from '../utils'
 import moment from 'moment'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -177,7 +178,7 @@ export class UserMessageInterface {
     this.agreeWords[Math.floor(Math.random() * this.agreeWords.length)]
   public generateRandomGreeting = () =>
     this.introGreetingWords[
-      Math.floor(Math.random() * this.introGreetingWords.length)
+    Math.floor(Math.random() * this.introGreetingWords.length)
     ]
 
   public generateConfirmationMessage(
@@ -189,7 +190,7 @@ export class UserMessageInterface {
   ) {
     if (!services.length || !barberName || !time || !total)
       throw Error('ERR - error creating confirmation message')
-    time = moment(time, 'YYYY-MM-DD HH-mm').format(this.friendlyFormat)
+    time = moment(time, 'YYYY-MM-DD HH:mm').format(this.friendlyFormat)
     const message = `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(
       service => `\n${service.service}`
     )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}`
@@ -206,9 +207,10 @@ export class UserMessageInterface {
     time: string,
     total: number
   ) {
+
     if (!services.length || !barberName || !time || !total)
       throw Error('ERR - error creating reminder message')
-    time = moment(time, 'YYYY-MM-DD HH-mm').format('dddd, MMMM Do, h:mm a')
+    time = moment(time, 'YYYY-MM-DD HH:mm').format('dddd, MMMM Do, h:mm a')
     return `REMINDER:\nYour appointment is less than an hour away.\nService: ${services.map(
       service => `\n${service.service}`
     )} \n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}`
@@ -276,11 +278,11 @@ export async function notifyBarber(req, res, next) {
     const message = `${name} just canceled their appointment for ${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
     const barberData = await database.findBarberInDatabase(barberName)
 
-    client.messages.create({
-      from: config.TWILIO_PHONE_NUMBER,
-      body: message,
-      to: '9082097544'
-    })
-    res.sendStatus(200)
-  }
+  client.messages.create({
+    from: config.TWILIO_PHONE_NUMBER,
+    body: message,
+    to: '9082097544'
+  })
+  res.sendStatus(200)
+}
 
