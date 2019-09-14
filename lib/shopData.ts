@@ -1,9 +1,3 @@
-export type SERVICES = {
-    service: string,
-    price?: number,
-    duration: number
-}
-
 export const serviceList = {
   1: {
     service: 'Adult Haircut',
