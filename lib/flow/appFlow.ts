@@ -1,4 +1,4 @@
-import * as utils from '../utils'
+import * as utils from '../../config/utils'
 import { database, getBarberAppointments, UserMessage, client} from '../twilio'
 import { barberShopAvailablilty } from '../twilio'
 import config from '../../config/config'
