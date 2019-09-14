@@ -158,7 +158,7 @@ export function sendShopIsClosedMessage(phoneNumber, res) {
   sendBookLaterDateLink(phoneNumber)
 }
 
-class UserMessageInterface {
+export class UserMessageInterface {
   agreeWords = [
     'Great',
     'Thanks',
