@@ -36,7 +36,7 @@ export class AppSystem {
 
 
     if (!firstAvailableTime) {
-      // This barber is booked up for the day
+      // This barber is booked up for the day or shop is closed
       return res.sendStatus(400)
     }
 

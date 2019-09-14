@@ -275,11 +275,11 @@ export async function notifyBarber(req, res, next) {
   const { customer, barberName } = req.body
   const { phoneNumber, name } = customer
   let date = customer.date
-  date = moment(date, 'YYYY-MM-DD HH:mm').format('ddd, MMM Do, h:mm a')
-  const message = `${name} just canceled their appointment for ${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
+  date = moment(date, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
+  const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
   const barberData = await database.findBarberInDatabase(barberName)
 
-  console.log(barberData, 'barberData')
+  
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
     body: message,
