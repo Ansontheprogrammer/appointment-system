@@ -1,4 +1,4 @@
-export const serviceList = {
+export default  {
   1: {
     service: 'Adult Haircut',
     price: 25,

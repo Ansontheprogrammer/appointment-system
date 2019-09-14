@@ -1,8 +1,7 @@
-import * as types from './'
 import * as twilioLib from './twilio'
 
 // store a variable containing if the shop is closed or not.
-const shopIsClosed = (() => {
+export const shopIsClosed = (() => {
     const currentTime = new Date().getHours()
     return (
       currentTime < parseInt(twilioLib.barberShopAvailablilty.open) ||

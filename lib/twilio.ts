@@ -4,7 +4,7 @@ import {
   Database,
   barbersInShop
 } from './database'
-import { serviceList } from './shopData'
+import serviceList from './shopData'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'

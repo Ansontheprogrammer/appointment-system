@@ -5,6 +5,7 @@ import config from '../../config/config'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
+
 export class AppSystem {
     public async walkInAppointment(req, res, next) {
       const { barber, name, services } = req.body
