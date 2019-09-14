@@ -1,6 +1,6 @@
 import 'mocha';
 import * as assert from 'assert';
-import { Database, BARBER } from '../lib/database';
+import { Database } from '../lib/database';
 import sinon from 'sinon';
 
 describe('Database class', () => {

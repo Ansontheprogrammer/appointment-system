@@ -1,7 +1,8 @@
-import * as twilioLib from '../lib/twilio'
-const textSystem = new twilioLib.TextSystem()
-const textWalkinSystem = new twilioLib.TextWalkInAppointmentInterface();
-const textBookSystem = new twilioLib.TextBookAppointmentInterface();
+import { TextSystem, TextBookAppointmentInterface, TextWalkInAppointmentInterface} from '../lib/flow/smsFlow'
+const textSystem = new TextSystem
+const textWalkinSystem = new TextWalkInAppointmentInterface();
+const textBookSystem = new TextBookAppointmentInterface();
+
 const steps = {
   // This object will contain the appropriate function in respect to the customer's step number
   '1': textSystem.textGetName,
