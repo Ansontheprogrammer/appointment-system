@@ -59,6 +59,7 @@ export class TextSystem {
           customer = await database.createCustomer(phoneNumber)
           return
         } else {
+
           req.customer = customer
           const userMessage: string = extractText(req.body.Body)
 
@@ -89,11 +90,13 @@ export class TextSystem {
       const message = `Text (reset) at any time to reset your appointment. \n${UserMessage.chooseAppointmentTypeMessage}`
       const session = Object.assign(req.customer.session, { stepNumber: '2' })
       const propsToUpdateUser = { session, firstName: userMessage }
-  
+      
       sendTextMessage(message)
   
       try {
-        await database.updateCustomer(req.customer.phoneNumber, propsToUpdateUser)
+        if(!req.customer.firstName){
+          await database.updateCustomer(req.customer.phoneNumber, propsToUpdateUser)
+        }
       } catch (err) {
         next(err)
       }

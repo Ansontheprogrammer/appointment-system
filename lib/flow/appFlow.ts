@@ -5,7 +5,7 @@ import config from '../../config/config'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
-import { formatToCronTime } from '../../utils'
+import { formatToCronTime } from '../../config/utils'
 
 export class AppSystem {
   public async walkInAppointment(req, res, next) {

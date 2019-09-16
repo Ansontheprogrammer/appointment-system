@@ -1,5 +1,5 @@
 import * as assert from 'assert'
-import { formatToCronTime } from '../utils'
+import { formatToCronTime } from '../config/utils'
 
 describe('Cron job time formatter', () => {
   it('should format dateTime to correct cron format', () => {
