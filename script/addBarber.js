@@ -19,9 +19,12 @@ request.post(url).form({
         ]
     }
 })
+
+
 request.post(url).form({
     name: 'Anthony',
     email: '',
+    appointments: [],
     unavailabilities: {
         lunch: { from : '13:00', to: '14:00' },
         vacations: [
@@ -38,6 +41,7 @@ request.post(url).form({
 request.post(url).form({
     name: 'Jimmy',
     email: '',
+    appointments: [],
     unavailabilities: {
         lunch: { from : '13:00', to: '14:00' },
         vacations: [
@@ -52,10 +56,10 @@ request.post(url).form({
     }
 })
 
-// barberSharp 
 // request.post(url).form({
 //     name: 'Jesse',
 //     email: '',
+//     appointments: [],
 //     unavailabilities: {
 //         lunch: { from : '13:00', to: '14:00' },
 //         vacations: [
@@ -73,6 +77,7 @@ request.post(url).form({
 // request.post(url).form({
 //     name: 'Kelly',
 //     email: '',
+//     appointments: [],
 //     unavailabilities: {
 //         lunch: { from : '13:00', to: '14:00' },
 //         vacations: [
@@ -90,6 +95,7 @@ request.post(url).form({
 // request.post(url).form({
 //     name: 'Ryan',
 //     email: '',
+//     appointments: [],
 //     unavailabilities: {
 //         lunch: { from : '13:00', to: '14:00' },
 //         vacations: [
@@ -107,6 +113,7 @@ request.post(url).form({
 // request.post(url).form({
 //     name: 'Steph',
 //     email: '',
+//     appointments: [],
 //     unavailabilities: {
 //         lunch: { from : '13:00', to: '14:00' },
 //         vacations: [

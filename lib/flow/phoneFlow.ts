@@ -14,8 +14,12 @@ import {
 } from '../twilio'
 
 import config from '../../config/config'
-import { barbersInShop, Database } from '../database'
-import serviceList from '../shopData'
+import { 
+  barbersInShop, 
+  Database, 
+  serviceList, 
+  friendlyShopName, 
+  automatedVoice } from '../database'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
@@ -32,7 +36,7 @@ export default class PhoneSystem extends UserMessageInterface {
         twiml.say(
           `The shop is closed currently. I'm sending you a link to book an appointment at a later date`,
           {
-            voice: 'Polly.Salli'
+            voice: automatedVoice
           }
         )
         res.send(twiml.toString())
@@ -45,6 +49,7 @@ export default class PhoneSystem extends UserMessageInterface {
         method: 'POST',
         finishOnKey: '#',
         timeout: 3
+        
       })
       const customer = await database.findCustomerInDatabase(phoneNumber)
       let message = ``
@@ -53,8 +58,8 @@ export default class PhoneSystem extends UserMessageInterface {
         message += `(${prop}) for ${serviceList[prop].service}\n`
       }
       gather.say(
-        `Thank you for calling Fades of Grey!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`,
-        { voice: 'Polly.Salli' }
+        `Thank you for calling ${friendlyShopName}!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`,
+        { voice: automatedVoice }
       )
   
       if (!customer) await database.createCustomer(phoneNumber)
@@ -74,7 +79,7 @@ export default class PhoneSystem extends UserMessageInterface {
       twiml.say(
         `${UserMessage.generateRandomAgreeWord()}! I'm connecting you to the shop right now.`,
         {
-          voice: 'Polly.Salli'
+          voice: automatedVoice
         }
       )
       twiml.dial(config.BARBERSHOP_PHONE_NUMBER)
@@ -105,7 +110,7 @@ export default class PhoneSystem extends UserMessageInterface {
           `Which barber would you like today? ${barbersWithoutTakenBarber.map(
             (barber, index) => `Press ${index + 1} for ${barber}`
           )}`,
-          { voice: 'Polly.Salli' }
+          { voice: automatedVoice }
         )
         return res.send(twiml.toString())
       }
@@ -130,7 +135,7 @@ export default class PhoneSystem extends UserMessageInterface {
             `${UserMessage.generateRandomAgreeWord()}! So you would like a ${services.map(
               service => service.service
             )}. ${UserMessage.generateChooseBarberMessage()}`,
-            { voice: 'Polly.Salli' }
+            { voice: automatedVoice }
           )
           return res.send(twiml.toString())
         } catch (err) {
@@ -138,7 +143,7 @@ export default class PhoneSystem extends UserMessageInterface {
         }
       } else {
         gather.say(UserMessage.generateChooseBarberMessage(), {
-          voice: 'Polly.Salli'
+          voice: automatedVoice
         })
         return res.send(twiml.toString())
       }
@@ -194,7 +199,7 @@ export default class PhoneSystem extends UserMessageInterface {
   
       if (!availableTimes.length) {
         twiml.say(`I'm so sorry! ${barberName} is all booked up for the day.`, {
-          voice: 'Polly.Salli'
+          voice: automatedVoice
         })
         twiml.redirect(
           { method: 'POST' },
@@ -215,7 +220,7 @@ export default class PhoneSystem extends UserMessageInterface {
                   UserMessage.friendlyFormat
                 ).format('h:mm')}`
             )}`,
-            { voice: 'Polly.Salli' }
+            { voice: automatedVoice }
           )
         }
         const dayForTimes = moment(
@@ -234,7 +239,7 @@ export default class PhoneSystem extends UserMessageInterface {
                 UserMessage.friendlyFormat
               ).format('h:mm')}`
           )}`,
-          { voice: 'Polly.Salli' }
+          { voice: automatedVoice }
         )
       }
       return res.send(twiml.toString())
@@ -268,7 +273,7 @@ export default class PhoneSystem extends UserMessageInterface {
   
       twiml.say(
         `${UserMessage.generateRandomAgreeWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today`,
-        { voice: 'Polly.Salli' }
+        { voice: automatedVoice }
       )
       services.forEach(service => (duration += service.duration))
   
@@ -324,7 +329,7 @@ export default class PhoneSystem extends UserMessageInterface {
     private errorMessage(res, redirectUrl: string) {
       const twiml = new VoiceResponse()
   
-      twiml.say('That was an invalid response', { voice: 'Polly.Salli' })
+      twiml.say('That was an invalid response', { voice: automatedVoice })
       twiml.redirect({ method: 'POST' }, redirectUrl)
       res.send(twiml.toString())
     }

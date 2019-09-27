@@ -2,9 +2,11 @@ import config from '../config/config'
 import twilio from 'twilio'
 import {
   Database,
-  barbersInShop
+  barbersInShop,
+  serviceList,
+  barberShopURL,
+  barberShopAvailability,
 } from './database'
-import serviceList from './shopData'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
@@ -27,9 +29,6 @@ export function getAvailableTimes(
   barber: types.BARBER
 ): TimeAvailability[] {
   // set time to get available times
-  let fromTime = barberShopAvailablilty.open
-  let toTime = barberShopAvailablilty.closed
-
   return scheduler.getIntersection({
     from,
     to,
@@ -37,14 +36,7 @@ export function getAvailableTimes(
     interval,
     schedules: [
       {
-        weekdays: {
-          from: fromTime,
-          to: toTime
-        },
-        saturday: {
-          from: fromTime,
-          to: toTime
-        },
+        ...barberShopAvailability,
         unavailability: [
           {
             from: `${from} ${barber.unavailabilities.lunch.from}`,
@@ -68,26 +60,14 @@ export function getBarberAppointments(
   const currentDateAndTime = moment()
   const currentTime = parseInt(currentDateAndTime.format('H'))
   let from = currentDateAndTime.format('YYYY-MM-DD')
-  const currentDayOfTheWeek = getDate().day()
   // check if barbershop is closed and move the user to make an appointment for the next day
   if (
     currentTime > parseInt(barberShopAvailablilty.closed) ||
     currentTime < parseInt(barberShopAvailablilty.open)
   ) {
-    if (currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Monday.index)
-      from = moment(from)
-        .add(barberShopAvailablilty.daysClosed.Monday.nextAvailableDay, 'day')
-        .format('YYYY-MM-DD')
-    else if (
-      currentDayOfTheWeek === barberShopAvailablilty.daysClosed.Sunday.index
-    )
-      from = moment(from)
-        .add(barberShopAvailablilty.daysClosed.Sunday.nextAvailableDay, 'day')
-        .format('YYYY-MM-DD')
-    else
-      from = moment(from)
-        .add(1, 'day')
-        .format('YYYY-MM-DD')
+    from = moment(from)
+      .add(1, 'day')
+      .format('YYYY-MM-DD')
   }
 
   if (!!date) from = moment(date).format('YYYY-MM-DD')
@@ -127,17 +107,6 @@ export function formatAllocatedTimes(
 export const barberShopAvailablilty = {
   open: '10',
   closed: '19',
-  daysClosed: {
-    // formatted for datetime object
-    Monday: {
-      index: 1,
-      nextAvailableDay: 1
-    },
-    Sunday: {
-      index: 0,
-      nextAvailableDay: 2
-    }
-  }
 }
 
 export function createBarber(req, res, next) {
@@ -253,7 +222,7 @@ export const UserMessage = new UserMessageInterface()
 
 export async function cancelRecentAppointment(req, res) {
   const { phoneNumber, uuid } = req.customer
-  const url = `fadesofgray.netlify.com/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
+  const url = `${barberShopURL}/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
   const message = `Here's a link to cancel your appointment \n${url}`
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,
@@ -263,7 +232,7 @@ export async function cancelRecentAppointment(req, res) {
 }
 
 export async function sendBookLaterDateLink(phoneNumber: string) {
-  const url = `https://fadesofgray.netlify.com/cue`
+  const url = `${barberShopURL}/cue`
   const message = `Here's a link to book at a later date ${url}`
   client.messages.create({
     from: config.TWILIO_PHONE_NUMBER,

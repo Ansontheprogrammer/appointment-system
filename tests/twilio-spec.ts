@@ -1,9 +1,8 @@
 import 'mocha';
 import * as assert from 'assert';
 import * as twilioLib from '../lib/twilio';
-import serviceList from '../lib/shopData'
 import { TextSystem } from '../lib/flow/smsFlow'
-import { Database } from '../lib/database';
+import { Database, serviceList } from '../lib/database';
 import sinon from 'sinon';
 
 describe('User message interface', () => {

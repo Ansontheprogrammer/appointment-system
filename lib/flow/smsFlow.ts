@@ -16,8 +16,7 @@ import {
   MessagingResponse,
   barberShopAvailablilty
 } from '../twilio'
-import { barbersInShop } from '../database'
-import serviceList from '../shopData'
+import { barbersInShop, serviceList, friendlyShopName } from '../database'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
@@ -54,7 +53,7 @@ export class TextSystem {
   
           const sendTextMessage = TextSystem.getTextMessageTwiml(res)
           sendTextMessage(
-            `${UserMessage.generateRandomGreeting()}, this is Fades of Grey appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
+            `${UserMessage.generateRandomGreeting()}, this is ${friendlyShopName} appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
           )
           customer = await database.createCustomer(phoneNumber)
           return
