@@ -163,7 +163,7 @@ export class UserMessageInterface {
     time = moment(time, 'YYYY-MM-DD HH:mm').format(this.friendlyFormat)
     const message = `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(
       service => `\n${service.service}`
-    )}\n\nIf you would like to cancel this appointment text (remove)\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}`
+    )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\nIf you would like to cancel this appointment text (remove)`
     if (noConfirmation) return message
     else
       return message.concat(
