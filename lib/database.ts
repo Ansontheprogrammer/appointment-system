@@ -64,7 +64,7 @@ export class Database {
     twilioPhoneNumber = twilioNumber
     
     // SET phone twilio number
-    barberShopPhoneNumber = 
+    barberShopPhoneNumber = shopPhoneNumber
 
     // SET barbers in shop
     Database.setBarbersInShop(barberCollection)
