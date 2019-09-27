@@ -2,6 +2,7 @@ const request = require('request')
 
 // store deal
 const url = `http://localhost:80/api/createBarber`
+
 // fades of gray
 request.post(url).form({
     name: 'Julian',

@@ -19,7 +19,9 @@ import {
   Database, 
   serviceList, 
   friendlyShopName, 
-  automatedVoice } from '../database'
+  automatedVoice,
+  twilioPhoneNumber,
+  barberShopPhoneNumber} from '../database'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
@@ -82,7 +84,7 @@ export default class PhoneSystem extends UserMessageInterface {
           voice: automatedVoice
         }
       )
-      twiml.dial(config.BARBERSHOP_PHONE_NUMBER)
+      twiml.dial(barberShopPhoneNumber)
       res.set('Content-Type', 'text/xml')
       return res.send(twiml.toString())
     }
@@ -320,7 +322,7 @@ export default class PhoneSystem extends UserMessageInterface {
       }
   
       client.messages.create({
-        from: config.TWILIO_PHONE_NUMBER,
+        from: twilioPhoneNumber,
         body: confirmationMessage,
         to: phoneNumber
       })

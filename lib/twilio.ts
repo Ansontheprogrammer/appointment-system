@@ -6,6 +6,7 @@ import {
   serviceList,
   barberShopURL,
   barberShopAvailability,
+  twilioPhoneNumber
 } from './database'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
@@ -120,7 +121,7 @@ export function createBarber(req, res, next) {
 
 export function sendshopIsClosedMessage(phoneNumber, res) {
   client.messages.create({
-    from: config.TWILIO_PHONE_NUMBER,
+    from: twilioPhoneNumber,
     body: 'The shop is currently closed\n',
     to: phoneNumber
   })
@@ -225,7 +226,7 @@ export async function cancelRecentAppointment(req, res) {
   const url = `${barberShopURL}/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
   const message = `Here's a link to cancel your appointment \n${url}`
   client.messages.create({
-    from: config.TWILIO_PHONE_NUMBER,
+    from: twilioPhoneNumber,
     body: message,
     to: phoneNumber
   })
@@ -235,7 +236,7 @@ export async function sendBookLaterDateLink(phoneNumber: string) {
   const url = `${barberShopURL}/cue`
   const message = `Here's a link to book at a later date ${url}`
   client.messages.create({
-    from: config.TWILIO_PHONE_NUMBER,
+    from: twilioPhoneNumber,
     body: message,
     to: phoneNumber
   })
@@ -251,7 +252,7 @@ export async function notifyBarber(req, res, next) {
 
   
   client.messages.create({
-    from: config.TWILIO_PHONE_NUMBER,
+    from: twilioPhoneNumber,
     body: message,
     to: barberData.phoneNumber
   })

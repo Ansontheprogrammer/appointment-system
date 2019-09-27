@@ -6,3 +6,4 @@ export default {
     "BARBERSHOP_PHONE_NUMBER": barberShopPhoneNumber,
     "MONGO_CONNECTION_KEY": "mongodb+srv://Anson:m4cGCRr2lKENVAT7@cluster0-mqzwm.mongodb.net/Fades-Of-Gray?retryWrites=true",
 }
+console.log(twilioPhoneNumber, 'twiliophonNumbers')

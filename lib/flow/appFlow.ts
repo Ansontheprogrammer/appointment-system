@@ -6,6 +6,7 @@ import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 import { formatToCronTime } from '../../config/utils'
+import { twilioPhoneNumber } from '../database'
 
 export class AppSystem {
   public async walkInAppointment(req, res, next) {
@@ -49,7 +50,7 @@ export class AppSystem {
     )
 
     client.messages.create({
-      from: config.TWILIO_PHONE_NUMBER,
+      from: twilioPhoneNumber,
       body: confirmationMessage,
       to: phoneNumber
     })
@@ -155,7 +156,7 @@ export class AppSystem {
     )
 
     client.messages.create({
-      from: config.TWILIO_PHONE_NUMBER,
+      from: twilioPhoneNumber,
       body: confirmationMessage,
       to: phoneNumber
     })
