@@ -31,12 +31,8 @@ export function validateMessage(body: string, validResponses: string[]) {
 }
 
 export function extractedNumbers(body: string) {
-  const extractedNumbers = body.match(/\d/gi)
-  if (extractedNumbers.length === 1) {
-    if (extractedNumbers[0].length > 1) return extractedNumbers[0].split('')
-    else return extractedNumbers
-  }
-  return extractedNumbers
+  var numbers = body.match(/\d+/g).map(Number);
+  return numbers
 }
 
 export function validateAppointmentDetails(details: DETAILS): { correct: boolean, msg?: string} {

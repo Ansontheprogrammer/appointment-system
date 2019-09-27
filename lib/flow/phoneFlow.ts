@@ -1,7 +1,8 @@
 import { phoneNumberFormatter, 
   shopIsClosed, 
   validateMessage,
-  getDate, 
+  getDate,
+  extractedNumbers, 
   } from '../../config/utils'
 import { 
   database, 
@@ -13,7 +14,6 @@ import {
   client
 } from '../twilio'
 
-import config from '../../config/config'
 import { 
   barbersInShop, 
   Database, 
@@ -121,7 +121,7 @@ export default class PhoneSystem extends UserMessageInterface {
         total = 0
   
       if (!!keyPress) {
-        keyPress.split('').forEach(n => {
+        extractedNumbers(keyPress).forEach(n => {
           const service = serviceList[n].service
           const price = serviceList[n].price
           const duration = serviceList[n].duration
