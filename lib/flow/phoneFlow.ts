@@ -49,9 +49,7 @@ export default class PhoneSystem extends UserMessageInterface {
       const gather = twiml.gather({
         action: '/api/chooseService',
         method: 'POST',
-        finishOnKey: '#',
-        timeout: 3
-        
+        numDigits: 1,
       })
       const customer = await database.findCustomerInDatabase(phoneNumber)
       let message = ``
