@@ -189,7 +189,7 @@ export class UserMessageInterface {
   }
 
   public generateAvailableServicesMessage() {
-    let message = `What type of service would you like today? \n\nPress multiple numbers for multiple services`
+    let message = `What type of service would you like today? \n\nPress multiple numbers with spaces for multiple services \nEx. 1 3 10 or 1,3,10`
 
     for (let prop in serviceList) {
       message += `\n\n(${prop}) for ${serviceList[prop].service}\nPrice - $${serviceList[prop].price}\nTime - ${serviceList[prop].duration}mins`

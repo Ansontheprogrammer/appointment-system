@@ -171,6 +171,8 @@ export class TextSystem {
         total = 0
   
       extractedNumbers(userMessage).forEach(n => {
+        // if service is invalid skip this service
+        if(!serviceList[n]) return 
         const service = serviceList[n].service
         const price = serviceList[n].price
         const duration = serviceList[n].duration
