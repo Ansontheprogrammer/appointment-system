@@ -1,21 +1,25 @@
 import bodyParser from 'body-parser'
 import express from 'express'
-import * as twilioLib from './lib/twilio';
+import PhoneSystem from './lib/flow/phoneFlow'
+import { TextSystem } from './lib/flow/smsFlow'
+import { AppSystem } from './lib/flow/appFlow'
+import { createBarber, notifyBarber } from './lib/twilio'
+import { Database } from './lib/database'
 import * as flow from './config/flow'
-import cors from 'cors';
+import cors from 'cors'
 
-const phoneSystem = new twilioLib.PhoneSystem()
-const textSystem = new twilioLib.TextSystem()
-const appSystem = new twilioLib.AppSystem()
+const phoneSystem = new PhoneSystem()
+const textSystem = new TextSystem()
+const appSystem = new AppSystem()
 
-export const app = (express)();
+export const app = express()
 
-const port = process.env.PORT || 80;
+const port = process.env.PORT || 80
 
-app.use(express.json());       // to support JSON-encoded bodies
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded());
-app.use(cors());
+app.use(express.json()) // to support JSON-encoded bodies
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded())
+app.use(cors())
 
 // Phone system
 app.post('/api/phoneAppointmentFlow', phoneSystem.phoneAppointmentFlow)
@@ -26,14 +30,16 @@ app.post('/api/confirmation', phoneSystem.confirmation)
 app.post('/api/bookAppointment', appSystem.bookAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
+app.post('/api/notifyBarber', notifyBarber)
 // Text system
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
-app.post('/api/createBarber', twilioLib.createBarber)
+app.post('/api/createBarber', createBarber)
+app.post('/api/setBarberShopData', Database.setBarberShopData)
 app.get('/api/ping', (req, res, next) => {
-  res.sendStatus(200);
+  res.sendStatus(200)
 })
 
 app.listen(port, () => {
-    console.log('Server is up and running')
-});
+  console.log('Server is up and running')
+})

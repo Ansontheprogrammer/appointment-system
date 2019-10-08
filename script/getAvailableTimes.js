@@ -1,7 +1,7 @@
 const request = require('request')
 
 // store deal
-const url = `https://cf7cd00e.ngrok.io/api/getBarberAvailableTimes`
+const url = `http://localhost:80/api/getBarberAvailableTimes`
 
 request.post(url)
 .form({
