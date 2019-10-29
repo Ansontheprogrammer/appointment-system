@@ -47,14 +47,14 @@ export class TextSystem {
       try {
         let customer = await database.findCustomerInDatabase(phoneNumber)
         const userMessage: string = extractText(req.body.Body)
+        if (!customer) {
           // Handle if the user would like to cancel the most recent appointment
           if (userMessage.toLowerCase() === 'remove') {
             return cancelRecentAppointment(req, res)
-        }
-        if (!customer) {
+          } 
+
           // Send user a message if they would like to continue in the flow and the shop is closed
           if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
-  
           const sendTextMessage = TextSystem.getTextMessageTwiml(res)
           sendTextMessage(
             `${UserMessage.generateRandomGreeting()}, this is ${friendlyShopName} appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
@@ -62,7 +62,6 @@ export class TextSystem {
           customer = await database.createCustomer(phoneNumber)
           return
         } else {
-
           req.customer = customer
           // Handle if the user would like to reset the flow
           if (userMessage.toLowerCase() === 'reset') {
