@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "npm run build && export NODE_ENV=production && node dist/server.js",
     "dev": "npm run build && node dist/server.js",
-    "set": "node script/startFadesOfGray.js",
+    "set": "node script/startFadesOfGray.js && node script/startBarberSharp.js",
     "test": "tsc && mocha --recursive dist/tests --exit"
   },
   "repository": {
