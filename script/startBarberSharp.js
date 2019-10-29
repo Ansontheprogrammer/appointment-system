@@ -1,7 +1,7 @@
 const request = require('request')
 
 let url;
-if(process.env.NODE_ENV === 'test'){
+if(process.env.NODE_ENV === 'developement'){
   url = `http://localhost:80/api/setBarberShopData`
 } else {
   url = `https://barbersharpappointmentsystem.onrender.com/api/setBarberShopData`
