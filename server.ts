@@ -7,6 +7,7 @@ import { createBarber, notifyBarber } from './lib/twilio'
 import { Database } from './lib/database'
 import * as flow from './config/flow'
 import cors from 'cors'
+import { exec }  from 'child_process'
 
 const phoneSystem = new PhoneSystem()
 const textSystem = new TextSystem()
@@ -42,4 +43,15 @@ app.get('/api/ping', (req, res, next) => {
 
 app.listen(port, () => {
   console.log('Server is up and running')
+  console.log('Setting individual shop data...', '\nCurrent enviroment:',process.env.NODE_ENV)
+  if(process.env.NODE_ENV === 'production'){
+    exec('npm run set', (err, stdout, stderr) => {
+      if (err) {
+        console.error(err);
+        process.exit()
+        return;
+      }
+    });
+  }
+  
 })
