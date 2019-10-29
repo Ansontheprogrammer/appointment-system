@@ -7,6 +7,9 @@ import * as databaseLib from '../lib/database'
 describe('Database class', () => {
     let sandbox;
     const database = new databaseLib.Database()
+    // Set barber data
+    databaseLib.Database.setBarberShopData({}, {sendStatus: (e) => {}}, {})
+
 
     beforeEach(() => {
         // stub out all database functions
@@ -26,7 +29,7 @@ describe('Database class', () => {
     })
 
     describe('addAppointment', () => {
-        const barberName = 'Jesse';
+        const barberName = 'Julian';
         const customer = {
             phoneNumber: '9082097544',
             firstName: 'Anson'

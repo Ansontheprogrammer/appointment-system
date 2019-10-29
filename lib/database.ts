@@ -1,7 +1,8 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
 import * as types from './';
-import uuid from 'uuid/v1'
+import uuid from 'uuid/v1';
+import developmentData from '../script/sampleData'
 import { validateAppointmentDetails } from '../config/utils';
 
 admin.initializeApp({
@@ -31,6 +32,10 @@ export class Database {
   }
 
   public static setBarberShopData(req, res, next){
+    if(process.env.NODE_ENV === 'development'){
+      req.body = developmentData
+    }
+
     const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber } = req.body
     const barberShopDoc = db
     .collection('barbershops')
@@ -68,6 +73,7 @@ export class Database {
 
     // SET barbers in shop
     Database.setBarbersInShop(barberCollection)
+
     res.sendStatus(200)
   }
 
@@ -109,13 +115,12 @@ export class Database {
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS) {
     const { phoneNumber, firstName } = customer
     const areAppointmentDetailsCorrect = validateAppointmentDetails(details);
-
+  
     if(!areAppointmentDetailsCorrect.correct){
       throw Error(areAppointmentDetailsCorrect.msg)
     }
     
     const appointment = { phoneNumber, firstName, details, uuid: uuid() }
-    
     try {
       let docRef = await barberCollection.doc(barberFirstName)
       let barber = await docRef.get()
@@ -127,7 +132,6 @@ export class Database {
     } catch (err) {
       throw err
     }
-
   }
 
   public createBarber(barberInfo: types.BARBER) {
