@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     barberShopName: 'fadesOfGray',
     friendlyName: 'Fades of Gray',
     url: 'fadesofgray.netlify.com',
