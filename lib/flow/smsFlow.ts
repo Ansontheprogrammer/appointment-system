@@ -47,12 +47,11 @@ export class TextSystem {
       try {
         let customer = await database.findCustomerInDatabase(phoneNumber)
         const userMessage: string = extractText(req.body.Body)
+        // Handle if the user would like to cancel the most recent appointment
+        if (userMessage.toLowerCase() === 'remove') {
+          return cancelRecentAppointment(req, res)
+        } 
         if (!customer) {
-          // Handle if the user would like to cancel the most recent appointment
-          if (userMessage.toLowerCase() === 'remove') {
-            return cancelRecentAppointment(req, res)
-          } 
-
           // Send user a message if they would like to continue in the flow and the shop is closed
           if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
           const sendTextMessage = TextSystem.getTextMessageTwiml(res)
