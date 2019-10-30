@@ -5,6 +5,7 @@ import moment = require('moment');
 // store a variable containing if the shop is closed or not.
 export const shopIsClosed = () => {
   const currentTime = parseInt(getDate().format('H'))
+
   return (
     currentTime < parseInt(twilioLib.barberShopAvailablilty.open) ||
     currentTime > parseInt(twilioLib.barberShopAvailablilty.closed)
@@ -49,7 +50,7 @@ export function validateAppointmentDetails(details: DETAILS): { correct: boolean
 
 export function getDate(): moment.Moment {
   const dateWithTimeZone = new Date().toLocaleString('en-US', {
-    timeZone: 'America/Mexico_City'
+    timeZone: 'America/Chicago'
   })
   
   return moment(dateWithTimeZone, 'M/DD/YYYY, h:mm:ss a')

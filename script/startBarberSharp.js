@@ -2,7 +2,7 @@ const request = require('request')
 
 let url;
 if(process.env.NODE_ENV === 'developement'){
-  url = `http://localhost:80/api/setBarberShopData`
+  url = `https://cf796d1f.ngrok.io/api/setBarberShopData`
 } else {
   url = `https://barbersharpappointmentsystem.onrender.com/api/setBarberShopData`
 }
