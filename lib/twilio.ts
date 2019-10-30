@@ -119,7 +119,7 @@ export function createBarber(req, res, next) {
   }, next)
 }
 
-export function sendshopIsClosedMessage(phoneNumber, res) {
+export function sendshopIsClosedMessage(phoneNumber, res?) {
   client.messages.create({
     from: twilioPhoneNumber,
     body: 'The shop is currently closed\n',

@@ -4,7 +4,8 @@ import moment = require('moment');
 import { timezone } from '../lib/database';
 
 // store a variable containing if the shop is closed or not.
-export const shopIsClosed = () => {
+export const shopIsClosed = (closedNow?: boolean) => {
+  if(closedNow) return true
   const currentTime = parseInt(getDate().format('H'))
 
   return (

@@ -4,6 +4,7 @@ import * as twilioLib from '../lib/twilio';
 import { TextSystem } from '../lib/flow/smsFlow'
 import { Database, serviceList } from '../lib/database';
 import sinon from 'sinon';
+import { shopIsClosed } from '../config/utils';
 
 describe('User message interface', () => {
     const sampleServices = [
@@ -238,52 +239,60 @@ describe('Text System', () => {
         const req = {
             body: {
                 From: '19082097544',
-                Body: ''
+                Body: 'Anson'
             }
         }
-        // describe('getShopIsClosedStatus', () => {
-        //     it('should return shop is closed because we are passing that in the function', () => {
-        //         const status = twilioLib.getShopIsClosedStatus(true);
-        //         assert.equal(status, true)
-        //     })
-        //     it('should return shop is closed, because we are trying to book at a time when the shop is not open yet', () => {
-        //         // stub out getHours Date object and force it to return a number less than when the shop is open
-        //         const now = new Date('August 17, 2019 03:24:00');
-        //         const clock = sinon.useFakeTimers(now.getTime())
-        //         const status = twilioLib.getShopIsClosedStatus();
-        //         assert.equal(status, true)
-        //         clock.restore()
-        //     })
-        //     it('should return shop is closed, because we are trying to book at a time when the shop has closed already', () => {
-        //         // stub out getHours Date object and force it to return a number less than when the shop is open
-        //         const now = new Date('August 17, 2019 20:24:00');
-        //         const clock = sinon.useFakeTimers(now.getTime())
-        //         const status = twilioLib.getShopIsClosedStatus();
-        //         assert.equal(status, true)
-        //         clock.restore()
-        //     })
-        //     it('should return shop is not closed, because we are trying to book at a time when the shop is open', () => {
-        //         // stub out getHours Date object and force it to return a number less than when the shop is open
-        //         const now = new Date('August 17, 2019 12:24:00');
-        //         const clock = sinon.useFakeTimers(now.getTime())
-        //         const status = twilioLib.getShopIsClosedStatus();
-        //         assert.equal(status, false)
-        //         clock.restore()
-        //     })
-        // })
+        describe('shopIsClosed', () => {
+            it.only('should return shop is closed because we are passing that in the function', () => {
+                const status = shopIsClosed(true)
+                assert.equal(status, true)
+            })
+            it.only('should return shop is closed, because we are trying to book at a time when the shop is not open yet', () => {
+                // stub out getHours Date object and force it to return a number less than when the shop is open
+                const now = new Date('August 17, 2019 03:24:00');
+                const clock = sinon.useFakeTimers(now.getTime())
+                const status = shopIsClosed()
+                assert.equal(status, true)
+                clock.restore()
+            })
+            it.only('should return shop is closed, because we are trying to book at a time when the shop has closed already', () => {
+                // stub out getHours Date object and force it to return a number less than when the shop is open
+                const now = new Date('August 17, 2019 21:24:00');
+                const clock = sinon.useFakeTimers(now.getTime())
+                const status = shopIsClosed()
+                assert.equal(status, true)
+                clock.restore()
+            })
+            it.only('should return shop is not closed, because we are trying to book at a time when the shop is open', () => {
+                // stub out getHours Date object and force it to return a number less than when the shop is open
+                const now = new Date('August 17, 2019 12:24:00');
+                const clock = sinon.useFakeTimers(now.getTime())
+                console.log(now.getTime(), 'time')
+                const status = shopIsClosed()
+                assert.equal(status, false)
+                clock.restore()
+            })
+        })
 
-        // it('Return shop is closed message', done => {
-        //     const now = new Date('August 17, 2019 03:24:00');
-        //     const clock = sinon.useFakeTimers(now.getTime());
-        //     // stub out shop is closed method, to make sure function was called
-        //     sandbox.stub(twilio, 'sendShopIsClosedMessage').callsFake(phoneNumberToSendTextMessageToo => {
-        //         assert.equal(phoneNumberToSendTextMessageToo, 'phoneNumber')
-        //         return 
-        //     })
-        //     textSystem.textMessageFlow(req, res, {}).then(() => {
-        //         done()
-        //     }, done)
-        //     clock.restore()
-        // })
+        describe('testGetName', () => {
+            const req = {
+                body: {
+                    From: '19082097544',
+                    Body: 'Anson'
+                },
+                customer: {
+                    session: {
+                        'stepNumber': '1'
+                    },
+                    phoneNumber: '9082097544',
+                    firstName: 'Anson'
+                }
+            }
+            it.only('should start a session for a user and send them a message to retrieve their name', done => {
+                new TextSystem().textGetName(req, res, () => {}).then(() => {
+                    done()
+                }, done)
+            })
+        })
     })
 })
