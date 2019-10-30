@@ -99,8 +99,7 @@ Total: $40`
     describe('generateAvailableServicesMessage', () => {
         it('should be able to generate available services message', () => {
             const servicesMessage = twilioLib.UserMessage.generateAvailableServicesMessage()
-            let message = `What type of service would you like today? \n\nPress multiple numbers for multiple services`
-            
+            let message = `What type of service would you like today? \n\nPress multiple numbers with spaces for multiple services \nEx. 1 3 10 or 1,3,10`
             for (let prop in serviceList) {
                 message += `\n\n(${prop}) for ${serviceList[prop].service}\nPrice - $${serviceList[prop].price}\nTime - ${serviceList[prop].duration}mins`
             }
@@ -158,11 +157,11 @@ Total: $40`
         })
     })
     it('confirmedAppointmentMessage', () => {
-        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
+        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
         assert.equal(twilioLib.UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
     })
     it('chooseAppointmentTypeMessage', () => {
-        const chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
+        const chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
         assert.equal(twilioLib.UserMessage.chooseAppointmentTypeMessage, chooseAppointmentTypeMessage)
     })
     it('friendlyFormat', () => {
@@ -170,7 +169,7 @@ Total: $40`
         assert.equal(twilioLib.UserMessage.friendlyFormat, friendlyFormat)
     })
     it('errorConfirmingAppointmentMessage', () => {
-        const errorConfirmingAppointmentMessage = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) for first available appointment time\n(2) to book an appointment for today\n(3) for later date`
+        const errorConfirmingAppointmentMessage = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) First available appointment time\n(2) Book an appointment for today\n(3) Later date`
         assert.equal(twilioLib.UserMessage.errorConfirmingAppointment, errorConfirmingAppointmentMessage)
     })
     it('errorValidatingConfirmingAppointment', () => {
