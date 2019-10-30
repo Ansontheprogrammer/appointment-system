@@ -24,7 +24,8 @@ export let
   friendlyShopName,
   automatedVoice,
   twilioPhoneNumber,
-  barberShopPhoneNumber
+  barberShopPhoneNumber,
+  timezone
 
 export class Database {
   public static firstLetterUpperCase(string) {
@@ -36,7 +37,7 @@ export class Database {
       req.body = developmentData
     }
 
-    const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber } = req.body
+    const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber, timeZone } = req.body
     const barberShopDoc = db
     .collection('barbershops')
     .doc(barberShopName)
@@ -73,6 +74,12 @@ export class Database {
 
     // SET barbers in shop
     Database.setBarbersInShop(barberCollection)
+
+    if(!timeZone) {
+      timezone = 'America/Chicago'
+    } else {
+      timezone = timeZone
+    }
 
     res.sendStatus(200)
   }

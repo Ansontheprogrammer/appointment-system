@@ -1,6 +1,6 @@
 const CronJob = require('cron').CronJob
 import { client } from './twilio'
-import { twilioPhoneNumber } from './database'
+import { twilioPhoneNumber, timezone } from './database'
 import config from '../config/config'
 const jobs = []
 
@@ -13,7 +13,7 @@ export function createJob(date: string, phoneNumber: string, message: string) {
     })
 
     this.stop()
-  }, () => onComplete(date), true, 'America/Mexico_City')
+  }, () => onComplete(date), true, timezone)
 
   jobs.push([date, job])
 }

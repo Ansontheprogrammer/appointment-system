@@ -28,6 +28,15 @@ describe('Database class', () => {
         })
     })
 
+    describe('setCorrectTimeZone', () => {
+        it('it should set to America/Chicago if no timezone is passed', () => {
+            const timeZone = databaseLib.timezone
+            console.log(timeZone, 'timeZone')
+            assert.equal(timeZone, 'America/Chicago')
+        })
+        
+    })
+
     describe('addAppointment', () => {
         const barberName = 'Julian';
         const customer = {
