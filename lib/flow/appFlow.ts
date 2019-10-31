@@ -1,7 +1,5 @@
 import * as utils from '../../config/utils'
 import { database, getBarberAppointments, UserMessage, client } from '../twilio'
-import { barberShopAvailablilty } from '../twilio'
-import config from '../../config/config'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
@@ -68,7 +66,7 @@ export class AppSystem {
     const currentHour = moment().format('H')
 
     // handle if barbershop is closed
-    if (parseInt(currentHour) > parseInt(barberShopAvailablilty.closed)) {
+    if (utils.shopIsClosed()) {
       return res.send('Barbershop is closed').status(400)
     }
 

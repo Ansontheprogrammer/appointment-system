@@ -1,16 +1,18 @@
 import * as twilioLib from '../lib/twilio'
 import { DETAILS } from '../lib'
 import moment = require('moment');
-import { timezone } from '../lib/database';
+import { timezone, barberShopAvailability } from '../lib/database';
 
 // store a variable containing if the shop is closed or not.
 export const shopIsClosed = (closedNow?: boolean) => {
   if(closedNow) return true
+  const currentDay = getDate().format('dddd')
   const currentTime = parseInt(getDate().format('H'))
-
+  const shopAvailabilityForTheDay = barberShopAvailability[currentDay.toLowerCase()]
+  
   return (
-    currentTime < parseInt(twilioLib.barberShopAvailablilty.open) ||
-    currentTime > parseInt(twilioLib.barberShopAvailablilty.closed)
+    currentTime <= parseInt(shopAvailabilityForTheDay.barberShopAvailablilty.open) ||
+    currentTime >= parseInt(shopAvailabilityForTheDay.barberShopAvailablilty.closed)
   )
 }
 

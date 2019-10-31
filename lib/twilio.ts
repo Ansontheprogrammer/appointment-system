@@ -11,7 +11,7 @@ import {
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
-import { getDate } from '../config/utils';
+import { shopIsClosed } from '../config/utils';
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
@@ -63,8 +63,7 @@ export function getBarberAppointments(
   let from = currentDateAndTime.format('YYYY-MM-DD')
   // check if barbershop is closed and move the user to make an appointment for the next day
   if (
-    currentTime > parseInt(barberShopAvailablilty.closed) ||
-    currentTime < parseInt(barberShopAvailablilty.open)
+    shopIsClosed()
   ) {
     from = moment(from)
       .add(1, 'day')
@@ -103,11 +102,6 @@ export function formatAllocatedTimes(
   return barbersAllocatedTimes
     .filter(availability => availability.available)
     .map(availability => moment(availability.time, 'HH:mm').format('h:mm a'))
-}
-
-export const barberShopAvailablilty = {
-  open: '10',
-  closed: '19',
 }
 
 export function createBarber(req, res, next) {

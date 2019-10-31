@@ -1,6 +1,6 @@
 import bodyParser from 'body-parser'
 import express from 'express'
-import PhoneSystem from './lib/flow/phoneFlow'
+import {PhoneSystem} from './lib/flow/phoneFlow'
 import { TextSystem } from './lib/flow/smsFlow'
 import { AppSystem } from './lib/flow/appFlow'
 import { createBarber, notifyBarber } from './lib/twilio'
@@ -44,7 +44,7 @@ app.get('/api/ping', (req, res, next) => {
 app.listen(port, () => {
   console.log('Server is up and running')
   console.log('Setting individual shop data...', '\nCurrent enviroment:',process.env.NODE_ENV)
-  if(process.env.NODE_ENV === 'production'){
+  if(process.env.NODE_ENV === 'development'){
     exec('npm run set', (err, stdout, stderr) => {
       if (err) {
         console.error(err);

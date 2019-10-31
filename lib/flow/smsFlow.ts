@@ -14,7 +14,6 @@ import {
   cancelRecentAppointment, 
   sendBookLaterDateLink,
   MessagingResponse,
-  barberShopAvailablilty
 } from '../twilio'
 import { barbersInShop, serviceList, friendlyShopName } from '../database'
 import moment from 'moment';
@@ -163,8 +162,7 @@ export class TextSystem {
         return sendTextMessage(
           `You must choose one of the following. \n\n${UserMessage.generateAvailableServicesMessage()}`
         )
-      let services = [],
-        total = 0
+      let services = [], total = 0
   
       extractedNumbers(userMessage).forEach(n => {
         // if service is invalid skip this service
@@ -176,6 +174,12 @@ export class TextSystem {
         services.push({ service, duration })
         total += price
       })
+
+      if(!services){
+        return sendTextMessage(
+          `You must choose one of the following. \n\n${UserMessage.generateAvailableServicesMessage()}`
+        )
+      }
   
       const message = UserMessage.generateChooseBarberMessage()
       const session = Object.assign(req.customer.session, {
@@ -469,11 +473,7 @@ export class TextBookAppointmentInterface extends TextSystem {
         }
   
         const currDate = getDate()
-        const currentTime = parseInt(moment().format('H'))
         let date = currDate.date()
-  
-        // check if barbershop is closed and move the user to make an appointment for the next day
-        if (currentTime > parseInt(barberShopAvailablilty.closed)) date += 1
   
         const minutes = moment(time, 'YYYY-MM-DD h:mm a').format('m')
         const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
