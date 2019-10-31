@@ -11,8 +11,8 @@ export const shopIsClosed = (closedNow?: boolean) => {
   const shopAvailabilityForTheDay = barberShopAvailability[currentDay.toLowerCase()]
 
   return (
-    currentTime <= parseInt(shopAvailabilityForTheDay.barberShopAvailablilty.from) ||
-    currentTime >= parseInt(shopAvailabilityForTheDay.barberShopAvailablilty.to)
+    currentTime <= parseInt(shopAvailabilityForTheDay.from) ||
+    currentTime >= parseInt(shopAvailabilityForTheDay.to)
   )
 }
 
