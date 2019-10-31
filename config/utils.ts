@@ -10,8 +10,7 @@ export const shopIsClosed = (closedNow?: boolean) => {
   const currentDay = getDate().format('dddd')
   const currentTime = parseInt(getDate().format('H'))
   const shopAvailabilityForTheDay = barberShopAvailability[currentDay.toLowerCase()]
-  console.log(shopAvailabilityForTheDay, 'shop availablility', currentDay, currentTime, barberShopAvailability)
-  return false
+  
   return (
     currentTime < parseInt(shopAvailabilityForTheDay.from) ||
     currentTime > parseInt(shopAvailabilityForTheDay.to)
