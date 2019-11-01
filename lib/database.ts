@@ -33,7 +33,7 @@ export class Database {
   }
 
   public static setBarberShopData(req, res, next){
-    if(process.env.NODE_ENV === 'development'){
+    if(process.env.NODE_ENV === 'test'){
       req.body = developmentData
     }
 
@@ -49,12 +49,6 @@ export class Database {
     serviceList = JSON.parse(req.body.serviceList)
 
     // SET barbershop availability
-    /* *** Must be lowercase
-       wednesday : {
-            from: '10',
-            to: '18',
-      },
-    */
     barberShopAvailability = JSON.parse(shopAvailability)
 
     // SET barbershop web url

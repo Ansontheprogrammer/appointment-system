@@ -52,7 +52,7 @@ export class PhoneSystem extends UserMessageInterface {
         message += `(${prop}) for ${serviceList[prop].service}\n`
       }
 
-      if(serviceList.length <= 10){
+      if(Object.keys(serviceList).length <= 10){
         gather = twiml.gather({
           action: '/api/chooseService',
           method: 'POST',
