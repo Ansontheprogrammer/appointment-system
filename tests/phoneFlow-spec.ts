@@ -104,44 +104,4 @@ describe('Phone Flow System', () => {
             new PhoneSystem().phoneAppointmentFlow({}, res, {}).then(done, done)
         })
     })
-
-    describe('textMessageFlow', () => {
-        const req = {
-            body: {
-                From: '19082097544',
-                Body: 'Anson'
-            }
-        }
-        describe('shopIsClosed', () => {
-            it('should return shop is closed because we are passing that in the function', () => {
-                const status = shopIsClosed(true)
-                assert.equal(status, true)
-            })
-            it('should return shop is closed, because we are trying to book at a time when the shop is not open yet', () => {
-                // stub out getHours Date object and force it to return a number less than when the shop is open
-                const now = new Date('August 17, 2019 03:24:00');
-                const clock = sinon.useFakeTimers(now.getTime())
-                const status = shopIsClosed()
-                assert.equal(status, true)
-                clock.restore()
-            })
-            it('should return shop is closed, because we are trying to book at a time when the shop has closed already', () => {
-                // stub out getHours Date object and force it to return a number less than when the shop is open
-                const now = new Date('August 17, 2019 21:24:00');
-                const clock = sinon.useFakeTimers(now.getTime())
-                const status = shopIsClosed()
-                assert.equal(status, true)
-                clock.restore()
-            })
-            it('should return shop is not closed, because we are trying to book at a time when the shop is open', () => {
-                // stub out getHours Date object and force it to return a number less than when the shop is open
-                const now = new Date('August 17, 2019 12:24:00');
-                const clock = sinon.useFakeTimers(now.getTime())
-                console.log(now.getTime(), 'time')
-                const status = shopIsClosed()
-                assert.equal(status, false)
-                clock.restore()
-            })
-        })
-    })
 })

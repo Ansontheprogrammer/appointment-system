@@ -59,7 +59,6 @@ export function getBarberAppointments(
   date?: string
 ): string[] {
   const currentDateAndTime = moment()
-  const currentTime = parseInt(currentDateAndTime.format('H'))
   let from = currentDateAndTime.format('YYYY-MM-DD')
   // check if barbershop is closed and move the user to make an appointment for the next day
   if (

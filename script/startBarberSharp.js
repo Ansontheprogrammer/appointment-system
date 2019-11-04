@@ -1,12 +1,13 @@
 const request = require('request')
 
 let url;
-if(process.env.NODE_ENV === 'developement'){
-  url = `https://cf796d1f.ngrok.io/api/setBarberShopData`
+if(process.env.NODE_ENV === 'development'){
+  url = `http://localhost:80/api/setBarberShopData`
 } else {
   url = `https://barbersharpappointmentsystem.onrender.com/api/setBarberShopData`
 }
 
+console.log('sending request, ', url)
 request.post(url).form({
     barberShopName: 'barberSharp',
     friendlyName: 'Barber Sharp',

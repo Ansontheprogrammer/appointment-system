@@ -4,7 +4,7 @@ import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 import { formatToCronTime } from '../../config/utils'
-import { twilioPhoneNumber } from '../database'
+import { twilioPhoneNumber, barbersInShop, barberShopName, friendlyShopName } from '../database'
 
 export class AppSystem {
   public async walkInAppointment(req, res, next) {
@@ -89,15 +89,21 @@ export class AppSystem {
   public async getBarberAvailableTimes(req, res, next) {
     // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
     const { barber, fromDate, services } = req.body
-    if (!Object.keys(services[0]).length) services.shift()
+    console.log(req.body, 'body', friendlyShopName, 'shop name')
+    // Handle case for retrieving schedules on the dashboard
+    if(services.length){
+      if (!Object.keys(services[0]).length) services.shift()
+    }
     const barberInDatabase = await (database.findBarberInDatabase(
       barber
     ) as Promise<BARBER>)
+    console.log(barberInDatabase, 'barberindatabase')
     let availableTimes = getBarberAppointments(
       services,
       barberInDatabase,
       fromDate
     )
+    console.log(barbersInShop, 'barbersInshop')
     availableTimes = availableTimes.map(time =>
       moment(time, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
     )
