@@ -1,10 +1,10 @@
 const CronJob = require('cron').CronJob
 import { client } from './twilio'
 import { twilioPhoneNumber, timezone } from './database'
-import config from '../config/config'
 const jobs = []
 
 export function createJob(date: string, phoneNumber: string, message: string) {
+  // Check to make sure date is not passed ***************
   let job = new CronJob(date, function () {
     client.messages.create({
       from: twilioPhoneNumber,

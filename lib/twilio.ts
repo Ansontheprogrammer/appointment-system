@@ -6,12 +6,14 @@ import {
   serviceList,
   barberShopURL,
   barberShopAvailability,
-  twilioPhoneNumber
+  twilioPhoneNumber,
+  barberCollection
 } from './database'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
-import { shopIsClosed } from '../config/utils';
+import { formatToCronTime } from '../config/utils';
+import { createJob } from './cron'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
@@ -248,5 +250,32 @@ export async function notifyBarber(req, res, next) {
     body: message,
     to: barberData.phoneNumber
   })
+
   res.sendStatus(200)
+}
+
+export function resetCronJobs(req, res, next){
+  barberCollection
+  .get()
+  .then(snapshot => {
+      snapshot.docs.forEach(doc => {
+          const barber = doc.id
+          const barberAppointments = (doc.get('appointments') as types.BARBER_APPOINTMENTS[]);
+          barberAppointments.forEach(appointment => {
+              const reminderMessage = UserMessage.generateReminderMessage(
+                appointment.details.services,
+                (barber as any),
+                appointment.details.time.from,
+                appointment.details.total
+              )
+              console.log(`Creating job for ${barber}\n${appointment.firstName}\nAt - ${appointment.details.time.from}`)
+              createJob(
+                formatToCronTime(appointment.details.time.from),
+                appointment.phoneNumber,
+                reminderMessage
+              )
+          })
+      })
+      res.sendStatus(200)
+  })
 }
