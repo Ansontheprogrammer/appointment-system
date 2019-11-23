@@ -45,10 +45,17 @@ export class TextSystem {
       
       try {
         let customer = await database.findCustomerInDatabase(phoneNumber)
+        // set req.customer to the customer found in database or an object containing the customer's phone number. 
+        req.customer = !!customer ? customer : { phoneNumber }
         const userMessage: string = extractText(req.body.Body)
+        // Handle if the user would like to cancel the most recent appointment
+        if (userMessage.toLowerCase() === 'remove') {
+          // set customer info to just contain phone number
+          return cancelRecentAppointment(req, res)
+        } 
+        // Send user a message if they would like to continue in the flow and the shop is closed
+        if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
         if (!customer) {
-          // Send user a message if they would like to continue in the flow and the shop is closed
-          if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
           const sendTextMessage = TextSystem.getTextMessageTwiml(res)
           sendTextMessage(
             `${UserMessage.generateRandomGreeting()}, this is ${friendlyShopName} appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
@@ -56,20 +63,12 @@ export class TextSystem {
           customer = await database.createCustomer(phoneNumber)
           return
         } else {
-          req.customer = customer
           // Handle if the user would like to reset the flow
           if (userMessage.toLowerCase() === 'reset') {
             const sendTextMessage = TextSystem.getTextMessageTwiml(res)
             return TextSystem.resetUser(req.customer.phoneNumber, sendTextMessage)
           }
-          // Handle if the user would like to cancel the most recent appointment
-          if (userMessage.toLowerCase() === 'remove') {
-            return cancelRecentAppointment(req, res)
-          } 
-
-          // Send user a message if they would like to continue in the flow and the shop is closed
-          if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
-          
+                    
           // Send user to the next step
           next()
         }
