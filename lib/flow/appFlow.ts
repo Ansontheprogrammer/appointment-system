@@ -61,9 +61,11 @@ export class AppSystem {
       total
     }
 
-    await database.addAppointment(barber, customer, appointmentData)
-
-    const currentHour = moment().format('H')
+    try {
+      await database.addAppointment(barber, customer, appointmentData)
+    } catch(err){
+      console.error(err, 'error trying to add appointment')
+    }
 
     // handle if barbershop is closed
     if (utils.shopIsClosed()) {
@@ -123,7 +125,6 @@ export class AppSystem {
     if (!Object.keys(services[0]).length) services.shift()
 
     const dateTime = `${date} ${time}`
-    // format dateTime to set appointment and receive confirmation message
     const formattedDateTime = moment(
       dateTime,
       `MM-DD-YYYY ${UserMessage.friendlyFormat}`
@@ -148,7 +149,9 @@ export class AppSystem {
       barber,
       customerInfo.customerData,
       customerInfo.appointmentData
-    )
+    ).catch(err => 'App Flow - could not add customer appointment')
+    
+    database.createCustomer(phoneNumber).catch(err => 'App Flow - could not create customer')
 
     // send confirmation
     const confirmationMessage = UserMessage.generateConfirmationMessage(
@@ -172,6 +175,7 @@ export class AppSystem {
       formattedDateTime,
       total
     )
+
     createJob(
       formatToCronTime(formattedDateTime),
       phoneNumber,

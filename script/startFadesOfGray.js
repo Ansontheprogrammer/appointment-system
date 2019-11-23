@@ -1,17 +1,18 @@
 const request = require('request')
 
-let url;
+let url, websiteUrl;
 if(process.env.NODE_ENV === 'development'){
-  url = `http://localhost:80/api/setBarberShopData`
+  url = `http://localhost:80/api/setBarberShopData`;
+  websiteUrl = '1839be92.ngrok.io'
 } else {
   url = `https://appointment-system.onrender.com/api/setBarberShopData`
+  websiteUrl = 'fadesofgray.netlify.com'
 }
 
-console.log('sending req', url)
 request.post({url, form: { 
     barberShopName: 'fadesOfGray',
     friendlyName: 'Fades of Gray',
-    url: 'fadesofgray.netlify.com',
+    url: websiteUrl,
     phoneVoice: 'Polly.Salli',
     twilioNumber: '16125023342',
     shopPhoneNumber: '6128796369',

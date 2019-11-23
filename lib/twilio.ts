@@ -215,7 +215,7 @@ export async function cancelRecentAppointment(req, res) {
     message = `Here's a link to cancel your appointment \n${url}`
   }
   else {
-    message = 'Hey, seems like you haven`t booked an appointment with anyone. \nYou need to book an appointment first before trying to cancel one.'
+    message = `Hey, seems like you haven't booked an appointment with anyone. \nYou need to book an appointment first before trying to cancel one.`
   }
   client.messages.create({
     from: twilioPhoneNumber,
