@@ -60,14 +60,6 @@ export function getBarberAppointments(
 ): string[] {
   const currentDateAndTime = moment()
   let from = currentDateAndTime.format('YYYY-MM-DD')
-  // check if barbershop is closed and move the user to make an appointment for the next day
-  // if (
-  //   shopIsClosed()
-  // ) {
-  //   from = moment(from)
-  //     .add(1, 'day')
-  //     .format('YYYY-MM-DD')
-  // }
 
   if (!!date) from = moment(date).format('YYYY-MM-DD')
 
@@ -215,13 +207,20 @@ export class UserMessageInterface {
 export const UserMessage = new UserMessageInterface()
 
 export async function cancelRecentAppointment(req, res) {
-  const { phoneNumber, uuid } = req.customer
-  const url = `${barberShopURL}/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
-  const message = `Here's a link to cancel your appointment \n${url}`
+  let message;
+  // if the customer has a uuid that means they have appointments in the database
+  if(!!req.customer.uuid){
+    const { phoneNumber, uuid } = req.customer
+    const url = `${barberShopURL}/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
+    message = `Here's a link to cancel your appointment \n${url}`
+  }
+  else {
+    message = 'Hey, seems like you haven`t booked an appointment with anyone. \nYou need to book an appointment first before trying to cancel one.'
+  }
   client.messages.create({
     from: twilioPhoneNumber,
     body: message,
-    to: phoneNumber
+    to: req.customer.phoneNumber
   })
 }
 
@@ -251,4 +250,3 @@ export async function notifyBarber(req, res, next) {
   })
   res.sendStatus(200)
 }
-
