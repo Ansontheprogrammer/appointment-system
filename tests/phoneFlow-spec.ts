@@ -52,7 +52,6 @@ describe('Phone Flow System', () => {
             const expectedMultipleServiceChoiceTwiml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Say voice=\"Polly.Salli\">The shop is closed currently. I'm sending you a link to book an appointment at a later date</Say></Response>"
             
             res.send = (message) => {
-                console.log(JSON.stringify(message, null, 4))
                 assert.deepEqual(JSON.stringify(message, null, 4), JSON.stringify(expectedMultipleServiceChoiceTwiml, null, 4))
                 done()
             }
