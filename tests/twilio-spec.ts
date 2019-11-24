@@ -267,32 +267,31 @@ describe('Text System', () => {
                 // stub out getHours Date object and force it to return a number less than when the shop is open
                 const now = new Date('August 17, 2019 12:24:00');
                 const clock = sinon.useFakeTimers(now.getTime())
-                console.log(now.getTime(), 'time')
                 const status = shopIsClosed()
                 assert.equal(status, false)
                 clock.restore()
             })
         })
 
-        describe('testGetName', () => {
-            const req = {
-                body: {
-                    From: '19082097544',
-                    Body: 'Anson'
-                },
-                customer: {
-                    session: {
-                        'stepNumber': '1'
-                    },
-                    phoneNumber: '9082097544',
-                    firstName: 'Anson'
-                }
-            }
-            it('should start a session for a user and send them a message to retrieve their name', done => {
-                new TextSystem().textGetName(req, res, () => {}).then(() => {
-                    done()
-                }, done)
-            })
-        })
+        // describe('testGetName', () => {
+        //     const req = {
+        //         body: {
+        //             From: '19082097544',
+        //             Body: 'Anson'
+        //         },
+        //         customer: {
+        //             session: {
+        //                 'stepNumber': '1'
+        //             },
+        //             phoneNumber: '9082097544',
+        //             firstName: 'Anson'
+        //         }
+        //     }
+        //     it('should start a session for a user and send them a message to retrieve their name', done => {
+        //         new TextSystem().textGetName(req, res, () => {}).then(() => {
+        //             done()
+        //         }, done)
+        //     })
+        // })
     })
 })
