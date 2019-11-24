@@ -52,7 +52,6 @@ describe('Phone Flow System', () => {
             const expectedMultipleServiceChoiceTwiml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Say voice=\"Polly.Salli\">The shop is closed currently. I'm sending you a link to book an appointment at a later date</Say></Response>"
             
             res.send = (message) => {
-                console.log(JSON.stringify(message, null, 4))
                 assert.deepEqual(JSON.stringify(message, null, 4), JSON.stringify(expectedMultipleServiceChoiceTwiml, null, 4))
                 done()
             }
@@ -81,27 +80,27 @@ describe('Phone Flow System', () => {
             new PhoneSystem().phoneAppointmentFlow({}, res, {}).then(done, done)
         })
 
-        it('it should send the user a text message if the shop is closed currently', done => {
-            sinon.stub(new VoiceResponse, 'say').callsFake((message, voice) => {
-                // functions were called in correct order
-                return new VoiceResponse.Say()
-            })
-            sinon.stub(twilioLib.client.messages, 'create').callsFake((createdMessage) => {
-                // functions were called in correct order
-                const expectedMessage = { 
-                    from: '16125023342',
-                    body: 'Here\'s a link to book at a later date fadesofgray.netlify.com/cue',
-                    to: '9082097544' 
-                }
+        // it('it should send the user a text message if the shop is closed currently', done => {
+        //     sinon.stub(new VoiceResponse, 'say').callsFake((message, voice) => {
+        //         // functions were called in correct order
+        //         return new VoiceResponse.Say()
+        //     })
+        //     sinon.stub(twilioLib.client.messages, 'create').callsFake((createdMessage) => {
+        //         // functions were called in correct order
+        //         const expectedMessage = { 
+        //             from: '16125023342',
+        //             body: 'Here\'s a link to book at a later date fadesofgray.netlify.com/cue',
+        //             to: '9082097544' 
+        //         }
          
-                assert.deepEqual(createdMessage, expectedMessage)
-                return 
-            })
-            res.send = (message) => {
+        //         assert.deepEqual(createdMessage, expectedMessage)
+        //         return 
+        //     })
+        //     res.send = (message) => {
             
-            }
+        //     }
     
-            new PhoneSystem().phoneAppointmentFlow({}, res, {}).then(done, done)
-        })
+        //     new PhoneSystem().phoneAppointmentFlow({}, res, {}).then(done, done)
+        // })
     })
 })
