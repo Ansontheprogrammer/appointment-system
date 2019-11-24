@@ -1,6 +1,6 @@
 const request = require('request')
 
-let url;
+let url, websiteUrl;
 if(process.env.NODE_ENV === 'development'){
   url = `http://localhost:80/api/setBarberShopData`;
 } else {
