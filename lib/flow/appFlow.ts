@@ -91,7 +91,6 @@ export class AppSystem {
   public async getBarberAvailableTimes(req, res, next) {
     // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
     const { barber, fromDate, services } = req.body
-    console.log(req.body, 'body', friendlyShopName, 'shop name')
     // Handle case for retrieving schedules on the dashboard
     if(services.length){
       if (!Object.keys(services[0]).length) services.shift()
@@ -99,7 +98,6 @@ export class AppSystem {
     const barberInDatabase = await (database.findBarberInDatabase(
       barber
     ) as Promise<BARBER>)
-    console.log(barberInDatabase, 'barberindatabase')
     let availableTimes = getBarberAppointments(
       services,
       barberInDatabase,
