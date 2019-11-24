@@ -3,7 +3,7 @@ import express from 'express'
 import {PhoneSystem} from './lib/flow/phoneFlow'
 import { TextSystem } from './lib/flow/smsFlow'
 import { AppSystem } from './lib/flow/appFlow'
-import { createBarber, notifyBarber } from './lib/twilio'
+import { createBarber, notifyBarber, resetCronJobs } from './lib/twilio'
 import { Database } from './lib/database'
 import * as flow from './config/flow'
 import cors from 'cors'
@@ -36,7 +36,10 @@ app.post('/api/notifyBarber', notifyBarber)
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
 app.post('/api/createBarber', createBarber)
+// Set Barber Shop Data
 app.post('/api/setBarberShopData', Database.setBarberShopData)
+// Reset server cron jobs
+app.get('/api/resetCronJobs', resetCronJobs)
 app.get('/api/ping', (req, res, next) => {
   res.sendStatus(200)
 })

@@ -34,11 +34,13 @@ export type CUSTOMER = {
   }
 
   export type BARBER_APPOINTMENTS = {
-    customer: CUSTOMER
+    phoneNumber: string,
+    firstName: string,
+    uuid?: string,
     details: {
-      time: ALLOCATED_TIMES
+      services: SERVICES[],
+      time: ALLOCATED_TIMES,
       total: number
-      duration: number
     }
   }
   
