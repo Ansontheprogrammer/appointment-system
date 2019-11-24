@@ -103,7 +103,6 @@ export class AppSystem {
       barberInDatabase,
       fromDate
     )
-    console.log(barbersInShop, 'barbersInshop')
     availableTimes = availableTimes.map(time =>
       moment(time, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
     )
