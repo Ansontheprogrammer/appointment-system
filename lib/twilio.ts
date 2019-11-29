@@ -75,14 +75,24 @@ export function getBarberAppointments(
   let totalDuration = 0
   // sum up total durations
   services.forEach(service => (totalDuration += service.duration))
+  // TODO: think of a way to architect it to provide different features per shop
+  // FADESOFGRAY - if customer didn't just order a hair lining, lets change interval to 30
+  let interval;
+  if(services.length === 1 && services[0].service === 'Hair Lining'){
+    interval = 15;
+  } else {
+    interval = 30;
+  }
+
   let availableTimes = getAvailableTimes(
     totalDuration,
-    15,
+    interval,
     barbersAllocatedTimes,
     from,
     to,
     barber
   )
+  
   if (!availableTimes) return []
   return formatAllocatedTimes(availableTimes).map(time =>
     moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm')
