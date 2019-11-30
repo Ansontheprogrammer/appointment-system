@@ -289,3 +289,31 @@ export function resetCronJobs(req, res, next){
       res.sendStatus(200)
   })
 }
+
+export function sendTextMessageBlast(req, res, next){
+  const { barberName, messageToBlast } = req.body
+  database.findBarberInDatabase(barberName).then(barber => {
+    const appointments = barber.appointments
+    let customerPhoneNumbersToBlastToo;
+    if(process.env.NODE_ENV === 'test'){
+      customerPhoneNumbersToBlastToo = ['9082097544']
+    } else {
+      customerPhoneNumbersToBlastToo = appointments.map(appointment => appointment.phoneNumber)
+    }
+    // Send blast text message 
+    const sendBlastTextMessagePromises = customerPhoneNumbersToBlastToo.map((phoneNumber, index) => {
+      return sendText(messageToBlast, phoneNumber, true)
+    });
+
+    Promise.all(sendBlastTextMessagePromises).then(() => res.sendStatus(200))
+  }, err => res.sendStatus(400))
+}
+
+export async function sendText(message: string, toPhoneNumber: string, testEnv?){
+  const twilioNumberToUse = testEnv ? '16125023342' : twilioPhoneNumber
+  return await client.messages.create({
+    from: twilioNumberToUse,
+    body: message,
+    to: toPhoneNumber
+  }).then(() => { return })
+}

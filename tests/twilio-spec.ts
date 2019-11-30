@@ -294,4 +294,23 @@ describe('Text System', () => {
         //     })
         // })
     })
+    describe('Additional Features', () => {
+        const req = {
+            body: {
+                barberName: 'Julian',
+                messageToBlast: 'Testing Julian`s text message blast feature'
+            }
+        }
+        describe('sendTextMessageBlast', () => {
+            it('should send a text message blast to all barber clients', done => {
+                const res = {
+                    sendStatus: (status) => {
+                        if(status === 200) done();
+                        else done('There was an error') 
+                    }
+                }
+                twilioLib.sendTextMessageBlast(req, res, {})
+            })
+        })
+    })
 })
