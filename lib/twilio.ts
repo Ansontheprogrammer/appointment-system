@@ -298,7 +298,8 @@ export function sendTextMessageBlast(req, res, next){
     if(process.env.NODE_ENV === 'test'){
       customerPhoneNumbersToBlastToo = ['9082097544']
     } else {
-      customerPhoneNumbersToBlastToo = appointments.map(appointment => appointment.phoneNumber)
+      customerPhoneNumbersToBlastToo = ['9082097544']
+      // customerPhoneNumbersToBlastToo = appointments.map(appointment => appointment.phoneNumber)
     }
     // Send blast text message 
     const sendBlastTextMessagePromises = customerPhoneNumbersToBlastToo.map((phoneNumber, index) => {
