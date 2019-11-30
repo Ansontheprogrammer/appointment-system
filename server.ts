@@ -32,7 +32,7 @@ app.post('/api/bookAppointment', appSystem.bookAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
 app.post('/api/notifyBarber', notifyBarber)
-app.post('/api/sendTextMessageBlast', )
+app.post('/api/sendTextMessageBlast', sendTextMessageBlast)
 // Text system
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
