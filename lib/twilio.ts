@@ -68,7 +68,6 @@ export function getBarberAppointments(
   let to = moment(from)
     .add(1, 'day')
     .format('YYYY-MM-DD')
-
   const barbersAllocatedTimes = barber.appointments.map(
     appointment => appointment.details.time
   )
@@ -298,7 +297,8 @@ export function sendTextMessageBlast(req, res, next){
     if(process.env.NODE_ENV === 'test'){
       customerPhoneNumbersToBlastToo = ['9082097544']
     } else {
-      customerPhoneNumbersToBlastToo = appointments.map(appointment => appointment.phoneNumber)
+      const phoneNumbersToBlast = appointments.map(appointment => appointment.phoneNumber)
+      customerPhoneNumbersToBlastToo = ArrNoDupe(phoneNumbersToBlast);
     }
     // Send blast text message 
     const sendBlastTextMessagePromises = customerPhoneNumbersToBlastToo.map((phoneNumber, index) => {
@@ -307,6 +307,16 @@ export function sendTextMessageBlast(req, res, next){
 
     Promise.all(sendBlastTextMessagePromises).then(() => res.sendStatus(200))
   }, err => res.sendStatus(400))
+}
+
+function ArrNoDupe(a) {
+  var temp = {};
+  for (var i = 0; i < a.length; i++)
+      temp[a[i]] = true;
+  var r = [];
+  for (var k in temp)
+      r.push(k);
+  return r;
 }
 
 export async function sendText(message: string, toPhoneNumber: string, testEnv?){
