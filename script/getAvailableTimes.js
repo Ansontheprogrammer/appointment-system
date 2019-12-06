@@ -5,8 +5,8 @@ const url = `http://localhost:80/api/getBarberAvailableTimes`
 
 request.post(url)
 .form({
-    barber: 'Kelly',
-    fromDate: '2019-08-25 00:00',
+    barber: 'Julian',
+    fromDate: '2019-01-02',
     toDays: 15,
     services: [{
         duration: 50,
