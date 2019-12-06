@@ -281,6 +281,24 @@ export async function notifyBarberCustomerTriedToCancelWithinTheHour(req, res, n
   res.sendStatus(200)
 }
 
+export async function notifyCustomerAboutFeeOnTheirNextVisit(req, res, next) {
+  const { amountOfTimesTheyHaveCanceled, customerPhoneNumber } = req.body
+  let message;
+  if(amountOfTimesTheyHaveCanceled === 0){
+    message = `You've recently had an appointment at the Fades of Gray and you didn't call or cancel your appointment.\nYou will be charged a $10 fee on your next visit.`
+  } else {
+    message = `You've recently had an appointment at the Fades of Gray and you didn't call or cancel your appointment.\nYou will be charged the total cost of your service on your next visit.`
+  }
+
+  client.messages.create({
+    from: twilioPhoneNumber,
+    body: message,
+    to: customerPhoneNumber
+  })
+
+  res.sendStatus(200)
+}
+
 export function resetCronJobs(req, res, next){
   barberCollection
   .get()
