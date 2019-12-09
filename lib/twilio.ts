@@ -30,26 +30,55 @@ export function getAvailableTimes(
   barber: types.BARBER
 ): TimeAvailability[] {
   // set time to get available times
+
+  // Get current date
+  const currentDate = moment().format('YYYY-MM-DD');
+  let schedules
+
+  // Check if date matches date in availabilities
+  (barber as any).availabilities.forEach(availability => {
+    if (availability.date === currentDate) {
+      schedules = [
+        {
+          ...barberShopAvailability,
+          ...availability.schedule,
+          unavailability: [
+            {
+              from: `${from} ${barber.unavailabilities.lunch.from}`,
+              to: `${from} ${barber.unavailabilities.lunch.to}}`
+            },
+            ...barber.unavailabilities.offDays,
+            ...barber.unavailabilities.unavailableTimes,
+            ...barber.unavailabilities.vacations
+          ],
+          allocated: allocatedTimes
+        }
+      ];
+    } else {
+      schedules = [
+        {
+          ...barberShopAvailability,
+          unavailability: [
+            {
+              from: `${from} ${barber.unavailabilities.lunch.from}`,
+              to: `${from} ${barber.unavailabilities.lunch.to}}`
+            },
+            ...barber.unavailabilities.offDays,
+            ...barber.unavailabilities.unavailableTimes,
+            ...barber.unavailabilities.vacations
+          ],
+          allocated: allocatedTimes
+        }
+      ];
+    }
+  })
+
   return scheduler.getIntersection({
     from,
     to,
     duration,
     interval,
-    schedules: [
-      {
-        ...barberShopAvailability,
-        unavailability: [
-          {
-            from: `${from} ${barber.unavailabilities.lunch.from}`,
-            to: `${from} ${barber.unavailabilities.lunch.to}}`
-          },
-          ...barber.unavailabilities.offDays,
-          ...barber.unavailabilities.unavailableTimes,
-          ...barber.unavailabilities.vacations
-        ],
-        allocated: allocatedTimes
-      }
-    ]
+    schedules
   })[from]
 }
 
@@ -250,7 +279,7 @@ export async function notifyBarber(req, res, next) {
   const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
   const barberData = await database.findBarberInDatabase(barberName)
 
-  
+
   client.messages.create({
     from: twilioPhoneNumber,
     body: message,
