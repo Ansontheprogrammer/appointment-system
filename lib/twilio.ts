@@ -77,11 +77,7 @@ export function getBarberAppointments(
   // TODO: think of a way to architect it to provide different features per shop
   // FADESOFGRAY - if customer didn't just order a hair lining, lets change interval to 30
   let interval;
-  if(services.length === 1 && services[0].service === 'Hair Lining'){
-    interval = 15;
-  } else {
-    interval = 30;
-  }
+  interval = 30;
 
   let availableTimes = getAvailableTimes(
     totalDuration,
