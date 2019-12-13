@@ -131,7 +131,7 @@ export class UserMessageInterface {
     'Okay',
     'Phenomenal'
   ]
-  introGreetingWords = ['How you doing', 'How you been', 'Long time no see']
+  introGreetingWords = ['How are you doing', 'How have you been', 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
   chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
