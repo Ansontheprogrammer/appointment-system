@@ -26,7 +26,7 @@ import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 
-export default class PhoneSystem extends UserMessageInterface {
+export class PhoneSystem extends UserMessageInterface {
     public async phoneAppointmentFlow(req, res, next) {
       const phoneNumber = phoneNumberFormatter(res.req.body.From)
       const twiml = new VoiceResponse()
@@ -45,24 +45,37 @@ export default class PhoneSystem extends UserMessageInterface {
         sendBookLaterDateLink(phoneNumber)
         return
       }
-  
-      const gather = twiml.gather({
-        action: '/api/chooseService',
-        method: 'POST',
-        finishOnKey: '#',
-        timeout: 3
-      })
-      const customer = await database.findCustomerInDatabase(phoneNumber)
+      
+      let gather, chooseServiceMessage;
       let message = ``
-  
       for (let prop in serviceList) {
         message += `(${prop}) for ${serviceList[prop].service}\n`
       }
+
+      if(Object.keys(serviceList).length <= 10){
+        gather = twiml.gather({
+          action: '/api/chooseService',
+          method: 'POST',
+          finishOnKey: '#',
+          timeout: 3
+        })
+        chooseServiceMessage = `Thank you for calling ${friendlyShopName}!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`
+      } else {
+        gather = twiml.gather({
+          action: '/api/chooseService',
+          method: 'POST',
+          timeout: 5
+        })
+        chooseServiceMessage = `Thank you for calling ${friendlyShopName}!. What type of service would you like? ${message}`
+      }
+    
       gather.say(
-        `Thank you for calling ${friendlyShopName}!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`,
+        chooseServiceMessage,
         { voice: automatedVoice }
       )
-  
+      
+      const customer = await database.findCustomerInDatabase(phoneNumber)
+
       if (!customer) await database.createCustomer(phoneNumber)
       res.send(twiml.toString())
     }

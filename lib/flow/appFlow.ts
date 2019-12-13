@@ -1,12 +1,10 @@
 import * as utils from '../../config/utils'
 import { database, getBarberAppointments, UserMessage, client } from '../twilio'
-import { barberShopAvailablilty } from '../twilio'
-import config from '../../config/config'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 import { formatToCronTime } from '../../config/utils'
-import { twilioPhoneNumber } from '../database'
+import { twilioPhoneNumber, barbersInShop, barberShopName, friendlyShopName } from '../database'
 
 export class AppSystem {
   public async walkInAppointment(req, res, next) {
@@ -63,12 +61,14 @@ export class AppSystem {
       total
     }
 
-    await database.addAppointment(barber, customer, appointmentData)
-
-    const currentHour = moment().format('H')
+    try {
+      await database.addAppointment(barber, customer, appointmentData)
+    } catch(err){
+      console.error(err, 'error trying to add appointment')
+    }
 
     // handle if barbershop is closed
-    if (parseInt(currentHour) > parseInt(barberShopAvailablilty.closed)) {
+    if (utils.shopIsClosed()) {
       return res.send('Barbershop is closed').status(400)
     }
 
@@ -91,7 +91,10 @@ export class AppSystem {
   public async getBarberAvailableTimes(req, res, next) {
     // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
     const { barber, fromDate, services } = req.body
-    if (!Object.keys(services[0]).length) services.shift()
+    // Handle case for retrieving schedules on the dashboard
+    if(services.length){
+      if (!Object.keys(services[0]).length) services.shift()
+    }
     const barberInDatabase = await (database.findBarberInDatabase(
       barber
     ) as Promise<BARBER>)
@@ -119,7 +122,6 @@ export class AppSystem {
     if (!Object.keys(services[0]).length) services.shift()
 
     const dateTime = `${date} ${time}`
-    // format dateTime to set appointment and receive confirmation message
     const formattedDateTime = moment(
       dateTime,
       `MM-DD-YYYY ${UserMessage.friendlyFormat}`
@@ -144,7 +146,9 @@ export class AppSystem {
       barber,
       customerInfo.customerData,
       customerInfo.appointmentData
-    )
+    ).catch(err => 'App Flow - could not add customer appointment')
+    
+    database.createCustomer(phoneNumber).catch(err => 'App Flow - could not create customer')
 
     // send confirmation
     const confirmationMessage = UserMessage.generateConfirmationMessage(
@@ -168,6 +172,7 @@ export class AppSystem {
       formattedDateTime,
       total
     )
+
     createJob(
       formatToCronTime(formattedDateTime),
       phoneNumber,

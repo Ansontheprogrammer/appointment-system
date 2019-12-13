@@ -4,6 +4,7 @@ import * as twilioLib from '../lib/twilio';
 import { TextSystem } from '../lib/flow/smsFlow'
 import { Database, serviceList } from '../lib/database';
 import sinon from 'sinon';
+import { shopIsClosed } from '../config/utils';
 
 describe('User message interface', () => {
     const sampleServices = [
@@ -99,8 +100,7 @@ Total: $40`
     describe('generateAvailableServicesMessage', () => {
         it('should be able to generate available services message', () => {
             const servicesMessage = twilioLib.UserMessage.generateAvailableServicesMessage()
-            let message = `What type of service would you like today? \n\nPress multiple numbers for multiple services`
-            
+            let message = `What type of service would you like today? \n\nPress multiple numbers with spaces for multiple services \nEx. 1 3 10 or 1,3,10`
             for (let prop in serviceList) {
                 message += `\n\n(${prop}) for ${serviceList[prop].service}\nPrice - $${serviceList[prop].price}\nTime - ${serviceList[prop].duration}mins`
             }
@@ -158,11 +158,11 @@ Total: $40`
         })
     })
     it('confirmedAppointmentMessage', () => {
-        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
+        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
         assert.equal(twilioLib.UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
     })
     it('chooseAppointmentTypeMessage', () => {
-        const chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) for first available time\n(2) to book an appointment for today\n(3) for Later date`;
+        const chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
         assert.equal(twilioLib.UserMessage.chooseAppointmentTypeMessage, chooseAppointmentTypeMessage)
     })
     it('friendlyFormat', () => {
@@ -170,7 +170,7 @@ Total: $40`
         assert.equal(twilioLib.UserMessage.friendlyFormat, friendlyFormat)
     })
     it('errorConfirmingAppointmentMessage', () => {
-        const errorConfirmingAppointmentMessage = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) for first available appointment time\n(2) to book an appointment for today\n(3) for later date`
+        const errorConfirmingAppointmentMessage = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) First available appointment time\n(2) Book an appointment for today\n(3) Later date`
         assert.equal(twilioLib.UserMessage.errorConfirmingAppointment, errorConfirmingAppointmentMessage)
     })
     it('errorValidatingConfirmingAppointment', () => {
@@ -184,12 +184,10 @@ describe('Text System', () => {
     let sandbox: sinon.SinonSandbox;
 
     beforeEach(() => {
-        // stub out all database functions
         sandbox = sinon.createSandbox()
     })
 
     afterEach(() => {
-        // restore all mongo db functions
         sandbox.restore();
     })
 
@@ -197,12 +195,12 @@ describe('Text System', () => {
         writeHead: (statusCode, httpHeader) => {
             // return the passed in values to ensure it contains the correct status code and http header
             assert.equal(statusCode, 200)
-            // TODO - figure out why this assert is failing
-            // assert.equal(httpHeader, { 'Content-Type': 'text/xml' })
+            assert.deepEqual(httpHeader, { 'Content-Type': 'text/xml' })
         },
         end: (twilioLibMessageString) => {
             // test that it's returning twiml
-            assert.equal(twilioLibMessageString.includes(`<Response><Message>`), true)
+            const twilioTwiml = `<Response><Message>`
+            assert.equal(twilioLibMessageString.includes(twilioTwiml), true)
         }
     }
 
@@ -211,11 +209,14 @@ describe('Text System', () => {
     it('getTextMessageTwiml', () => {
         TextSystem.getTextMessageTwiml(res)
     })
+
     it('resetUser', () => {
-        res.end = (twilioLibMessageString) => {
+        res.end = (twilioMessageString) => {
+            const twilioTwiml = `<Response><Message>`
             const correctTwimlMessage = `Okay let's start from the top! \n${twilioLib.UserMessage.chooseAppointmentTypeMessage}`
             // test that it's returning the correct twiml
-            assert.equal(twilioLibMessageString.includes(correctTwimlMessage), true)
+            assert.equal(twilioMessageString.includes(correctTwimlMessage), true)
+            assert.equal(twilioMessageString.includes(twilioTwiml), true)
         }
 
         const sendTextMessage = TextSystem.getTextMessageTwiml(res)
@@ -232,5 +233,84 @@ describe('Text System', () => {
         })
 
         TextSystem.resetUser(phoneNumber, sendTextMessage)
+    })
+
+    describe('textMessageFlow', () => {
+        const req = {
+            body: {
+                From: '19082097544',
+                Body: 'Anson'
+            }
+        }
+        describe('shopIsClosed', () => {
+            it('should return shop is closed because we are passing that in the function', () => {
+                const status = shopIsClosed(true)
+                assert.equal(status, true)
+            })
+            it('should return shop is closed, because we are trying to book at a time when the shop is not open yet', () => {
+                // stub out getHours Date object and force it to return a number less than when the shop is open
+                const now = new Date('August 17, 2019 03:24:00');
+                const clock = sinon.useFakeTimers(now.getTime())
+                const status = shopIsClosed()
+                assert.equal(status, true)
+                clock.restore()
+            })
+            it('should return shop is closed, because we are trying to book at a time when the shop has closed already', () => {
+                // stub out getHours Date object and force it to return a number less than when the shop is open
+                const now = new Date('August 17, 2019 21:24:00');
+                const clock = sinon.useFakeTimers(now.getTime())
+                const status = shopIsClosed()
+                assert.equal(status, true)
+                clock.restore()
+            })
+            it('should return shop is not closed, because we are trying to book at a time when the shop is open', () => {
+                // stub out getHours Date object and force it to return a number less than when the shop is open
+                const now = new Date('August 17, 2019 12:24:00');
+                const clock = sinon.useFakeTimers(now.getTime())
+                const status = shopIsClosed()
+                assert.equal(status, false)
+                clock.restore()
+            })
+        })
+
+        // describe('testGetName', () => {
+        //     const req = {
+        //         body: {
+        //             From: '19082097544',
+        //             Body: 'Anson'
+        //         },
+        //         customer: {
+        //             session: {
+        //                 'stepNumber': '1'
+        //             },
+        //             phoneNumber: '9082097544',
+        //             firstName: 'Anson'
+        //         }
+        //     }
+        //     it('should start a session for a user and send them a message to retrieve their name', done => {
+        //         new TextSystem().textGetName(req, res, () => {}).then(() => {
+        //             done()
+        //         }, done)
+        //     })
+        // })
+    })
+    describe('Additional Features', () => {
+        const req = {
+            body: {
+                barberName: 'Julian',
+                messageToBlast: 'Testing Julian`s text message blast feature'
+            }
+        }
+        describe('sendTextMessageBlast', () => {
+            it('should send a text message blast to all barber clients', done => {
+                const res = {
+                    sendStatus: (status) => {
+                        if(status === 200) done();
+                        else done('There was an error') 
+                    }
+                }
+                twilioLib.sendTextMessageBlast(req, res, {})
+            })
+        })
     })
 })

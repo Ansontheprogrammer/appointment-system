@@ -1,7 +1,8 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
 import * as types from './';
-import uuid from 'uuid/v1'
+import uuid from 'uuid/v1';
+import developmentData from '../script/sampleData'
 import { validateAppointmentDetails } from '../config/utils';
 
 admin.initializeApp({
@@ -23,7 +24,8 @@ export let
   friendlyShopName,
   automatedVoice,
   twilioPhoneNumber,
-  barberShopPhoneNumber
+  barberShopPhoneNumber,
+  timezone
 
 export class Database {
   public static firstLetterUpperCase(string) {
@@ -31,7 +33,11 @@ export class Database {
   }
 
   public static setBarberShopData(req, res, next){
-    const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber } = req.body
+    if(process.env.NODE_ENV === 'test'){
+      req.body = developmentData
+    }
+
+    const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber, timeZone } = req.body
     const barberShopDoc = db
     .collection('barbershops')
     .doc(barberShopName)
@@ -43,12 +49,6 @@ export class Database {
     serviceList = JSON.parse(req.body.serviceList)
 
     // SET barbershop availability
-    /* *** Must be lowercase
-       wednesday : {
-            from: '10',
-            to: '18',
-      },
-    */
     barberShopAvailability = JSON.parse(shopAvailability)
 
     // SET barbershop web url
@@ -68,6 +68,13 @@ export class Database {
 
     // SET barbers in shop
     Database.setBarbersInShop(barberCollection)
+
+    if(!timeZone) {
+      timezone = 'America/Chicago'
+    } else {
+      timezone = timeZone
+    }
+
     res.sendStatus(200)
   }
 
@@ -109,13 +116,12 @@ export class Database {
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS) {
     const { phoneNumber, firstName } = customer
     const areAppointmentDetailsCorrect = validateAppointmentDetails(details);
-
+  
     if(!areAppointmentDetailsCorrect.correct){
       throw Error(areAppointmentDetailsCorrect.msg)
     }
     
     const appointment = { phoneNumber, firstName, details, uuid: uuid() }
-    
     try {
       let docRef = await barberCollection.doc(barberFirstName)
       let barber = await docRef.get()
@@ -127,7 +133,6 @@ export class Database {
     } catch (err) {
       throw err
     }
-
   }
 
   public createBarber(barberInfo: types.BARBER) {

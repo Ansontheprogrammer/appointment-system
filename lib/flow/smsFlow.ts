@@ -14,7 +14,6 @@ import {
   cancelRecentAppointment, 
   sendBookLaterDateLink,
   MessagingResponse,
-  barberShopAvailablilty
 } from '../twilio'
 import { barbersInShop, serviceList, friendlyShopName } from '../database'
 import moment from 'moment';
@@ -46,11 +45,17 @@ export class TextSystem {
       
       try {
         let customer = await database.findCustomerInDatabase(phoneNumber)
-
+        // set req.customer to the customer found in database or an object containing the customer's phone number. 
+        req.customer = !!customer ? customer : { phoneNumber }
+        const userMessage: string = extractText(req.body.Body)
+        // Handle if the user would like to cancel the most recent appointment
+        if (userMessage.toLowerCase() === 'remove') {
+          // set customer info to just contain phone number
+          return cancelRecentAppointment(req, res)
+        } 
+        // Send user a message if they would like to continue in the flow and the shop is closed
+        if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
         if (!customer) {
-          // Send user a message if they would like to continue in the flow and the shop is closed
-          if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
-  
           const sendTextMessage = TextSystem.getTextMessageTwiml(res)
           sendTextMessage(
             `${UserMessage.generateRandomGreeting()}, this is ${friendlyShopName} appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
@@ -58,23 +63,12 @@ export class TextSystem {
           customer = await database.createCustomer(phoneNumber)
           return
         } else {
-
-          req.customer = customer
-          const userMessage: string = extractText(req.body.Body)
-
-          // Handle if the user would like to cancel the most recent appointment
-          if (userMessage.toLowerCase() === 'remove') {
-            return cancelRecentAppointment(req, res)
-          }
           // Handle if the user would like to reset the flow
           if (userMessage.toLowerCase() === 'reset') {
             const sendTextMessage = TextSystem.getTextMessageTwiml(res)
             return TextSystem.resetUser(req.customer.phoneNumber, sendTextMessage)
           }
-    
-          // Send user a message if they would like to continue in the flow and the shop is closed
-          if (shopIsClosed()) return sendshopIsClosedMessage(phoneNumber, res)
-          
+                    
           // Send user to the next step
           next()
         }
@@ -167,10 +161,11 @@ export class TextSystem {
         return sendTextMessage(
           `You must choose one of the following. \n\n${UserMessage.generateAvailableServicesMessage()}`
         )
-      let services = [],
-        total = 0
+      let services = [], total = 0
   
       extractedNumbers(userMessage).forEach(n => {
+        // if service is invalid skip this service
+        if(!serviceList[n]) return 
         const service = serviceList[n].service
         const price = serviceList[n].price
         const duration = serviceList[n].duration
@@ -178,6 +173,12 @@ export class TextSystem {
         services.push({ service, duration })
         total += price
       })
+
+      if(!services){
+        return sendTextMessage(
+          `You must choose one of the following. \n\n${UserMessage.generateAvailableServicesMessage()}`
+        )
+      }
   
       const message = UserMessage.generateChooseBarberMessage()
       const session = Object.assign(req.customer.session, {
@@ -471,11 +472,7 @@ export class TextBookAppointmentInterface extends TextSystem {
         }
   
         const currDate = getDate()
-        const currentTime = parseInt(moment().format('H'))
         let date = currDate.date()
-  
-        // check if barbershop is closed and move the user to make an appointment for the next day
-        if (currentTime > parseInt(barberShopAvailablilty.closed)) date += 1
   
         const minutes = moment(time, 'YYYY-MM-DD h:mm a').format('m')
         const appointmentHour = moment(time, 'YYYY-MM-DD h:mm a').format('H')
