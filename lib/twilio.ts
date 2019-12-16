@@ -120,7 +120,7 @@ export function sendshopIsClosedMessage(phoneNumber, res?) {
   sendBookLaterDateLink(phoneNumber)
 }
 
-export class UserMessageInterface {
+export class UserMessages {
   agreeWords = [
     'Great',
     'Thanks',
@@ -211,7 +211,7 @@ export class UserMessageInterface {
   errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
 }
 
-export const UserMessage = new UserMessageInterface()
+export const UserMessage = new UserMessages()
 
 export async function cancelRecentAppointment(req, res) {
   let message;
