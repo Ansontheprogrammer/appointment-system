@@ -1,7 +1,7 @@
 import bodyParser from 'body-parser'
 import express from 'express'
 import {PhoneSystem} from './lib/flow/phoneFlow'
-import { TextSystem } from './lib/flow/smsFlow'
+import { TextSystem } from './lib/flow/smsFlow/smsFlow'
 import { AppSystem } from './lib/flow/appFlow'
 import { 
   createBarber, 
@@ -15,10 +15,12 @@ import { Database } from './lib/database'
 import * as flow from './config/flow'
 import cors from 'cors'
 import { exec }  from 'child_process'
+import { TextInterface } from './lib/flow/smsFlow/textInterface'
 
 const phoneSystem = new PhoneSystem()
 const textSystem = new TextSystem()
 const appSystem = new AppSystem()
+const textInterface = new TextInterface();
 
 export const app = express()
 
@@ -30,10 +32,7 @@ app.use(bodyParser.urlencoded())
 app.use(cors())
 
 // Phone system
-app.post('/api/phoneAppointmentFlow', phoneSystem.phoneAppointmentFlow)
-app.post('/api/chooseService', phoneSystem.chooseService)
-app.post('/api/chosenBarber', phoneSystem.chosenBarber)
-app.post('/api/confirmation', phoneSystem.confirmation)
+app.post('/api/phoneAppointmentFlow', phoneSystem.phoneFlow)
 // App system
 app.post('/api/bookAppointment', appSystem.bookAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
@@ -45,6 +44,7 @@ app.post('/api/notifyCustomerAboutFeeOnTheirNextVisit', notifyCustomerAboutFeeOn
 // Text blast
 app.post('/api/sendTextMessageBlast', sendTextMessageBlast)
 // Text system
+app.post('/api/textInterface', textInterface.userInterface)
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
 app.post('/api/createBarber', createBarber)
