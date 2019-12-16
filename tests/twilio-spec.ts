@@ -1,7 +1,7 @@
 import 'mocha';
 import * as assert from 'assert';
 import * as twilioLib from '../lib/twilio';
-import { TextSystem } from '../lib/flow/smsFlow'
+import { TextSystem } from '../lib/flow/smsFlow/smsFlow'
 import { Database, serviceList } from '../lib/database';
 import sinon from 'sinon';
 import { shopIsClosed } from '../config/utils';
@@ -39,6 +39,18 @@ describe('User message interface', () => {
         const generatedGreeting = twilioLib.UserMessage.generateRandomGreeting()
         const isGreetingValid = twilioLib.UserMessage.introGreetingWords.find(greeting => generatedGreeting === greeting)
         assert.equal(!!isGreetingValid, true)
+    })
+    describe('generateTextInterfaceMessage', () => {
+        it.only('should generate the appropriate text interface message', () => {
+            const message = twilioLib.UserMessage.generateTextInterfaceMessage();
+            const expectedMessage = `Welcome to the Fades of Gray help interface. How can I help you today? Press:
+
+(1) Cancel Appointment
+(2) Book Appointment Online
+(3) Book Appointment Offline
+(4) Help`
+            assert.equal(message, expectedMessage)
+        })
     })
     describe('generateConfirmationMessage', () => {
         it('should create a confirmation message and include appointment confirmation', () => {
