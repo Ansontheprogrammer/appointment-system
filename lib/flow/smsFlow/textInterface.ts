@@ -54,6 +54,8 @@ export class TextInterface {
             case TextInterface.userInterfaceOptions.bookAppointmentOffline.number:
                 // Add customer field allowing us to make the text message flow active or not.
                 return
+            case TextInterface.userInterfaceOptions.help.number:
+                return this.sendInterface(res)
         }
     }
 }
