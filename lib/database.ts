@@ -90,7 +90,8 @@ export class Database {
   public findBarberInDatabase(firstName: string): Promise<DocumentData> {
     return new Promise((resolve, reject) => {
       barberCollection
-      .doc(firstName).get()
+      .doc(firstName)
+        .get()
         .then((snapshot) => resolve(snapshot.data()))
         .catch(reject);
     })
