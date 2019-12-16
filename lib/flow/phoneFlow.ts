@@ -13,6 +13,7 @@ import {
   automatedVoice,
   barberShopPhoneNumber
 } from '../database'
+import { TextInterface } from './smsFlow/textInterface'
 
 /*
   TODO ^Feature: 
@@ -50,6 +51,7 @@ export class PhoneSystem {
 
         if (!customer) {
           this.sayMessageToClient(res, twiml, tellCustomerAboutTextInterfaceMessage)
+          new TextInterface().sendInterface(res);
           await database.createCustomer(phoneNumber)
         }
       } catch(err){
@@ -57,7 +59,6 @@ export class PhoneSystem {
       }
 
       this.callBarbershop(res, twiml)
-      // Send them text interface
     }
   
     private callBarbershop(res, twiml) {
