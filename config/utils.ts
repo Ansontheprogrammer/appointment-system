@@ -1,4 +1,3 @@
-import * as twilioLib from '../lib/twilio'
 import { DETAILS } from '../lib'
 import moment = require('moment');
 import { timezone, barberShopAvailability } from '../lib/database';
@@ -36,8 +35,13 @@ export function validateMessage(body: string, validResponses: string[]) {
   return validResponses.includes(extractedNumber)
 }
 
-export function extractedNumbers(body: string) {
+export function extractNumbers(body: string) {
   var numbers = body.match(/\d+/g).map(Number);
+  return numbers
+}
+
+export function extractNumberFromMessage(body: string) {
+  var numbers = body.match(/\d+/g)[0];
   return numbers
 }
 
