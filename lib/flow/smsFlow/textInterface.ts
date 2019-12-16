@@ -9,13 +9,11 @@ import {
 } from '../../twilio'
 
 export class TextInterface {
-    private getTextMessageTwiml(res: any) {
-      return (message: string) => {
+    private sendTextMessage(res: any, message) {
         const msg = new MessagingResponse()
         msg.message(message)
         res.writeHead(200, { 'Content-Type': 'text/xml' })
-        return res.end(msg.toString())
-      }
+        return res.send(msg.toString())
     }
 
     public static userInterfaceOptions = {
@@ -38,8 +36,12 @@ export class TextInterface {
     }
 
     public sendInterface(res){
-        const sendTextMessage = this.getTextMessageTwiml(res);
-        sendTextMessage(UserMessage.generateTextInterfaceMessage())
+        this.sendTextMessage(res, UserMessage.generateTextInterfaceMessage());
+    }
+
+    private invalidInterfaceOption(res){
+       this.sendTextMessage(res, 'Sorry that was an invalid option\n')
+       this.sendInterface(res);
     }
 
     public userInterface(req, res, next) {
@@ -48,14 +50,18 @@ export class TextInterface {
 
         switch (userMessage){
             case TextInterface.userInterfaceOptions.cancelAppointment.number:
-                return cancelRecentAppointment(req, res);
+                cancelRecentAppointment(req, res);
             case TextInterface.userInterfaceOptions.bookAppointmentOnline.number:
-                return sendBookLaterDateLink(phoneNumber)
+                sendBookLaterDateLink(phoneNumber)
             case TextInterface.userInterfaceOptions.bookAppointmentOffline.number:
                 // Add customer field allowing us to make the text message flow active or not.
-                return
+                this.sendTextMessage(res, 'Sorry this shop does not provide offline booking')
             case TextInterface.userInterfaceOptions.help.number:
-                return this.sendInterface(res)
+                this.sendInterface(res)
+            default:
+                this.invalidInterfaceOption(res)
         }
+
+        res.sendStatus(200);
     }
 }
