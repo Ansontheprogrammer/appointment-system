@@ -7,13 +7,15 @@ import {
   barberShopURL,
   barberShopAvailability,
   twilioPhoneNumber,
-  barberCollection
+  barberCollection,
+  friendlyShopName
 } from './database'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
 import { formatToCronTime } from '../config/utils';
 import { createJob } from './cron'
+import { TextInterface } from './flow/smsFlow/textInterface'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
@@ -163,6 +165,13 @@ export class UserMessages {
       )
   }
 
+  public generateTextInterfaceMessage(){
+    const options = TextInterface.userInterfaceOptions;
+    let message = `Welcome to the ${friendlyShopName} help interface. How can I help you today? Press:\n`
+    for (let option in options) message += `\n(${options[option].number}) ${options[option].name}`
+    return message
+  }
+
   public generateReminderMessage(
     services: types.SERVICES[],
     barberName: string,
@@ -233,7 +242,7 @@ export async function cancelRecentAppointment(req, res) {
 
 export async function sendBookLaterDateLink(phoneNumber: string) {
   const url = `${barberShopURL}/cue`
-  const message = `Here's a link to book at a later date ${url}`
+  const message = `Here's a link to book an appointment ${url}`
   client.messages.create({
     from: twilioPhoneNumber,
     body: message,
