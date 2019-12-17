@@ -47,10 +47,20 @@ export function extractNumberFromMessage(body: string) {
 
 export function validateAppointmentDetails(details: DETAILS): { correct: boolean, msg?: string} {
   const errorMessages = {
-    invaildDate: 'Date was invaild'
+    invaildDate: 'Date was invaild',
+    invalidAppointmentDuration: 'No appointment duration was supplied',
+    invalidServices: 'No services were supplied',
+    invalidTotal: 'No total was supplied'
   }
+  // TODO: Add a check to check if the services are corret & make a type for services
   if(details.time.from === 'Invalid date'){
     return { correct: false, msg: errorMessages.invaildDate }
+  } else if(!details.time.duration){
+    return { correct: false, msg: errorMessages.invalidAppointmentDuration}
+  } else if(!details.services.length){
+    return { correct: false, msg: errorMessages.invalidServices}
+  } else if(!details.total){
+    return { correct: false, msg: errorMessages.invalidTotal}
   }
   else {
     return { correct: true }
