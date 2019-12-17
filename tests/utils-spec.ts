@@ -84,7 +84,7 @@ describe('Utility Functions', () =>{
         })
         it('should return that the appointment details are correct', () => {
             const exampleIncorrectAppointment = {
-                services: [],
+                services: ['Hair Cut'],
                 time: { 
                 duration: 60, 
                 from: '2019-11-09' 
