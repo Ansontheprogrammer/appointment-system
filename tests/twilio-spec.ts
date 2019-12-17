@@ -41,7 +41,7 @@ describe('User message interface', () => {
         assert.equal(!!isGreetingValid, true)
     })
     describe('generateTextInterfaceMessage', () => {
-        it.only('should generate the appropriate text interface message', () => {
+        it('should generate the appropriate text interface message', () => {
             const message = twilioLib.UserMessage.generateTextInterfaceMessage();
             const expectedMessage = `Welcome to the Fades of Gray help interface. How can I help you today? Press:
 
