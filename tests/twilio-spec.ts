@@ -1,10 +1,11 @@
 import 'mocha';
 import * as assert from 'assert';
 import * as twilioLib from '../lib/twilio';
-import { TextSystem } from '../lib/flow/smsFlow'
+import { TextSystem } from '../lib/flow/smsFlow/smsFlow'
 import { Database, serviceList } from '../lib/database';
 import sinon from 'sinon';
 import { shopIsClosed } from '../config/utils';
+import { BARBER } from '../lib';
 
 describe('User message interface', () => {
     const sampleServices = [
@@ -39,6 +40,18 @@ describe('User message interface', () => {
         const generatedGreeting = twilioLib.UserMessage.generateRandomGreeting()
         const isGreetingValid = twilioLib.UserMessage.introGreetingWords.find(greeting => generatedGreeting === greeting)
         assert.equal(!!isGreetingValid, true)
+    })
+    describe('generateTextInterfaceMessage', () => {
+        it('should generate the appropriate text interface message', () => {
+            const message = twilioLib.UserMessage.generateTextInterfaceMessage();
+            const expectedMessage = `Welcome to the Fades of Gray help interface. How can I help you today? Press:
+
+(1) Cancel Appointment
+(2) Book Appointment Online
+(3) Book Appointment Offline
+(4) Help`
+            assert.equal(message, expectedMessage)
+        })
     })
     describe('generateConfirmationMessage', () => {
         it('should create a confirmation message and include appointment confirmation', () => {
@@ -180,6 +193,93 @@ Total: $40`
 })
 
 
+describe('scheduling appointments', () => {
+    Database.setBarberShopData({}, {
+        sendStatus: () => {}
+    }, () => {})
+
+    const sampleService = [
+        {
+            service: 'Adult Haircut',
+            price: 25,
+            duration: 45
+        }
+    ]
+
+    const exampleBarber = {
+        phoneNumber: '',
+        email: '',
+        name: '',
+        appointments: [
+            {
+                phoneNumber: '',
+                firstName: '',
+                uuid: '',
+                details: {
+                  services: [],
+                  time: {
+                    from: '2019-15-10 10:00',
+                    to: '2019-15-10 11:00'
+                  },
+                  total: 60
+                }
+            }
+        ],
+        unavailabilities: {
+            lunch: {
+                from: '10:00',
+                to: '10:30'
+            },
+            offDays: [
+                {
+                    from: '2019-12-10',
+                    to: '2019-12-11'
+                }
+            ],
+            vacations: [],
+            unavailableTimes: []
+        }
+    }
+
+    describe('getAvailableTimes', () => {
+        it('should not be able to book an appointment during a lunch time', () => {
+            const availableTimes = twilioLib.getAvailableTimes(30, 15, [], '2019-12-12', '2019-12-13', (exampleBarber as any))
+            const timesThatShouldBeUnavailable = availableTimes.filter(availableTime => availableTime.time === '10:00' || availableTime.time === '10:15');
+            const expectedTimeAvailability = [ 
+                { time: '10:00', available: false, reference: null },
+                { time: '10:15', available: false, reference: null } 
+            ]
+            assert.deepEqual(timesThatShouldBeUnavailable, expectedTimeAvailability)
+        })
+        it('should be able to book an appointment if it is not lunch time or off day', () => {
+            const availableTimes = twilioLib.getAvailableTimes(30, 15, [], '2019-12-12', '2019-12-13', (exampleBarber as any))
+            const timesThatShouldBeUnavailable = availableTimes.filter(availableTime => availableTime.time === '10:30' || availableTime.time === '11:00');
+            const expectedTimeAvailability = [ 
+                { time: '10:30', available: true, reference: null },
+                { time: '11:00', available: true, reference: null } 
+            ]
+            assert.deepEqual(timesThatShouldBeUnavailable, expectedTimeAvailability)
+        })
+    
+        it('should not be able to book an appointment during an off day', () => {
+            const availableTimes = twilioLib.getAvailableTimes(30, 15, [], '2019-12-10', '2019-12-11', (exampleBarber as any))
+            const areAllTimesUnavailable = availableTimes.every(availableTime => availableTime.available === false)
+            assert.equal(areAllTimesUnavailable, true)
+        })
+    })
+    // describe('getBarberAppointments', () => {
+    //     it.only('should not be able to book an appointment during a lunch time', () => {
+    //         const barberAppointments = twilioLib.getBarberAppointments(sampleService, (exampleBarber as any));
+    //         console.log(barberAppointments, 'barberAppointments')
+    //     })
+    //     it('should be able to book an appointment if it is not lunch time or off day', () => {
+    //     })
+    
+    //     it('should not be able to book an appointment during an off day', () => {
+    //     })
+    // })
+})
+
 describe('Text System', () => {
     let sandbox: sinon.SinonSandbox;
 
@@ -301,16 +401,16 @@ describe('Text System', () => {
                 messageToBlast: 'Testing Julian`s text message blast feature'
             }
         }
-        describe('sendTextMessageBlast', () => {
-            it('should send a text message blast to all barber clients', done => {
-                const res = {
-                    sendStatus: (status) => {
-                        if(status === 200) done();
-                        else done('There was an error') 
-                    }
-                }
-                twilioLib.sendTextMessageBlast(req, res, {})
-            })
-        })
+        // describe('sendTextMessageBlast', () => {
+        //     it('should send a text message blast to all barber clients', done => {
+        //         const res = {
+        //             sendStatus: (status) => {
+        //                 if(status === 200) done();
+        //                 else done('There was an error') 
+        //             }
+        //         }
+        //         twilioLib.sendTextMessageBlast(req, res, {})
+        //     })
+        // })
     })
 })

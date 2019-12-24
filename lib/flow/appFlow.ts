@@ -4,7 +4,7 @@ import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 import { formatToCronTime } from '../../config/utils'
-import { twilioPhoneNumber, barbersInShop, barberShopName, friendlyShopName } from '../database'
+import { twilioPhoneNumber } from '../database'
 
 export class AppSystem {
   public async walkInAppointment(req, res, next) {

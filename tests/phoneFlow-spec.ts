@@ -2,10 +2,7 @@ import 'mocha';
 import * as assert from 'assert';
 import * as twilioLib from '../lib/twilio';
 import { PhoneSystem } from '../lib/flow/phoneFlow'
-import { Database, serviceList } from '../lib/database';
 import sinon from 'sinon';
-import { shopIsClosed } from '../config/utils';
-import VoiceResponse from 'twilio/lib/twiml/VoiceResponse';
 
 describe('Phone Flow System', () => {
     let sandbox: sinon.SinonSandbox;
@@ -47,20 +44,7 @@ describe('Phone Flow System', () => {
     }
 
     
-    describe('phoneAppointmentFlow', () => {
-        it('it should return twiml to start phone flow also allowing multiple service choice.', done => {
-            const expectedMultipleServiceChoiceTwiml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response><Say voice=\"Polly.Salli\">The shop is closed currently. I'm sending you a link to book an appointment at a later date</Say></Response>"
-            
-            res.send = (message) => {
-                assert.deepEqual(JSON.stringify(message, null, 4), JSON.stringify(expectedMultipleServiceChoiceTwiml, null, 4))
-                done()
-            }
-    
-            new PhoneSystem().phoneAppointmentFlow({}, res, {})
-        })
-
-        //** TODO - make test for choosing non multiple choices */
-
+    describe('phoneFlow', () => {
         it('it should ensure that create customer is called after find customer in database', done => {
             let calledFindCustomerInDatabase;
             sinon.stub(twilioLib.database, 'findCustomerInDatabase').callsFake(phoneNumber => {
@@ -77,10 +61,10 @@ describe('Phone Flow System', () => {
             res.send = (message) => {
             }
     
-            new PhoneSystem().phoneAppointmentFlow({}, res, {}).then(done, done)
+            new PhoneSystem().phoneFlow({}, res, {}).then(done, done)
         })
 
-        // it('it should send the user a text message if the shop is closed currently', done => {
+        // it('should send the user a text message if the shop is closed currently', done => {
         //     sinon.stub(new VoiceResponse, 'say').callsFake((message, voice) => {
         //         // functions were called in correct order
         //         return new VoiceResponse.Say()
@@ -100,7 +84,7 @@ describe('Phone Flow System', () => {
             
         //     }
     
-        //     new PhoneSystem().phoneAppointmentFlow({}, res, {}).then(done, done)
+        //     new PhoneSystem().phoneFlow({}, res, {}).then(done, done)
         // })
     })
 })

@@ -1,4 +1,6 @@
-import { TextSystem, TextBookAppointmentInterface, TextWalkInAppointmentInterface} from '../lib/flow/smsFlow'
+import { TextSystem } from '../lib/flow/smsFlow/smsFlow'
+import { TextBookAppointmentInterface } from '../lib/flow/smsFlow/bookAppointmentSMSFlow';
+import { TextWalkInAppointmentInterface } from '../lib/flow/smsFlow/walkinAppointmentSMSFlow';
 const textSystem = new TextSystem
 const textWalkinSystem = new TextWalkInAppointmentInterface();
 const textBookSystem = new TextBookAppointmentInterface();

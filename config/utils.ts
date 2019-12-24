@@ -1,4 +1,3 @@
-import * as twilioLib from '../lib/twilio'
 import { DETAILS } from '../lib'
 import moment = require('moment');
 import { timezone, barberShopAvailability } from '../lib/database';
@@ -36,17 +35,32 @@ export function validateMessage(body: string, validResponses: string[]) {
   return validResponses.includes(extractedNumber)
 }
 
-export function extractedNumbers(body: string) {
+export function extractNumbers(body: string) {
   var numbers = body.match(/\d+/g).map(Number);
+  return numbers
+}
+
+export function extractNumberFromMessage(body: string) {
+  var numbers = body.match(/\d+/g)[0];
   return numbers
 }
 
 export function validateAppointmentDetails(details: DETAILS): { correct: boolean, msg?: string} {
   const errorMessages = {
-    invaildDate: 'Date was invaild'
+    invaildDate: 'Date was invaild',
+    invalidAppointmentDuration: 'No appointment duration was supplied',
+    invalidServices: 'No services were supplied',
+    invalidTotal: 'No total was supplied'
   }
+  // TODO: Add a check to check if the services are corret & make a type for services
   if(details.time.from === 'Invalid date'){
     return { correct: false, msg: errorMessages.invaildDate }
+  } else if(!details.time.duration){
+    return { correct: false, msg: errorMessages.invalidAppointmentDuration}
+  } else if(!details.services.length){
+    return { correct: false, msg: errorMessages.invalidServices}
+  } else if(!details.total){
+    return { correct: false, msg: errorMessages.invalidTotal}
   }
   else {
     return { correct: true }

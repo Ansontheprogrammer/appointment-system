@@ -7,13 +7,15 @@ import {
   barberShopURL,
   barberShopAvailability,
   twilioPhoneNumber,
-  barberCollection
+  barberCollection,
+  friendlyShopName
 } from './database'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
 import { formatToCronTime } from '../config/utils';
 import { createJob } from './cron'
+import { TextInterface } from './flow/smsFlow/textInterface'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
@@ -77,11 +79,7 @@ export function getBarberAppointments(
   // TODO: think of a way to architect it to provide different features per shop
   // FADESOFGRAY - if customer didn't just order a hair lining, lets change interval to 30
   let interval;
-  if(services.length === 1 && services[0].service === 'Hair Lining'){
-    interval = 15;
-  } else {
-    interval = 30;
-  }
+  interval = 30;
 
   let availableTimes = getAvailableTimes(
     totalDuration,
@@ -124,7 +122,7 @@ export function sendshopIsClosedMessage(phoneNumber, res?) {
   sendBookLaterDateLink(phoneNumber)
 }
 
-export class UserMessageInterface {
+export class UserMessages {
   agreeWords = [
     'Great',
     'Thanks',
@@ -135,7 +133,7 @@ export class UserMessageInterface {
     'Okay',
     'Phenomenal'
   ]
-  introGreetingWords = ['How you doing', 'How you been', 'Long time no see']
+  introGreetingWords = ['How are you doing', 'How have you been', 'Long time no see']
   confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
   chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
@@ -165,6 +163,13 @@ export class UserMessageInterface {
       return message.concat(
         '\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO'
       )
+  }
+
+  public generateTextInterfaceMessage(){
+    const options = TextInterface.userInterfaceOptions;
+    let message = `Welcome to the ${friendlyShopName} help interface. How can I help you today? Press:\n`
+    for (let option in options) message += `\n(${options[option].number}) ${options[option].name}`
+    return message
   }
 
   public generateReminderMessage(
@@ -215,7 +220,7 @@ export class UserMessageInterface {
   errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
 }
 
-export const UserMessage = new UserMessageInterface()
+export const UserMessage = new UserMessages()
 
 export async function cancelRecentAppointment(req, res) {
   let message;
@@ -237,7 +242,7 @@ export async function cancelRecentAppointment(req, res) {
 
 export async function sendBookLaterDateLink(phoneNumber: string) {
   const url = `${barberShopURL}/cue`
-  const message = `Here's a link to book at a later date ${url}`
+  const message = `Here's a link to book an appointment ${url}`
   client.messages.create({
     from: twilioPhoneNumber,
     body: message,
@@ -253,7 +258,10 @@ export async function notifyBarber(req, res, next) {
   const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
   const barberData = await database.findBarberInDatabase(barberName)
 
-  
+  // TODO: Cancel Job
+  // TODO: Remove Appointment
+  // TODO: Send Notification Text
+
   client.messages.create({
     from: twilioPhoneNumber,
     body: message,
