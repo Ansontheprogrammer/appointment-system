@@ -258,7 +258,10 @@ export async function notifyBarber(req, res, next) {
   const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
   const barberData = await database.findBarberInDatabase(barberName)
 
-  
+  // TODO: Cancel Job
+  // TODO: Remove Appointment
+  // TODO: Send Notification Text
+
   client.messages.create({
     from: twilioPhoneNumber,
     body: message,

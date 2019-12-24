@@ -51,7 +51,7 @@ export class PhoneSystem {
 
         if (!customer) {
           this.sayMessageToClient(res, twiml, tellCustomerAboutTextInterfaceMessage)
-          new TextInterface().sendInterface(res);
+          TextInterface.sendInterface(res);
           await database.createCustomer(phoneNumber)
         }
       } catch(err){
