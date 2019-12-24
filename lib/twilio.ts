@@ -14,7 +14,7 @@ import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment'
 import { formatToCronTime } from '../config/utils';
-import { createJob } from './cron'
+import { createJob, cancelJob } from './cron'
 import { TextInterface } from './flow/smsFlow/textInterface'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -259,6 +259,7 @@ export async function notifyBarber(req, res, next) {
   const barberData = await database.findBarberInDatabase(barberName)
 
   // TODO: Cancel Job
+  cancelJob(customer.date);
   // TODO: Remove Appointment
   // TODO: Send Notification Text
 
