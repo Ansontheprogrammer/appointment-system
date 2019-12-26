@@ -33,6 +33,65 @@ describe('Database class', () => {
         })
     })
 
+    describe('findBarberInDatabase', () => {
+        it('should attempt to find barber in database', () => {
+            sandbox.stub(databaseLib.barberCollection, 'doc').callsFake((barberName: string) => { 
+                assert.equal(barberName, 'Julian');
+                return {
+                    get: () => {
+                        return new Promise((resolve, reject) => {
+                            resolve({ data: () => { return { phoneNumber: '908029854' } }})
+                        })
+                    },
+                }
+            })
+            new databaseLib.Database().findBarberInDatabase('Julian').then(barber => {
+                const expectedBarberData = { phoneNumber: '908029854' };
+                assert.deepEqual(barber, expectedBarberData)
+            })
+        })
+    })
+
+    describe('updateBarber', () => {
+        it(`should attempt to update a barber's fields in the database`, () => {
+            sandbox.stub(databaseLib.barberCollection, 'doc').callsFake((barberName: string) => { 
+                assert.equal(barberName, 'Julian');
+                return {
+                    update: (updatedAppointments: BARBER_APPOINTMENTS[]) => {
+                        assert.deepEqual(updatedAppointments, {})
+                        return {
+                            then: () => {}
+                        }
+                    },
+                }
+            })
+            new databaseLib.Database().updateBarber('Julian', {}).then(barber => {
+                const expectedBarberData = {};
+                assert.deepEqual(barber, expectedBarberData)
+            })
+        })
+    })
+
+    describe('createCustomer', () => {
+        it('should attempt to find customer in database', () => {
+            sandbox.stub(databaseLib.customerCollection, 'doc').callsFake((phoneNumber: string) => { 
+                assert.equal(phoneNumber, '9082097544');
+                return {
+                    get: () => {
+                        return new Promise((resolve, reject) => {
+                            resolve({ data: () => { return { phoneNumber: '908029854' } }})
+                        })
+                    },
+                }
+            })
+            new databaseLib.Database().findCustomerInDatabase('9082097544').then(barber => {
+                const expectedCustomerData = { phoneNumber: '908029854' };
+                assert.deepEqual(barber, expectedCustomerData)
+            })
+        })
+    })
+
+
     describe('addAppointment', () => {
         const barberName = 'Julian';
         const customer = {
