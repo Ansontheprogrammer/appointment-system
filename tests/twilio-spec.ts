@@ -49,7 +49,8 @@ describe('User message interface', () => {
 (1) Cancel Appointment
 (2) Book Appointment Online
 (3) Book Appointment Offline
-(4) Help`
+(4) Help
+(5) Shop Hours`
             assert.equal(message, expectedMessage)
         })
     })
