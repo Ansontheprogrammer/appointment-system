@@ -2,6 +2,8 @@ import 'mocha';
 import * as assert from 'assert';
 import sinon from 'sinon';
 import * as databaseLib from '../lib/database'
+import { BARBER_APPOINTMENTS } from '../lib';
+import uuid from 'uuid';
 
 describe('Database class', () => {
     let sandbox;
@@ -9,7 +11,6 @@ describe('Database class', () => {
     beforeEach(() => {
         // stub out all database functions
         sandbox = sinon.createSandbox()
-        
     })
 
     afterEach(() => {
@@ -40,19 +41,59 @@ describe('Database class', () => {
             firstName: 'Anson'
         }
 
-        // it('should create an appointment', done => {
-        // TODO: Find a way to override firebase
-        //     const details = {
-        //         services: ['Hair cut'],
-        //         time: { 
-        //             duration: 30,
-        //             from: '2019-09-14 13:30'
-        //         },
-        //         total: 25
-        //     }
-        //     database.addAppointment(barberName, customer, details).then(() => {
-        //         done()
-        //     }, done)
-        // })
+        it('should create an appointment', done => {
+            const expectedAppointment = `{
+    "appointments": [
+        {
+            "phoneNumber": "9082097544",
+            "firstName": "Anson",
+            "details": {
+                "services": [
+                    "Hair cut"
+                ],
+                "time": {
+                    "duration": 30,
+                    "from": "2019-09-14 13:30"
+                },
+                "total": 25
+            },
+            "uuid": "24a888e0-2824-11ea-9786-1568773a6827"
+        }
+    ]
+}`
+            
+            sandbox.stub(databaseLib.barberCollection, 'doc').callsFake((barberName: string) => { 
+                assert.equal(barberName, 'Julian');
+                return {
+                    get: () => {
+                        return {
+                            get: (field: string) => {
+                                assert.equal(field, 'appointments');
+                                return []
+                            }
+                        }
+                    },
+                    update: (updatedObject: BARBER_APPOINTMENTS[]) => {
+                        assert.equal(JSON.stringify(updatedObject, null, 4), expectedAppointment)
+                    },
+                }
+            })
+            sandbox.stub(uuid, 'v1').callsFake(() => { 
+                return '24a888e0-2824-11ea-9786-1568773a6827'
+            })
+
+            // TODO: Find a way to override firebase
+            const details = {
+                services: ['Hair cut'],
+                time: { 
+                    duration: 30,
+                    from: '2019-09-14 13:30'
+                },
+                total: 25
+            }
+            new databaseLib.Database().addAppointment(barberName, customer, details).then(() => {
+                done()
+            }, done)
+        })
     })
 })
