@@ -15,10 +15,10 @@ export const db = admin.firestore();
 export let barbersInShop = [];
 
 export const barberShopName = ''
-export let 
-  barberCollection, 
-  customerCollection, 
-  serviceList, 
+export let
+  barberCollection,
+  customerCollection,
+  serviceList,
   barberShopURL,
   barberShopAvailability,
   friendlyShopName,
@@ -32,16 +32,16 @@ export class Database {
     return string[0].toUpperCase() + string.slice(1)
   }
 
-  public static setBarberShopData(req, res, next){
-    if(process.env.NODE_ENV === 'test'){
+  public static setBarberShopData(req, res, next) {
+    if (process.env.NODE_ENV === 'test') {
       req.body = developmentData
     }
 
     const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber, timeZone } = req.body
     const barberShopDoc = db
-    .collection('barbershops')
-    .doc(barberShopName)
-    
+      .collection('barbershops')
+      .doc(barberShopName)
+
     // SET collections
     barberCollection = barberShopDoc.collection('barbers')
     customerCollection = barberShopDoc.collection('customers')
@@ -53,7 +53,7 @@ export class Database {
 
     // SET barbershop web url
     barberShopURL = url
-    
+
     // SET friendly shop name
     friendlyShopName = friendlyName
 
@@ -62,14 +62,14 @@ export class Database {
 
     // SET phone twilio number
     twilioPhoneNumber = twilioNumber
-    
+
     // SET phone twilio number
     barberShopPhoneNumber = shopPhoneNumber
 
     // SET barbers in shop
     Database.setBarbersInShop(barberCollection)
 
-    if(!timeZone) {
+    if (!timeZone) {
       timezone = 'America/Chicago'
     } else {
       timezone = timeZone
@@ -80,11 +80,11 @@ export class Database {
 
   public static setBarbersInShop = (barberShopDoc: FirebaseFirestore.CollectionReference) => {
     barberShopDoc
-    .get()
-    .then(snapshot => {
-      const barberData = snapshot.docs.map(doc => doc.id)
-      barbersInShop = barberData
-    })
+      .get()
+      .then(snapshot => {
+        const barberData = snapshot.docs.map(doc => doc.id)
+        barbersInShop = barberData
+      })
   }
 
   public findBarberInDatabase(firstName: string): Promise<DocumentData> {
@@ -117,8 +117,8 @@ export class Database {
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS) {
     const { phoneNumber, firstName } = customer
     const areAppointmentDetailsCorrect = validateAppointmentDetails(details);
-  
-    if(!areAppointmentDetailsCorrect.correct){
+
+    if (!areAppointmentDetailsCorrect.correct) {
       throw Error(areAppointmentDetailsCorrect.msg)
     }
     
@@ -161,8 +161,8 @@ export class Database {
   public createCustomer(phoneNumber: string): Promise<any> {
     return new Promise((resolve, reject) => {
       // Assign step number field before saving
-      const customerInfo = Object.assign({ phoneNumber, uuid: uuid.v1() })
-      const session = { stepNumber: '1', finishedGeneralSteps: false}
+      const customerInfo = Object.assign({ phoneNumber, uuid: uuid.v1(), noCallNoShows: [] })
+      const session = { stepNumber: '1', finishedGeneralSteps: false }
 
       this.hasPersonSignedUp(false, customerInfo.phoneNumber).then(hasPersonSignedUp => {
         if (!!hasPersonSignedUp) return reject('Customer has already signed up.')
