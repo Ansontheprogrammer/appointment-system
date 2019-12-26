@@ -1,13 +1,13 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
 import * as types from './';
-import uuid from 'uuid/v1';
 import developmentData from '../script/sampleData'
 import { validateAppointmentDetails } from '../config/utils';
-
+import uuid from 'uuid'
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
 });
+
 
 export const db = admin.firestore();
 
@@ -121,8 +121,8 @@ export class Database {
     if (!areAppointmentDetailsCorrect.correct) {
       throw Error(areAppointmentDetailsCorrect.msg)
     }
-
-    const appointment = { phoneNumber, firstName, details, uuid: uuid() }
+    
+    const appointment = { phoneNumber, firstName, details, uuid: uuid.v1() }
     try {
       let docRef = await barberCollection.doc(barberFirstName)
       let barber = await docRef.get()
@@ -161,7 +161,7 @@ export class Database {
   public createCustomer(phoneNumber: string): Promise<any> {
     return new Promise((resolve, reject) => {
       // Assign step number field before saving
-      const customerInfo = Object.assign({ phoneNumber, uuid: uuid(), noCallNoShows: [] })
+      const customerInfo = Object.assign({ phoneNumber, uuid: uuid.v1(), noCallNoShows: [] })
       const session = { stepNumber: '1', finishedGeneralSteps: false }
 
       this.hasPersonSignedUp(false, customerInfo.phoneNumber).then(hasPersonSignedUp => {
