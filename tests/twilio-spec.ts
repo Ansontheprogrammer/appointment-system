@@ -121,6 +121,13 @@ Total: $40`
             assert.equal(servicesMessage, message)
         })
     })
+    describe('generateShopOpenAvailabilityMessage', () => {
+        it('should be able to generate shop open availabilty message', () => {
+            const availabilityMessage = twilioLib.UserMessage.generateShopOpenAvailabilityMessage()
+            let message = `The shop is open from 10:00 am - 6:00 pm today`
+            assert.equal(availabilityMessage, message)
+        })
+    })
     describe('generateGetBarberAvailableTimesMessage', () => {
         it('should be able to generate a message containing all of the barbers available times', () => {
             const availableTimesMessage = twilioLib.UserMessage.generateGetBarberAvailableTimesMessage(sampleBarberAvailableTimes)

@@ -76,7 +76,9 @@ export class TextInterface {
             sendTextMessage('Sorry this shop does not provide offline booking')
         } else if(userMessage === '4'){
             TextInterface.sendInterface(res)
-        } else {
+        } else if(userMessage === '5'){
+            sendTextMessage(UserMessage.generateShopOpenAvailabilityMessage)
+        }  else {
             TextInterface.invalidInterfaceOption(res)
         }
     }
