@@ -14,8 +14,9 @@ import {
   cancelRecentAppointment, 
   sendBookLaterDateLink,
   MessagingResponse,
+  client,
 } from '../twilio'
-import { barbersInShop, serviceList, friendlyShopName } from '../database'
+import { barbersInShop, serviceList, friendlyShopName, twilioPhoneNumber } from '../database'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
@@ -48,6 +49,13 @@ export class TextSystem {
         // set req.customer to the customer found in database or an object containing the customer's phone number. 
         req.customer = !!customer ? customer : { phoneNumber }
         const userMessage: string = extractText(req.body.Body)
+        const constructionMessage = "App under construction";
+        client.messages.create({
+          from: twilioPhoneNumber,
+          body: constructionMessage,
+          to: req.customer.phoneNumber
+        })
+        return 
         // Handle if the user would like to cancel the most recent appointment
         if (userMessage.toLowerCase() === 'remove') {
           // set customer info to just contain phone number
