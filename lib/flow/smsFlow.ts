@@ -55,7 +55,7 @@ export class TextSystem {
           body: constructionMessage,
           to: req.customer.phoneNumber
         })
-        return 
+    
         // Handle if the user would like to cancel the most recent appointment
         if (userMessage.toLowerCase() === 'remove') {
           // set customer info to just contain phone number
