@@ -9,7 +9,8 @@ import {
   resetCronJobs, 
   sendTextMessageBlast, 
   notifyBarberCustomerTriedToCancelWithinTheHour,
-  notifyCustomerAboutFeeOnTheirNextVisit
+  notifyCustomerAboutFeeOnTheirNextVisit,
+  notifyBarberCustomerMadeAnAppointment
 } from './lib/twilio'
 import { Database } from './lib/database'
 import * as flow from './config/flow'
@@ -40,6 +41,7 @@ app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
 // No call no show
 app.post('/api/notifyBarber', notifyBarber)
+app.post('/api/notifyBarberCustomerMadeAnAppointment', notifyBarberCustomerMadeAnAppointment)
 app.post('/api/notifyBarberCustomerTriedToCancelWithinTheHour', notifyBarberCustomerTriedToCancelWithinTheHour)
 app.post('/api/notifyCustomerAboutFeeOnTheirNextVisit', notifyCustomerAboutFeeOnTheirNextVisit)
 // Text blast
