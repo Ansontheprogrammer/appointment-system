@@ -259,6 +259,22 @@ export async function notifyBarber(req, res, next) {
   res.sendStatus(200)
 }
 
+export async function notifyBarberCustomerMadeAnAppointment(req, res, next) {
+  const { customer, barberName } = req.body
+  const { phoneNumber, name, date } = customer
+  const message = `${name} just made an appointment for \n${date}\nHere is there phone number: ${phoneNumber}`
+  const barberData = await database.findBarberInDatabase(barberName)
+
+  
+  client.messages.create({
+    from: twilioPhoneNumber,
+    body: message,
+    to: '9082097544'
+  })
+
+  res.sendStatus(200)
+}
+
 export async function notifyBarberCustomerTriedToCancelWithinTheHour(req, res, next) {
   const { customer, barberName } = req.body
   const { phoneNumber, name } = customer
