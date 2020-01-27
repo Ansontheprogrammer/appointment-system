@@ -97,20 +97,13 @@ export class Database {
     })
   }
 
-  public findAllBarbers(): Promise<DocumentData[]> {
-    return new Promise((resolve, reject) => {
-      barberCollection
-        .onSnapshot(snapshot => {
-          snapshot.docs.map(doc => doc.data())
-        }, reject)
-    })
-  }
-
   public updateBarber(firstName: string, update: {}) {
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
-      let docRef = barberCollection.doc(firstName)
-      docRef.update({ ...update }).then(resolve, reject)
+      barberCollection
+      .doc(firstName)
+      .update({ ...update })
+      .then(resolve, reject)
     })
   }
 
@@ -152,9 +145,11 @@ export class Database {
 
   public findCustomerInDatabase(phoneNumber: string): Promise<DocumentData> {
     return new Promise((resolve, reject) => {
-      customerCollection.doc(phoneNumber).get()
-        .then((snapshot) => resolve(snapshot.data()))
-        .catch(reject);
+      customerCollection
+      .doc(phoneNumber)
+      .get()
+      .then((snapshot) => resolve(snapshot.data()))
+      .catch(reject);
     })
   }
 
