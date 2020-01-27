@@ -1,9 +1,9 @@
 const CronJob = require('cron').CronJob
 import { client } from './twilio'
 import { twilioPhoneNumber, timezone } from './database'
-const jobs = []
+const jobs = {}
 
-export function createJob(date: string, phoneNumber: string, message: string) {
+export function createJob(date: string, phoneNumber: string, message: string, barberName: string) {
   // Check to make sure date is not passed ***************
   let job = new CronJob(date, function () {
     client.messages.create({
@@ -13,23 +13,23 @@ export function createJob(date: string, phoneNumber: string, message: string) {
     })
 
     this.stop()
-  }, () => onComplete(date), true, timezone)
+  }, () => onComplete(date, barberName), true, timezone)
 
-  jobs.push([date, job])
+  jobs[barberName].push([date, job])
 }
 
-export function cancelJob(date) {
-  jobs.forEach(job => {
+export function cancelJob(date: string, barberName: string) {
+  jobs[barberName].forEach(job => {
     if(job[0] === date) {
       job[1].stop()
     }
   })
 }
 
-function onComplete(date) {
-  jobs.forEach((job, i) => {
+function onComplete(date: string, barberName: string) {
+  jobs[barberName].forEach((job, i) => {
     if(job[0] === date) {
-      jobs.splice(i, 1)
+      jobs[barberName].splice(i, 1)
     }
   })
 }

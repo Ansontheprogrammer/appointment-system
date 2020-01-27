@@ -35,6 +35,7 @@ app.use(cors())
 app.post('/api/phoneAppointmentFlow', phoneSystem.phoneFlow)
 // App system
 app.post('/api/bookAppointment', appSystem.bookAppointment)
+app.post('/api/cancelAppointment', appSystem.cancelAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
 // No call no show
