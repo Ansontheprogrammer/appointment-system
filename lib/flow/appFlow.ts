@@ -82,7 +82,8 @@ export class AppSystem {
     createJob(
       formatToCronTime(firstAvailableTime),
       phoneNumber,
-      reminderMessage
+      reminderMessage,
+      barber
     )
 
     res.sendStatus(200)
@@ -176,8 +177,30 @@ export class AppSystem {
     createJob(
       formatToCronTime(formattedDateTime),
       phoneNumber,
-      reminderMessage
+      reminderMessage,
+      barber
     )
+
+    res.sendStatus(200)
+  }
+
+  public cancelAppointment(req, res, next) {
+    /* 
+      Formats:
+        Date - MM-DD-YYYY
+        Time - ddd, MMMM Do, h:mm a
+    */
+
+    const { barber, date, time, name, services } = req.body
+    const phoneNumber = utils.phoneNumberFormatter(req.body.phoneNumber)
+    // remove first element if empty
+    if (!Object.keys(services[0]).length) services.shift()
+
+    const dateTime = `${date} ${time}`
+    const formattedDateTime = moment(
+      dateTime,
+      `MM-DD-YYYY ${UserMessage.friendlyFormat}`
+    ).format('YYYY-MM-DD HH:mm')
 
     res.sendStatus(200)
   }

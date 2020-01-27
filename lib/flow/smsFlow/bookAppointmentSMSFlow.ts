@@ -170,7 +170,8 @@ export class TextBookAppointmentInterface {
         createJob(
           `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
           phoneNumber,
-          reminderMessage
+          reminderMessage,
+          barber
         )
       } else {
         sendTextMessage(UserMessage.errorConfirmingAppointment)

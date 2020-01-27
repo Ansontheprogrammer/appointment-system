@@ -1,5 +1,5 @@
 import { 
-    extractNumberFromMessage, phoneNumberFormatter,
+  phoneNumberFormatter, extractText,
 } from '../../../config/utils'
 import { 
     cancelRecentAppointment, 
@@ -19,26 +19,26 @@ export class TextInterface {
     }
 
     public static userInterfaceOptions = {
-        cancelAppointment: {
-            number: '1',
-            name: 'Cancel Appointment'
-        },
         bookAppointmentOnline: {
-            number: '2',
+            option: '2',
             name: 'Book Appointment Online'
         },
         bookAppointmentOffline: {
-            number: '3',
+            option: '3',
             name: 'Book Appointment Offline'
         },
         help: {
-            number: '4',
+            option: '4',
             name: 'Help'
         },
         shopHours: {
-            number: '5',
+            option: '5',
             name: 'Shop Hours'
-        }
+        },
+        cancelAppointment: {
+            option: 'View',
+            name: 'View Appointments'
+        },
     }
 
     public static sendInterface(res){
@@ -57,7 +57,7 @@ export class TextInterface {
             Add a feature that they can press maybe 3 to cancel their most recent appointment
             If they press four they can cancel a future appointment 
          */
-        const userMessage: string = extractNumberFromMessage(req.body.Body);
+        const userMessage: string = extractText(req.body.Body);
         const phoneNumber = phoneNumberFormatter(req.body.From)
         const sendTextMessage = TextInterface.getTextMessageTwiml(res);
         try {

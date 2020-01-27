@@ -134,7 +134,7 @@ export class UserMessages {
     'Phenomenal'
   ]
   introGreetingWords = ['How are you doing', 'How have you been', 'Long time no see']
-  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
+  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
   chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
@@ -157,7 +157,7 @@ export class UserMessages {
     time = moment(time, 'YYYY-MM-DD HH:mm').format(this.friendlyFormat)
     const message = `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(
       service => `\n${service.service}`
-    )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\nIf you would like to cancel this appointment text (remove)`
+    )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\nIf you would like to view your appointments text (view)`
     if (noConfirmation) return message
     else
       return message.concat(
@@ -312,20 +312,21 @@ export function resetCronJobs(req, res, next){
   .get()
   .then(snapshot => {
       snapshot.docs.forEach(doc => {
-          const barber = doc.id
+          const barberName = doc.id
           const barberAppointments = (doc.get('appointments') as types.BARBER_APPOINTMENTS[]);
           barberAppointments.forEach(appointment => {
               const reminderMessage = UserMessage.generateReminderMessage(
                 appointment.details.services,
-                (barber as any),
+                (barberName as any),
                 appointment.details.time.from,
                 appointment.details.total
               )
-              console.log(`Creating job for ${barber}\n${appointment.firstName}\nAt - ${appointment.details.time.from}`)
+              console.log(`Creating job for ${barberName}\n${appointment.firstName}\nAt - ${appointment.details.time.from}`)
               createJob(
                 formatToCronTime(appointment.details.time.from),
                 appointment.phoneNumber,
-                reminderMessage
+                reminderMessage,
+                barberName
               )
           })
       })

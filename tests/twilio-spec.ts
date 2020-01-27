@@ -171,7 +171,7 @@ Total: $40`
         })
     })
     it('confirmedAppointmentMessage', () => {
-        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (Remove) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
+        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
         assert.equal(twilioLib.UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
     })
     it('chooseAppointmentTypeMessage', () => {
