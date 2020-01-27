@@ -168,7 +168,7 @@ export class UserMessages {
   public generateTextInterfaceMessage(){
     const options = TextInterface.userInterfaceOptions;
     let message = `Welcome to the ${friendlyShopName} help interface. How can I help you today? Press:\n`
-    for (let option in options) message += `\n(${options[option].number}) ${options[option].name}`
+    for (let option in options) message += `\n(${options[option].action}) ${options[option].name}`
     return message
   }
 

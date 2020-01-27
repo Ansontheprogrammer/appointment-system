@@ -20,23 +20,19 @@ export class TextInterface {
 
     public static userInterfaceOptions = {
         bookAppointmentOnline: {
-            option: '2',
+            action: '1',
             name: 'Book Appointment Online'
         },
-        bookAppointmentOffline: {
-            option: '3',
-            name: 'Book Appointment Offline'
-        },
-        help: {
-            option: '4',
-            name: 'Help'
-        },
-        shopHours: {
-            option: '5',
-            name: 'Shop Hours'
-        },
+        // bookAppointmentOffline: {
+        //     action: '2',
+        //     name: 'Book Appointment through'
+        // },
+        // shopHours: {
+        //     action: '5',
+        //     name: 'Shop Hours'
+        // },
         cancelAppointment: {
-            option: 'View',
+            action: 'View',
             name: 'View Appointments'
         },
     }
@@ -68,16 +64,11 @@ export class TextInterface {
             console.error(err, 'Error finding customer');
         }
         if(userMessage === '1'){
-            cancelRecentAppointment(req, res);
-        } else if(userMessage === '2'){
-            sendBookLaterDateLink(phoneNumber)
-        } else if(userMessage === '3'){
-            // Add customer field allowing us to make the text message flow active or not.
-            sendTextMessage('Sorry this shop does not provide offline booking')
-        } else if(userMessage === '4'){
-            TextInterface.sendInterface(res)
+            return sendBookLaterDateLink(phoneNumber)
+        } else if(userMessage.toLowerCase() === 'view'){
+            return cancelRecentAppointment(req, res);
         } else {
-            TextInterface.invalidInterfaceOption(res)
+            return TextInterface.invalidInterfaceOption(res)
         }
     }
 }

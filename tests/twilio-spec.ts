@@ -44,12 +44,8 @@ describe('User message interface', () => {
     describe('generateTextInterfaceMessage', () => {
         it('should generate the appropriate text interface message', () => {
             const message = twilioLib.UserMessage.generateTextInterfaceMessage();
-            const expectedMessage = `Welcome to the Fades of Gray help interface. How can I help you today? Press:
-
-(1) Cancel Appointment
-(2) Book Appointment Online
-(3) Book Appointment Offline
-(4) Help`
+            const expectedMessage = `Welcome to the Fades of Gray help interface. How can I help you today? Press:\n\n(1) Book Appointment Online\n(View) View Appointments`
+            console.log(message, expectedMessage, 'messaages')
             assert.equal(message, expectedMessage)
         })
     })
@@ -171,7 +167,7 @@ Total: $40`
         })
     })
     it('confirmedAppointmentMessage', () => {
-        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to remove your appointment \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
+        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
         assert.equal(twilioLib.UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
     })
     it('chooseAppointmentTypeMessage', () => {
