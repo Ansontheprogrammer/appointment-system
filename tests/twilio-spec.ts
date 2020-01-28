@@ -8,6 +8,8 @@ import { shopIsClosed } from '../config/utils';
 import { BARBER } from '../lib';
 
 describe('User message interface', () => {
+    const UserMessage = new twilioLib.UserMessages()
+
     const sampleServices = [
         {
             service: 'Adult Haircut',
@@ -31,27 +33,27 @@ describe('User message interface', () => {
     const sampleTime = '2023-09-09 13:00'
     const sampleTotal = 40
 
-    it('generateRandomAgreeWord', () => {
-        const generatedAgreeWord = twilioLib.UserMessage.generateRandomAgreeWord()
-        const isAgreeWordValid = twilioLib.UserMessage.agreeWords.find(agreeWord => generatedAgreeWord === agreeWord)
+    it('getRandomAgreeWord', () => {
+        const getdAgreeWord = UserMessage.getRandomAgreeWord()
+        const isAgreeWordValid = UserMessage.agreeWords.find(agreeWord => getdAgreeWord === agreeWord)
         assert.equal(!!isAgreeWordValid, true)
     })
-    it('generateRandomGreeting', () => {
-        const generatedGreeting = twilioLib.UserMessage.generateRandomGreeting()
-        const isGreetingValid = twilioLib.UserMessage.introGreetingWords.find(greeting => generatedGreeting === greeting)
+    it('getRandomGreeting', () => {
+        const getdGreeting = UserMessage.getRandomGreeting()
+        const isGreetingValid = UserMessage.introGreetingWords.find(greeting => getdGreeting === greeting)
         assert.equal(!!isGreetingValid, true)
     })
-    describe('generateTextInterfaceMessage', () => {
-        it('should generate the appropriate text interface message', () => {
-            const message = twilioLib.UserMessage.generateTextInterfaceMessage();
+    describe('getTextInterfaceMessage', () => {
+        it('should get the appropriate text interface message', () => {
+            const message = UserMessage.getTextInterfaceMessage();
             const expectedMessage = `Welcome to the Fades of Gray help interface. How can I help you today? Press:\n\n(1) Book Appointment Online\n(View) View Appointments`
             console.log(message, expectedMessage, 'messaages')
             assert.equal(message, expectedMessage)
         })
     })
-    describe('generateConfirmationMessage', () => {
+    describe('getConfirmationMessage', () => {
         it('should create a confirmation message and include appointment confirmation', () => {
-            const confirmationMessage = twilioLib.UserMessage.generateConfirmationMessage(sampleServices, sampleBarber, sampleTime, sampleTotal, false)
+            const confirmationMessage = UserMessage.getConfirmationMessage(sampleServices, sampleBarber, sampleTime, sampleTotal, false)
             const stringIncludedToConfirmMessage = '\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO'
             const doesStringIncludeAppointmentConfirmation = confirmationMessage.includes(stringIncludedToConfirmMessage)
 
@@ -59,7 +61,7 @@ describe('User message interface', () => {
             assert.equal(doesStringIncludeAppointmentConfirmation, true)
         })
         it('should create a confirmation message without appointment confirmation', () => {
-            const confirmationMessage = twilioLib.UserMessage.generateConfirmationMessage(sampleServices, sampleBarber, sampleTime, sampleTotal, true)
+            const confirmationMessage = UserMessage.getConfirmationMessage(sampleServices, sampleBarber, sampleTime, sampleTotal, true)
             const stringIncludedToConfirmMessage = '\n\nDoes this look correct? Press:\n(1) for YES\n(2) for NO'
             const doesStringIncludeAppointmentConfirmation = confirmationMessage.includes(stringIncludedToConfirmMessage)
 
@@ -67,21 +69,21 @@ describe('User message interface', () => {
             assert.equal(doesStringIncludeAppointmentConfirmation, false)
         })
         it('without selecting a service we should not be able to send confirmation message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateConfirmationMessage([], sampleBarber, sampleTime, sampleTotal, true) }, Error );
+            assert.throws( function() { UserMessage.getConfirmationMessage([], sampleBarber, sampleTime, sampleTotal, true) }, Error );
         })
         it('without selecting a barber we should not be able to send confirmation message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateConfirmationMessage(sampleServices, '', sampleTime, sampleTotal, true) }, Error );
+            assert.throws( function() { UserMessage.getConfirmationMessage(sampleServices, '', sampleTime, sampleTotal, true) }, Error );
         })
         it('without selecting a time we should not be able to send confirmation message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateConfirmationMessage(sampleServices, sampleBarber, '', sampleTotal, true) }, Error );
+            assert.throws( function() { UserMessage.getConfirmationMessage(sampleServices, sampleBarber, '', sampleTotal, true) }, Error );
         })
         it('without selecting a total we should not be able to send confirmation message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateConfirmationMessage(sampleServices, sampleBarber, sampleTime, 0, true) }, Error );
+            assert.throws( function() { UserMessage.getConfirmationMessage(sampleServices, sampleBarber, sampleTime, 0, true) }, Error );
         })
     })
-    describe('generateReminderMessage', () => {
+    describe('getReminderMessage', () => {
         it('should create a reminder message', () => {
-            const reminderMessage = twilioLib.UserMessage.generateReminderMessage(sampleServices, sampleBarber, sampleTime, sampleTotal)
+            const reminderMessage = UserMessage.getReminderMessage(sampleServices, sampleBarber, sampleTime, sampleTotal)
             const expectedReminderMessage = `REMINDER:
 Your appointment is less than an hour away.
 Service: 
@@ -94,21 +96,21 @@ Total: $40`
             assert.equal(reminderMessage, expectedReminderMessage)
         })
         it('without selecting a service we should not be able to receive a reminder message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateReminderMessage([], sampleBarber, sampleTime, sampleTotal) }, Error );
+            assert.throws( function() { UserMessage.getReminderMessage([], sampleBarber, sampleTime, sampleTotal) }, Error );
         })
         it('without selecting a barber we should not be able to receive a reminder message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateReminderMessage(sampleServices, '', sampleTime, sampleTotal) }, Error );
+            assert.throws( function() { UserMessage.getReminderMessage(sampleServices, '', sampleTime, sampleTotal) }, Error );
         })
         it('without selecting a time we should not be able to receive a reminder message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateReminderMessage(sampleServices, sampleBarber, '', sampleTotal) }, Error );
+            assert.throws( function() { UserMessage.getReminderMessage(sampleServices, sampleBarber, '', sampleTotal) }, Error );
         })
         it('without selecting a total we should not be able to receive a reminder message', () => {
-            assert.throws( function() { twilioLib.UserMessage.generateReminderMessage(sampleServices, sampleBarber, sampleTime, 0) }, Error );
+            assert.throws( function() { UserMessage.getReminderMessage(sampleServices, sampleBarber, sampleTime, 0) }, Error );
         })
     })
-    describe('generateAvailableServicesMessage', () => {
-        it('should be able to generate available services message', () => {
-            const servicesMessage = twilioLib.UserMessage.generateAvailableServicesMessage()
+    describe('getAvailableServicesMessage', () => {
+        it('should be able to get available services message', () => {
+            const servicesMessage = UserMessage.getAvailableServicesMessage()
             let message = `What type of service would you like today? \n\nPress multiple numbers with spaces for multiple services \nEx. 1 3 10 or 1,3,10`
             for (let prop in serviceList) {
                 message += `\n\n(${prop}) for ${serviceList[prop].service}\nPrice - $${serviceList[prop].price}\nTime - ${serviceList[prop].duration}mins`
@@ -116,19 +118,19 @@ Total: $40`
             assert.equal(servicesMessage, message)
         })
     })
-    describe('generateGetBarberAvailableTimesMessage', () => {
-        it('should be able to generate a message containing all of the barbers available times', () => {
-            const availableTimesMessage = twilioLib.UserMessage.generateGetBarberAvailableTimesMessage(sampleBarberAvailableTimes)
+    describe('getGetBarberAvailableTimesMessage', () => {
+        it('should be able to get a message containing all of the barbers available times', () => {
+            const availableTimesMessage = UserMessage.getGetBarberAvailableTimesMessage(sampleBarberAvailableTimes)
             let message = `Here are their available times\nPress:${sampleBarberAvailableTimes.map((slot, i) => `\n\n(${i + 1}) \n${slot}`)}`
             assert.equal(availableTimesMessage, message)
         })
-        it('should not generate correct message', () => {
-            const availableTimesMessage = twilioLib.UserMessage.generateGetBarberAvailableTimesMessage(sampleBarberAvailableTimes)
+        it('should not get correct message', () => {
+            const availableTimesMessage = UserMessage.getGetBarberAvailableTimesMessage(sampleBarberAvailableTimes)
             let message = `Here are their available times\nPress:${[]}`
             assert.equal(availableTimesMessage === message, false)
         })
     })
-    describe('generateErrorValidatingAppointmentTime', () => {
+    describe('getErrorValidatingAppointmentTime', () => {
         const sampleBarberAvailableTimes = [
             'Sat, August 24th, 4:30pm',
             'Sat, August 24th, 4:45pm',
@@ -136,18 +138,18 @@ Total: $40`
             'Sat, August 24th, 5:15pm',
             'Sat, August 24th, 5:30pm',
         ]
-        it('should be able to generate a message containing all of the barbers available times', () => {
-            const availableTimesMessage = twilioLib.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+        it('should be able to get a message containing all of the barbers available times', () => {
+            const availableTimesMessage = UserMessage.getErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
             let message = `You must choose a valid response. Here are their available times\nPress:${sampleBarberAvailableTimes.map((slot, i) => `\n\n(${i + 1}) \n${slot}`)}`
             assert.equal(availableTimesMessage, message)
         })
-        it('should not generate correct message', () => {
-            const availableTimesMessage = twilioLib.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+        it('should not get correct message', () => {
+            const availableTimesMessage = UserMessage.getErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
             let message = `Here are their available times\nPress:${[]}`
             assert.equal(availableTimesMessage === message, false)
         })
     })
-    describe('generateErrorValidatingAppointmentTime', () => {
+    describe('getErrorValidatingAppointmentTime', () => {
         const sampleBarberAvailableTimes = [
             'Sat, August 24th, 4:30pm',
             'Sat, August 24th, 4:45pm',
@@ -155,36 +157,36 @@ Total: $40`
             'Sat, August 24th, 5:15pm',
             'Sat, August 24th, 5:30pm',
         ]
-        it('should be able to generate a message containing all of the barbers available times', () => {
-            const availableTimesMessage = twilioLib.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+        it('should be able to get a message containing all of the barbers available times', () => {
+            const availableTimesMessage = UserMessage.getErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
             let message = `You must choose a valid response. Here are their available times\nPress:${sampleBarberAvailableTimes.map((slot, i) => `\n\n(${i + 1}) \n${slot}`)}`
             assert.equal(availableTimesMessage, message)
         })
-        it('should not generate correct message', () => {
-            const availableTimesMessage = twilioLib.UserMessage.generateErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
+        it('should not get correct message', () => {
+            const availableTimesMessage = UserMessage.getErrorValidatingAppointmentTime(sampleBarberAvailableTimes)
             let message = `Here are their available times\nPress:${[]}`
             assert.equal(availableTimesMessage === message, false)
         })
     })
     it('confirmedAppointmentMessage', () => {
         const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
-        assert.equal(twilioLib.UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
+        assert.equal(UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
     })
     it('chooseAppointmentTypeMessage', () => {
         const chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
-        assert.equal(twilioLib.UserMessage.chooseAppointmentTypeMessage, chooseAppointmentTypeMessage)
+        assert.equal(UserMessage.chooseAppointmentTypeMessage, chooseAppointmentTypeMessage)
     })
     it('friendlyFormat', () => {
         const friendlyFormat = 'ddd, MMMM Do, h:mm a'
-        assert.equal(twilioLib.UserMessage.friendlyFormat, friendlyFormat)
+        assert.equal(UserMessage.friendlyFormat, friendlyFormat)
     })
     it('errorConfirmingAppointmentMessage', () => {
         const errorConfirmingAppointmentMessage = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) First available appointment time\n(2) Book an appointment for today\n(3) Later date`
-        assert.equal(twilioLib.UserMessage.errorConfirmingAppointment, errorConfirmingAppointmentMessage)
+        assert.equal(UserMessage.errorConfirmingAppointment, errorConfirmingAppointmentMessage)
     })
     it('errorValidatingConfirmingAppointment', () => {
         const errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
-        assert.equal(twilioLib.UserMessage.errorValidatingConfirmingAppointment, errorValidatingConfirmingAppointment)
+        assert.equal(UserMessage.errorValidatingConfirmingAppointment, errorValidatingConfirmingAppointment)
     })
 })
 
@@ -309,7 +311,7 @@ describe('Text System', () => {
     it('resetUser', () => {
         res.end = (twilioMessageString) => {
             const twilioTwiml = `<Response><Message>`
-            const correctTwimlMessage = `Okay let's start from the top! \n${twilioLib.UserMessage.chooseAppointmentTypeMessage}`
+            const correctTwimlMessage = `Okay let's start from the top! \n${new twilioLib.UserMessages().chooseAppointmentTypeMessage}`
             // test that it's returning the correct twiml
             assert.equal(twilioMessageString.includes(correctTwimlMessage), true)
             assert.equal(twilioMessageString.includes(twilioTwiml), true)

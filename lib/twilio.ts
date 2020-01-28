@@ -123,7 +123,13 @@ export function sendshopIsClosedMessage(phoneNumber, res?) {
 }
 
 export class UserMessages {
-  agreeWords = [
+  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
+  chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
+  friendlyFormat = 'ddd, MMMM Do, h:mm a'
+  errorConfirmingAppointment = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) First available appointment time\n(2) Book an appointment for today\n(3) Later date`
+  errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
+
+  public agreeWords = [
     'Great',
     'Thanks',
     'Fantastic',
@@ -133,19 +139,22 @@ export class UserMessages {
     'Okay',
     'Phenomenal'
   ]
-  introGreetingWords = ['How are you doing', 'How have you been', 'Long time no see']
-  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
-  chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
-  friendlyFormat = 'ddd, MMMM Do, h:mm a'
 
-  public generateRandomAgreeWord = () =>
+  public introGreetingWords = ['How are you doing', 'How have you been', 'Long time no see']
+
+  public getRandomAgreeWord = () =>
     this.agreeWords[Math.floor(Math.random() * this.agreeWords.length)]
-  public generateRandomGreeting = () =>
+
+  public getRandomGreeting = () =>
     this.introGreetingWords[
     Math.floor(Math.random() * this.introGreetingWords.length)
     ]
 
-  public generateConfirmationMessage(
+  public getFriendlyTimeFormat = time => {
+    return moment(time, 'HH:mm').format('h:mm a')
+  }
+
+  public getConfirmationMessage(
     services: types.SERVICES[],
     barberName: string,
     time: string,
@@ -155,7 +164,7 @@ export class UserMessages {
     if (!services.length || !barberName || !time || !total)
       throw Error('ERR - error creating confirmation message')
     time = moment(time, 'YYYY-MM-DD HH:mm').format(this.friendlyFormat)
-    const message = `${this.generateRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(
+    const message = `${this.getRandomAgreeWord()}! Here are your appointment details:\n\nService: ${services.map(
       service => `\n${service.service}`
     )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\nIf you would like to view your appointments text (view)`
     if (noConfirmation) return message
@@ -165,14 +174,14 @@ export class UserMessages {
       )
   }
 
-  public generateTextInterfaceMessage(){
+  public getTextInterfaceMessage(){
     const options = TextInterface.userInterfaceOptions;
     let message = `Welcome to the ${friendlyShopName} help interface. How can I help you today? Press:\n`
     for (let option in options) message += `\n(${options[option].action}) ${options[option].name}`
     return message
   }
 
-  public generateReminderMessage(
+  public getReminderMessage(
     services: types.SERVICES[],
     barberName: string,
     time: string,
@@ -189,7 +198,7 @@ export class UserMessages {
     )} \n\nBarber: ${barberName}\nTime: ${time}\nTotal: $${total}`
   }
 
-  public generateAvailableServicesMessage() {
+  public getAvailableServicesMessage() {
     let message = `What type of service would you like today? \n\nPress multiple numbers with spaces for multiple services \nEx. 1 3 10 or 1,3,10`
 
     for (let prop in serviceList) {
@@ -198,29 +207,37 @@ export class UserMessages {
     return message
   }
 
-  public generateGetBarberAvailableTimesMessage(barberSchedule: string[]) {
+  public getGetBarberAvailableTimesMessage(barberSchedule: string[]) {
     return `Here are their available times\nPress:${barberSchedule.map(
       (slot, i) => `\n\n(${i + 1}) \n${slot}`
     )}`
   }
 
-  public generateErrorValidatingAppointmentTime(barberSchedule: string[]) {
+  public getErrorValidatingAppointmentTime(barberSchedule: string[]) {
     return `You must choose a valid response. Here are their available times\nPress:${barberSchedule.map(
       (slot, i) => `\n\n(${i + 1}) \n${slot}`
     )}`
   }
 
-  public generateChooseBarberMessage() {
+  public getChooseBarberMessage() {
     return `Which barber would you like today? Press: \n${barbersInShop.map(
       (barber, index) => `\n(${index + 1}) for ${barber}`
     )}`
   }
 
-  errorConfirmingAppointment = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) First available appointment time\n(2) Book an appointment for today\n(3) Later date`
-  errorValidatingConfirmingAppointment = `You must choose a valid response. Press:\n(1) for YES\n(2) for NO`
+  public getShopHoursMessage() {
+    let message = `Here are the shop's hours:\n\n`
+    let day: types.DAY
+    const formatTime = (time: string) => new UserMessages().getFriendlyTimeFormat(time)
+
+    for (day in barberShopAvailability) {
+      message += `${Database.firstLetterUpperCase(day)} - ${formatTime(barberShopAvailability[day].from)} to ${formatTime(barberShopAvailability[day].to)}  ` 
+    }
+
+    return message
+  }
 }
 
-export const UserMessage = new UserMessages()
 
 export async function cancelRecentAppointment(req, res) {
   let message;
@@ -254,7 +271,7 @@ export async function notifyBarber(req, res, next) {
   const { customer, barberName } = req.body
   const { phoneNumber, name } = customer
   let date = customer.date
-  date = moment(date, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
+  date = moment(date, 'YYYY-MM-DD HH:mm').format(this.UserMessage.friendlyFormat)
   const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
   const barberData = await database.findBarberInDatabase(barberName)
 
@@ -275,7 +292,7 @@ export async function notifyBarberCustomerTriedToCancelWithinTheHour(req, res, n
   const { customer, barberName } = req.body
   const { phoneNumber, name } = customer
   let date = customer.date
-  date = moment(date, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
+  date = moment(date, 'YYYY-MM-DD HH:mm').format(this.UserMessage.friendlyFormat)
   const message = `${name} tried to cancel an appointment within the hour for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
   const barberData = await database.findBarberInDatabase(barberName)
 
@@ -315,7 +332,7 @@ export function resetCronJobs(req, res, next){
           const barberName = doc.id
           const barberAppointments = (doc.get('appointments') as types.BARBER_APPOINTMENTS[]);
           barberAppointments.forEach(appointment => {
-              const reminderMessage = UserMessage.generateReminderMessage(
+              const reminderMessage = this.UserMessage.getReminderMessage(
                 appointment.details.services,
                 (barberName as any),
                 appointment.details.time.from,

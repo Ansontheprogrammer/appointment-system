@@ -1,10 +1,12 @@
 import * as utils from '../../config/utils'
-import { database, getBarberAppointments, UserMessage, client } from '../twilio'
+import { database, getBarberAppointments, client, UserMessages } from '../twilio'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 import { formatToCronTime } from '../../config/utils'
 import { twilioPhoneNumber } from '../database'
+
+const UserMessage = new UserMessages()
 
 export class AppSystem {
   public async walkInAppointment(req, res, next) {
@@ -39,7 +41,7 @@ export class AppSystem {
       return res.sendStatus(400)
     }
 
-    const confirmationMessage = UserMessage.generateConfirmationMessage(
+    const confirmationMessage = UserMessage.getConfirmationMessage(
       services,
       barber,
       firstAvailableTime,
@@ -72,7 +74,7 @@ export class AppSystem {
       return res.send('Barbershop is closed').status(400)
     }
 
-    const reminderMessage = UserMessage.generateReminderMessage(
+    const reminderMessage = UserMessage.getReminderMessage(
       services,
       barber,
       firstAvailableTime,
@@ -152,7 +154,7 @@ export class AppSystem {
     database.createCustomer(phoneNumber).catch(err => 'App Flow - could not create customer')
 
     // send confirmation
-    const confirmationMessage = UserMessage.generateConfirmationMessage(
+    const confirmationMessage = UserMessage.getConfirmationMessage(
       services,
       barber,
       formattedDateTime,
@@ -167,7 +169,7 @@ export class AppSystem {
     })
 
 
-    const reminderMessage = UserMessage.generateReminderMessage(
+    const reminderMessage = UserMessage.getReminderMessage(
       services,
       barber,
       formattedDateTime,

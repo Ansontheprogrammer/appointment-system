@@ -5,43 +5,26 @@ import {
     cancelRecentAppointment, 
     MessagingResponse,
     sendBookLaterDateLink,
-    UserMessage,
     database,
+    UserMessages,
 } from '../../twilio'
 
 export class TextInterface {
-    private req; 
-    private res; 
-    private next
-    private textTwiml
-
-    constructor(req, res, next){
-        this.req = req;
-        this.res = res;
-        this.next = this.next;
-    }
-
-    public sendTextMessage(message: string){
-        const msg = new MessagingResponse()
-        this.textTwiml = msg.message(message)
-        return this.res.send(this.textTwiml.toString())
-    }
-
     public static userInterfaceOptions = {
         bookAppointmentOnline: {
             action: '1',
             name: 'Book Appointment Online'
         },
-        bookAppointmentOffline: {
-            action: '2',
-            name: 'Book Appointment through text'
-        },
-        bookFirstAvailableAppointment: {
-            action: '3',
-            name: 'Book First Available Appointment'
-        },
+        // bookAppointmentOffline: {
+        //     action: '2',
+        //     name: 'Book Appointment through text'
+        // },
+        // bookFirstAvailableAppointment: {
+        //     action: '3',
+        //     name: 'Book First Available Appointment'
+        // },
         shopHours: {
-            action: '4',
+            action: '2',
             name: 'Shop Hours'
         },
         viewAppointment: {
@@ -50,40 +33,53 @@ export class TextInterface {
         },
     }
 
-    private sendInterface(res){
-        this.sendTextMessage(UserMessage.generateTextInterfaceMessage());
+    public sendInterface(res){
+        const sendTextMessage = TextInterface.getMessage(res)
+        sendTextMessage(new UserMessages().getTextInterfaceMessage());
     }
 
     private invalidInterfaceOption(res){
-       this.sendTextMessage('Sorry that was an invalid option\n')
-       this.sendInterface(res);
+        const sendTextMessage = TextInterface.getMessage(res)
+        sendTextMessage('Sorry that was an invalid option\n');
+        this.sendInterface(res);
     }
 
+    // For some reason I'm not able to access this method from inside of the user interface method so I will be making this a static method
+    public static getMessage(res){
+        return message => {
+            const msg = new MessagingResponse()
+            const messageToSend = msg.message(message)
+            return res.send(messageToSend.toString())
+        }
+    }
 
-    public async userInterface() {
+    public async userInterface(req, res, next) {
         /* Todo:
             Add a feature that they can press maybe 3 to cancel their most recent appointment
             If they press four they can cancel a future appointment 
          */
-        const userMessage: string = extractText(this.req.body.Body);
-        const phoneNumber = phoneNumberFormatter(this.req.body.From)
+        const userMessage: string = extractText(req.body.Body);
+        const phoneNumber = phoneNumberFormatter(req.body.From)
+        const sendTextMessage = TextInterface.getMessage(res)
         try {
             let customer = await database.findCustomerInDatabase(phoneNumber)
             // set req.customer to the customer found in database or an object containing the customer's phone number. 
-            this.req.customer = !!customer ? customer : { phoneNumber }
+            req.customer = !!customer ? customer : { phoneNumber }
         } catch(err) {
             console.error(err, 'Error finding customer');
         }
-        switch (userMessage) {
-            case '1':
-                return sendBookLaterDateLink(phoneNumber)
-            case '4': 
-                return this.sendTextMessage('')
-            case 'view':
-                return cancelRecentAppointment(this.req, this.res)
-            default:
-                return this.invalidInterfaceOption(this.res)
-
+        if(userMessage === '1'){
+            sendBookLaterDateLink(phoneNumber)
+            .then(() => {
+                res.status(200)
+                res.end()
+            })
+        } else if(userMessage === '2'){
+            sendTextMessage(new UserMessages().getShopHoursMessage())
+        } else if(userMessage.toLowerCase() === 'view'){
+            cancelRecentAppointment(req, res)
+        } else {
+            this.invalidInterfaceOption(res)
         }
     }
 }

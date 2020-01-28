@@ -7,14 +7,16 @@ import {
 } from '../../../config/utils'
 import { 
   database, 
-  UserMessage, 
   sendshopIsClosedMessage, 
   sendBookLaterDateLink,
   MessagingResponse,
+  UserMessages,
 } from '../../twilio'
 import { serviceList, friendlyShopName } from '../../database'
 
 export class TextSystem {
+    private UserMessage = new UserMessages()
+
     public static getTextMessageTwiml(res: any) {
       return (message: string) => {
         const msg = new MessagingResponse()
@@ -23,10 +25,10 @@ export class TextSystem {
         return res.end(msg.toString())
       }
     }
-  
+    
     public static resetUser(phoneNumber: string, sendTextMessage: any) {
       sendTextMessage(
-        `Okay let's start from the top! \n${UserMessage.chooseAppointmentTypeMessage}`
+        `Okay let's start from the top! \n${new UserMessages().chooseAppointmentTypeMessage}`
       )
       // reset user by deleting session variables
       const session = { stepNumber: '2' }
@@ -47,7 +49,7 @@ export class TextSystem {
         if (!customer) {
           const sendTextMessage = TextSystem.getTextMessageTwiml(res)
           sendTextMessage(
-            `${UserMessage.generateRandomGreeting()}, this is ${friendlyShopName} appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
+            `${this.UserMessage.getRandomGreeting()}, this is ${friendlyShopName} appointment system. I'm going to help book your appointment today. Can you please tell me your name?`
           )
           customer = await database.createCustomer(phoneNumber)
           return
@@ -69,7 +71,7 @@ export class TextSystem {
     public async textGetName(req, res, next) {
       const userMessage: string = extractText(req.body.Body)
       const sendTextMessage = TextSystem.getTextMessageTwiml(res)
-      const message = `Text (reset) at any time to reset your appointment. \n${UserMessage.chooseAppointmentTypeMessage}`
+      const message = `Text (reset) at any time to reset your appointment. \n${this.UserMessage.chooseAppointmentTypeMessage}`
       const session = Object.assign(req.customer.session, { stepNumber: '2' })
       const propsToUpdateUser = { session, firstName: userMessage }
       
@@ -114,7 +116,7 @@ export class TextSystem {
           appointmentType,
           finishedGeneralSteps: true
         })
-        const message = `${UserMessage.generateRandomAgreeWord()}, ${UserMessage.generateChooseBarberMessage()}`
+        const message = `${this.UserMessage.getRandomAgreeWord()}, ${this.UserMessage.getChooseBarberMessage()}`
   
         sendTextMessage(message)
   
@@ -128,7 +130,7 @@ export class TextSystem {
           stepNumber: '3',
           appointmentType
         })
-        const message = `${UserMessage.generateRandomAgreeWord()}, ${UserMessage.generateAvailableServicesMessage()}`
+        const message = `${this.UserMessage.getRandomAgreeWord()}, ${this.UserMessage.getAvailableServicesMessage()}`
   
         sendTextMessage(message)
   
@@ -148,7 +150,7 @@ export class TextSystem {
   
       if (!validatedResponse)
         return sendTextMessage(
-          `You must choose one of the following. \n\n${UserMessage.generateAvailableServicesMessage()}`
+          `You must choose one of the following. \n\n${this.UserMessage.getAvailableServicesMessage()}`
         )
       let services = [], total = 0
   
@@ -165,11 +167,11 @@ export class TextSystem {
 
       if(!services){
         return sendTextMessage(
-          `You must choose one of the following. \n\n${UserMessage.generateAvailableServicesMessage()}`
+          `You must choose one of the following. \n\n${this.UserMessage.getAvailableServicesMessage()}`
         )
       }
   
-      const message = UserMessage.generateChooseBarberMessage()
+      const message = this.UserMessage.getChooseBarberMessage()
       const session = Object.assign(req.customer.session, {
         stepNumber: '1',
         services,

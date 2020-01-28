@@ -20,7 +20,6 @@ import { TextInterface } from './lib/flow/smsFlow/textInterface'
 const phoneSystem = new PhoneSystem()
 const textSystem = new TextSystem()
 const appSystem = new AppSystem()
-const textInterface = new TextInterface();
 
 export const app = express()
 
@@ -45,7 +44,7 @@ app.post('/api/notifyCustomerAboutFeeOnTheirNextVisit', notifyCustomerAboutFeeOn
 // Text blast
 app.post('/api/sendTextMessageBlast', sendTextMessageBlast)
 // Text system
-app.post('/api/textInterface', textInterface.userInterface)
+app.post('/api/textInterface', new TextInterface().userInterface)
 app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 // Database Handlers
 app.post('/api/createBarber', createBarber)

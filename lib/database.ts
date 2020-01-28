@@ -20,14 +20,16 @@ export let
   customerCollection, 
   serviceList, 
   barberShopURL,
-  barberShopAvailability,
+  barberShopAvailability: types.BARBER_AVAILBILITY,
   friendlyShopName,
   automatedVoice,
   twilioPhoneNumber,
   barberShopPhoneNumber,
   timezone
 
+
 export class Database {
+
   public static firstLetterUpperCase(string) {
     return string[0].toUpperCase() + string.slice(1)
   }
