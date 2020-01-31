@@ -6,6 +6,8 @@ import {
   database, 
   sendBookLaterDateLink,
   VoiceResponse,
+  sendText,
+  UserMessages,
 } from '../twilio'
 
 import { 
@@ -26,48 +28,57 @@ import { TextInterface } from './smsFlow/textInterface'
 */
 
 export class PhoneSystem {
+  public static callBarbershop(res, twiml) {
+    console.log('in call barbershop')
+    let phoneNumber;
+    if(process.env.NODE_ENV === 'development'){
+      phoneNumber = '9082097544'
+    } else {
+      phoneNumber = barberShopPhoneNumber
+    }
+    twiml.dial(phoneNumber)
+    res.send(twiml.toString())
+  }
+
+  public static sayMessageToClient(res, twiml, message){
+    twiml.say(message, { voice: automatedVoice })
+    // res.send(twiml.toString())
+  }
+
     public async phoneFlow(req, res, next) {
       const phoneNumber = phoneNumberFormatter(res.req.body.From)
       const twiml = new VoiceResponse()
       const connectToShopMessage = `Thank you for calling ${friendlyShopName}!. I'm connecting you to the shop right now. One moment please`;
-      const tellCustomerAboutTextInterfaceMessage = "Also I'm sending you a text message to show you our text interface. This will allow for you to book an appointment, know shop available, and a bunch of other useful stuff about the shop";
+      const tellCustomerAboutTextInterfaceMessage = "\nAlso I'm sending you a text message to show you our text interface. This will allow for you to book an appointment, know shop available, and a bunch of other useful stuff about the shop";
       const shopIsClosedMessage = `The shop is closed currently. I'm sending you a link to book an appointment at a later date`;
+      let message
       /*
           if shop is closed currently send shop is closed message
           sending twiml before creating gather twiml to avoid latency issues
       */
       if (shopIsClosed()) {
-        this.sayMessageToClient(res, twiml, shopIsClosedMessage);
+        PhoneSystem.sayMessageToClient(res, twiml, shopIsClosedMessage);
         sendBookLaterDateLink(phoneNumber)
         return
       }
 
+      message += connectToShopMessage;
       // TODO: Play caller a song or waiting sound while we connect them to the shop
-      this.sayMessageToClient(res, twiml, connectToShopMessage)
+      PhoneSystem.sayMessageToClient(res, twiml, connectToShopMessage)
 
       try {
         // Check to see if the customer is currently in database before telling them about text interface
         const customer = await database.findCustomerInDatabase(phoneNumber)
-
         if (!customer) {
-          this.sayMessageToClient(res, twiml, tellCustomerAboutTextInterfaceMessage)
-          new TextInterface().sendInterface(res);
+          PhoneSystem.sayMessageToClient(res, twiml, tellCustomerAboutTextInterfaceMessage)
+          sendText(new UserMessages().getTextInterfaceMessage(), phoneNumber)
           await database.createCustomer(phoneNumber)
         }
       } catch(err){
         console.error(err)
       }
 
-      this.callBarbershop(res, twiml)
-    }
-  
-    private callBarbershop(res, twiml) {
-      twiml.dial(barberShopPhoneNumber)
-      res.send(twiml.toString())
-    }
-
-    private sayMessageToClient(res, twiml, message){
-      twiml.say(message, { voice: automatedVoice })
-      res.send(twiml.toString())
+      PhoneSystem.callBarbershop(res, twiml)
+      res.status(200)
     }
 }

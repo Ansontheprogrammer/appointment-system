@@ -55,8 +55,10 @@ export class TextInterface {
 
     public async userInterface(req, res, next) {
         /* Todo:
-            Add a feature that they can press maybe 3 to cancel their most recent appointment
+            Add a feature that they can press maybe 3 to cancel their most recent appointment maybe no
             If they press four they can cancel a future appointment 
+            Add a button to book appointment with first available barber
+            Add a button for deals by this barber
          */
         const userMessage: string = extractText(req.body.Body);
         const phoneNumber = phoneNumberFormatter(req.body.From)
@@ -76,7 +78,7 @@ export class TextInterface {
             })
         } else if(userMessage === '2'){
             sendTextMessage(new UserMessages().getShopHoursMessage())
-        } else if(userMessage.toLowerCase() === 'view'){
+        } else if(userMessage.toLowerCase() === 'review'){
             cancelRecentAppointment(req, res)
         } else {
             this.invalidInterfaceOption(res)
