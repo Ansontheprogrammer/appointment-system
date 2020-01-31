@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && export NODE_ENV=production && node dist/server.js",
-    "dev": "npm run build && node dist/server.js",
+    "dev": "npm run build && NODE_ENV=development node dist/server.js",
     "set": "NODE_ENV=development node script/startFadesOfGray.js",
     "test": "tsc && export NODE_ENV=test && mocha --recursive dist/tests --exit"
   },
