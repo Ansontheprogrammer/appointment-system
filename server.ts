@@ -59,15 +59,4 @@ app.get('/api/ping', (req, res, next) => {
 app.listen(port, () => {
   console.log('Server is up and running')
   console.log('Setting individual shop data...', '\nCurrent enviroment:',process.env.NODE_ENV)
-  if(process.env.NODE_ENV === 'development'){
-    exec('npm run set', (err, stdout, stderr) => {
-      if (err) {
-        console.error(err);
-        process.exit()
-        return;
-      }
-      console.log('Finished submitting shop data')
-    });
-  }
-  
 })
