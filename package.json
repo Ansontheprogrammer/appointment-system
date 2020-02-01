@@ -26,7 +26,7 @@
     "cron": "^1.7.1",
     "express": "^4.16.4",
     "moment": "^2.24.0",
-    "mongoose": "^5.4.20",
+    "moment-timezone": "^0.5.27",
     "twilio": "^3.29.2",
     "uuid": "^3.3.2"
   },
@@ -37,7 +37,6 @@
     "@types/sinon": "7.0.11",
     "@types/twilio": "0.0.10",
     "cors": "^2.8.5",
-    "firebase-admin": "^8.8.0",
     "mocha": "^6.0.2",
     "request": "^2.88.0",
     "sinon": "^7.3.2",
