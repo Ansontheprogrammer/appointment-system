@@ -5,16 +5,15 @@ import { TextSystem } from './lib/flow/smsFlow/smsFlow'
 import { AppSystem } from './lib/flow/appFlow'
 import { 
   createBarber, 
-  notifyBarber, 
   resetCronJobs, 
   sendTextMessageBlast, 
   notifyBarberCustomerTriedToCancelWithinTheHour,
-  notifyCustomerAboutFeeOnTheirNextVisit
+  notifyCustomerAboutFeeOnTheirNextVisit,
+  cancelAppointment
 } from './lib/twilio'
 import { Database } from './lib/database'
 import * as flow from './config/flow'
 import cors from 'cors'
-import { exec }  from 'child_process'
 import { TextInterface } from './lib/flow/smsFlow/textInterface'
 
 const phoneSystem = new PhoneSystem()
@@ -34,11 +33,10 @@ app.use(cors())
 app.post('/api/phoneAppointmentFlow', phoneSystem.phoneFlow)
 // App system
 app.post('/api/bookAppointment', appSystem.bookAppointment)
-app.post('/api/cancelAppointment', appSystem.cancelAppointment)
+app.post('/api/cancelAppointment', cancelAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
 // No call no show
-app.post('/api/notifyBarber', notifyBarber)
 app.post('/api/notifyBarberCustomerTriedToCancelWithinTheHour', notifyBarberCustomerTriedToCancelWithinTheHour)
 app.post('/api/notifyCustomerAboutFeeOnTheirNextVisit', notifyCustomerAboutFeeOnTheirNextVisit)
 // Text blast
