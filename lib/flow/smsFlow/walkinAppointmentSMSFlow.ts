@@ -135,12 +135,12 @@ export class TextWalkInAppointmentInterface  {
           time,
           total
         )
-        createJob(
-          `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
-          phoneNumber,
-          reminderMessage,
-          barber
-        )
+        // createJob(
+        //   `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
+        //   phoneNumber,
+        //   reminderMessage,
+        //   barber
+        // )
       } else {
         sendTextMessage(UserMessage.errorConfirmingAppointment)
       }

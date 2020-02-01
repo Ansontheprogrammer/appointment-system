@@ -169,12 +169,12 @@ export class TextBookAppointmentInterface {
           time,
           total
         )
-        createJob(
-          `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
-          phoneNumber,
-          reminderMessage,
-          barber
-        )
+        // createJob(
+        //   `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
+        //   phoneNumber,
+        //   reminderMessage,
+        //   barber
+        // )
       } else {
         sendTextMessage(this.UserMessage.errorConfirmingAppointment)
       }

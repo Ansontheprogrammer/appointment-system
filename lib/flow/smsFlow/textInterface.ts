@@ -38,12 +38,6 @@ export class TextInterface {
         sendTextMessage(new UserMessages().getTextInterfaceMessage());
     }
 
-    private invalidInterfaceOption(res){
-        const sendTextMessage = TextInterface.getMessage(res)
-        sendTextMessage('Sorry that was an invalid option\n');
-        this.sendInterface(res);
-    }
-
     // For some reason I'm not able to access this method from inside of the user interface method so I will be making this a static method
     public static getMessage(res){
         return message => {
@@ -81,7 +75,7 @@ export class TextInterface {
         } else if(userMessage.toLowerCase() === 'review'){
             cancelRecentAppointment(req, res)
         } else {
-            this.invalidInterfaceOption(res)
+            sendTextMessage('Sorry that was an invalid option\n');
         }
     }
 }

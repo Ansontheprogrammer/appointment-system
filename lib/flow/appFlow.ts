@@ -62,9 +62,11 @@ export class AppSystem {
       services,
       total
     }
+    
+    let appointmentID;
 
     try {
-      await database.addAppointment(barber, customer, appointmentData)
+      appointmentID = await database.addAppointment(barber, customer, appointmentData)
     } catch(err){
       console.error(err, 'error trying to add appointment')
     }
@@ -85,7 +87,8 @@ export class AppSystem {
       formatToCronTime(firstAvailableTime),
       phoneNumber,
       reminderMessage,
-      barber
+      barber, 
+      appointmentID
     )
 
     res.sendStatus(200)
@@ -112,7 +115,7 @@ export class AppSystem {
     res.json({ availableTimes })
   }
 
-  public bookAppointment(req, res, next) {
+  public async bookAppointment(req, res, next) {
     /* 
       Formats:
         Date - MM-DD-YYYY
@@ -145,13 +148,19 @@ export class AppSystem {
       }
     }
 
-    database.addAppointment(
-      barber,
-      customerInfo.customerData,
-      customerInfo.appointmentData
-    ).catch(err => 'App Flow - could not add customer appointment')
-    
-    database.createCustomer(phoneNumber).catch(err => 'App Flow - could not create customer')
+    let appointmentID
+
+    try {
+      appointmentID = database.addAppointment(
+        barber,
+        customerInfo.customerData,
+        customerInfo.appointmentData
+      )
+      
+      database.createCustomer(phoneNumber)
+    } catch (err){
+      return res.send(err).status(500)
+    }
 
     // send confirmation
     const confirmationMessage = UserMessage.getConfirmationMessage(
@@ -180,29 +189,9 @@ export class AppSystem {
       formatToCronTime(formattedDateTime),
       phoneNumber,
       reminderMessage,
-      barber
+      barber, 
+      appointmentID
     )
-
-    res.sendStatus(200)
-  }
-
-  public cancelAppointment(req, res, next) {
-    /* 
-      Formats:
-        Date - MM-DD-YYYY
-        Time - ddd, MMMM Do, h:mm a
-    */
-
-    const { barber, date, time, name, services } = req.body
-    const phoneNumber = utils.phoneNumberFormatter(req.body.phoneNumber)
-    // remove first element if empty
-    if (!Object.keys(services[0]).length) services.shift()
-
-    const dateTime = `${date} ${time}`
-    const formattedDateTime = moment(
-      dateTime,
-      `MM-DD-YYYY ${UserMessage.friendlyFormat}`
-    ).format('YYYY-MM-DD HH:mm')
 
     res.sendStatus(200)
   }

@@ -116,7 +116,7 @@ export class Database {
     })
   }
 
-  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS) {
+  public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS): Promise<string | Error> {
     const { phoneNumber, firstName } = customer
     const areAppointmentDetailsCorrect = validateAppointmentDetails(details);
   
@@ -124,7 +124,9 @@ export class Database {
       throw Error(areAppointmentDetailsCorrect.msg)
     }
     
-    const appointment = { phoneNumber, firstName, details, uuid: uuid() }
+    const appointmentID = uuid()
+
+    const appointment = { phoneNumber, firstName, details, uuid: appointmentID }
     try {
       let docRef = await barberCollection.doc(barberFirstName)
       let barber = await docRef.get()
@@ -133,6 +135,8 @@ export class Database {
         let newAppointmentsArray = appointments.concat(appointment)
         await docRef.update({ appointments: newAppointmentsArray });
       } else await docRef.update({ appointments: [appointment] })
+      // Return appointmentID to use to query list if we have to cancel job.
+      return appointmentID
     } catch (err) {
       throw err
     }

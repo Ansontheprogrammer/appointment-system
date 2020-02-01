@@ -12,9 +12,9 @@ import {
 } from './database'
 import * as types from './'
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
-import moment from 'moment'
+import moment from 'moment-timezone'
 import { formatToCronTime } from '../config/utils';
-import { createJob } from './cron'
+import { createJob, cancelJob } from './cron'
 import { TextInterface } from './flow/smsFlow/textInterface'
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
@@ -267,27 +267,83 @@ export async function sendBookLaterDateLink(phoneNumber: string) {
   })
 }
 
-export async function notifyBarber(req, res, next) {
-  const { customer, barberName } = req.body
+export async function cancelAppointment(req, res, next) {
+  const { customer, barberName, id } = req.body
   const { phoneNumber, name } = customer
   let date = customer.date
   date = moment(date, 'YYYY-MM-DD HH:mm').format(this.UserMessage.friendlyFormat)
   const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
   const barberData = await database.findBarberInDatabase(barberName)
+  const clientData = await getClientData(phoneNumber, id)
 
-  // TODO: Cancel Job
-  // TODO: Remove Appointment
-  // TODO: Send Notification Text
-
-  client.messages.create({
-    from: twilioPhoneNumber,
-    body: message,
-    to: barberData.phoneNumber
-  })
-
+  // cancelJob(id, barberName);
+  try {
+    // await removeAppointmentFromList(barberName, id, clientData)
+    // await sendText(message, barberData.phoneNumber)
+  } catch(err){
+    
+  }
   res.sendStatus(200)
 }
 
+export async function getClientData(phoneNumber, id){
+  await barberCollection
+      .collection('customers')
+      .doc(phoneNumber)
+      .get()
+      .then(doc => {
+        const data = doc.data()
+        // Set error if document or uuid is invalid
+        if (!data || id !== data.uuid) {
+          throw 'ERROR: Phone number and client ID do not match.'
+        }
+        return data
+      })
+}
+
+export async function removeAppointmentFromList(barberID, appointmentID, clientData){
+  
+  const barberDoc = await barberCollection
+      .collection('barbers')
+      .doc(barberID)
+      .get()
+
+    const barberData = barberDoc.data()
+    let appointmentToDelete, triedToCancelWithinTheHour;
+    const updatedAppointments = barberData.appointments.filter(appointment => {
+      // set appointment to notify barber about
+      if(appointment.uuid === appointmentID) {
+        // find the appointment time
+        const appointmentTime = appointment.details.time.from;
+        // find the appointment time one hour before
+        const appointmentTimeOneHourBefore = moment(appointmentTime).subtract(1,"hours").format("YYYY,MM-DD HH:mm");
+        // find the current time in the same appointment time format
+        const currentTime = moment().tz("America/Chicago").format('YYYY-MM-DD HH:mm');
+        // Check if the current time is after the current appointment
+        if(moment(currentTime).isAfter(appointmentTimeOneHourBefore)){
+          // To close to appointment time, the customer can't delete the appointment
+          if(!clientData.noCallNoShows.length){
+            // alert('You can’t cancel an appointment, you will be charged a $10 fee on your next visit')
+          } else {
+            // alert('You can’t cancel an appointment, you will be charged the full cost of your service on your next visit')
+          }
+          triedToCancelWithinTheHour = true;
+          return true
+        }
+        appointmentToDelete = appointment
+      }
+      return appointment.uuid !== appointmentID
+    })
+
+    await barberCollection
+      .collection('barbers')
+      .doc(barberID)
+      .update({
+        appointments: updatedAppointments
+      })
+
+    return triedToCancelWithinTheHour
+}
 export async function notifyBarberCustomerTriedToCancelWithinTheHour(req, res, next) {
   const { customer, barberName } = req.body
   const { phoneNumber, name } = customer
@@ -343,7 +399,8 @@ export function resetCronJobs(req, res, next){
                 formatToCronTime(appointment.details.time.from),
                 appointment.phoneNumber,
                 reminderMessage,
-                barberName
+                barberName,
+                appointment.uuid
               )
           })
       })
