@@ -23,86 +23,6 @@ export const client: any = twilio(
 export const VoiceResponse = (twilio as any).twiml.VoiceResponse
 export const MessagingResponse = (twilio as any).twiml.MessagingResponse
 export const database = new Database()
-const scheduler = new Scheduler()
-
-export function getAvailableTimes(
-  duration: number,
-  interval: number,
-  allocatedTimes: types.ALLOCATED_TIMES[],
-  from: string,
-  to: string,
-  barber: types.BARBER
-): TimeAvailability[] {
-  // set time to get available times
-  return scheduler.getIntersection({
-    from,
-    to,
-    duration,
-    interval,
-    schedules: [
-      {
-        ...barberShopAvailability,
-        unavailability: [
-          {
-            from: `${from} ${barber.unavailabilities.lunch.from}`,
-            to: `${from} ${barber.unavailabilities.lunch.to}}`
-          },
-          ...barber.unavailabilities.offDays,
-          ...barber.unavailabilities.unavailableTimes,
-          ...barber.unavailabilities.vacations
-        ],
-        allocated: allocatedTimes
-      }
-    ]
-  })[from]
-}
-
-export function getBarberAppointments(
-  services: types.SERVICES[],
-  barber: types.BARBER,
-  date?: string
-): string[] {
-  const currentDateAndTime = moment()
-  let from = currentDateAndTime.format('YYYY-MM-DD')
-
-  if (!!date) from = moment(date).format('YYYY-MM-DD')
-
-  let to = moment(from)
-    .add(1, 'day')
-    .format('YYYY-MM-DD')
-  const barbersAllocatedTimes = barber.appointments.map(
-    appointment => appointment.details.time
-  )
-  let totalDuration = 0
-  // sum up total durations
-  services.forEach(service => (totalDuration += service.duration))
-  // TODO: think of a way to architect it to provide different features per shop
-  // FADESOFGRAY - if customer didn't just order a hair lining, lets change interval to 30
-  let interval;
-  interval = 30;
-
-  let availableTimes = getAvailableTimes(
-    totalDuration,
-    interval,
-    barbersAllocatedTimes,
-    from,
-    to,
-    barber
-  )
-  
-  if (!availableTimes) return []
-  return formatAllocatedTimes(availableTimes).map(time =>
-    moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm')
-  )
-}
-
-export function formatAllocatedTimes(
-  barbersAllocatedTimes: TimeAvailability[]
-) {
-  return barbersAllocatedTimes
-    .filter(availability => availability.available)
-    .map(availability => moment(availability.time, 'HH:mm').format('h:mm a'))
-}
 
 export function createBarber(req, res, next) {
   /**
@@ -267,22 +187,22 @@ export async function sendBookLaterDateLink(phoneNumber: string) {
   })
 }
 
-export async function cancelAppointment(req, res, next) {
+export function cancelAppointment(req, res, next) {
   const { customer, barberName, id } = req.body
   const { phoneNumber, name } = customer
   let date = customer.date
   date = moment(date, 'YYYY-MM-DD HH:mm').format(this.UserMessage.friendlyFormat)
   const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
-  const barberData = await database.findBarberInDatabase(barberName)
-  const clientData = await getClientData(phoneNumber, id)
+  const barberData =  database.findBarberInDatabase(barberName)
+  const clientData =  getClientData(phoneNumber, id)
 
-  // cancelJob(id, barberName);
-  try {
-    // await removeAppointmentFromList(barberName, id, clientData)
-    // await sendText(message, barberData.phoneNumber)
-  } catch(err){
+  cancelJob(id);
+  // try {
+  //   //  removeAppointmentFromList(barberName, id, clientData)
+  //   //  sendText(message, barberData.phoneNumber)
+  // } catch(err){
     
-  }
+  // }
   res.sendStatus(200)
 }
 
@@ -380,7 +300,7 @@ export async function notifyCustomerAboutFeeOnTheirNextVisit(req, res, next) {
   res.sendStatus(200)
 }
 
-export function resetCronJobs(req, res, next){
+export function resetCronJobs(){
   barberCollection
   .get()
   .then(snapshot => {
@@ -399,12 +319,10 @@ export function resetCronJobs(req, res, next){
                 formatToCronTime(appointment.details.time.from),
                 appointment.phoneNumber,
                 reminderMessage,
-                barberName,
                 appointment.uuid
               )
           })
       })
-      res.sendStatus(200)
   })
 }
 
