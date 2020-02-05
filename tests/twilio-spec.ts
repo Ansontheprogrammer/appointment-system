@@ -2,7 +2,7 @@ import 'mocha';
 import * as assert from 'assert';
 import * as twilioLib from '../lib/twilio';
 import { TextSystem } from '../lib/flow/smsFlow/smsFlow'
-import { Database, serviceList } from '../lib/database';
+import { Database, serviceList, getAvailableTimes } from '../lib/database';
 import sinon from 'sinon';
 import { shopIsClosed } from '../config/utils';
 import { BARBER } from '../lib';
@@ -241,7 +241,7 @@ describe('scheduling appointments', () => {
 
     describe('getAvailableTimes', () => {
         it('should not be able to book an appointment during a lunch time', () => {
-            const availableTimes = twilioLib.getAvailableTimes(30, 15, [], '2019-12-12', '2019-12-13', (exampleBarber as any))
+            const availableTimes = getAvailableTimes(30, 15, [], '2019-12-12', '2019-12-13', (exampleBarber as any))
             const timesThatShouldBeUnavailable = availableTimes.filter(availableTime => availableTime.time === '10:00' || availableTime.time === '10:15');
             const expectedTimeAvailability = [ 
                 { time: '10:00', available: false, reference: null },
@@ -250,7 +250,7 @@ describe('scheduling appointments', () => {
             assert.deepEqual(timesThatShouldBeUnavailable, expectedTimeAvailability)
         })
         it('should be able to book an appointment if it is not lunch time or off day', () => {
-            const availableTimes = twilioLib.getAvailableTimes(30, 15, [], '2019-12-12', '2019-12-13', (exampleBarber as any))
+            const availableTimes = getAvailableTimes(30, 15, [], '2019-12-12', '2019-12-13', (exampleBarber as any))
             const timesThatShouldBeUnavailable = availableTimes.filter(availableTime => availableTime.time === '10:30' || availableTime.time === '11:00');
             const expectedTimeAvailability = [ 
                 { time: '10:30', available: true, reference: null },
@@ -260,7 +260,7 @@ describe('scheduling appointments', () => {
         })
     
         it('should not be able to book an appointment during an off day', () => {
-            const availableTimes = twilioLib.getAvailableTimes(30, 15, [], '2019-12-10', '2019-12-11', (exampleBarber as any))
+            const availableTimes = getAvailableTimes(30, 15, [], '2019-12-10', '2019-12-11', (exampleBarber as any))
             const areAllTimesUnavailable = availableTimes.every(availableTime => availableTime.available === false)
             assert.equal(areAllTimesUnavailable, true)
         })
@@ -389,25 +389,6 @@ describe('Text System', () => {
         //         new TextSystem().textGetName(req, res, () => {}).then(() => {
         //             done()
         //         }, done)
-        //     })
-        // })
-    })
-    describe('Additional Features', () => {
-        const req = {
-            body: {
-                barberName: 'Julian',
-                messageToBlast: 'Testing Julian`s text message blast feature'
-            }
-        }
-        // describe('sendTextMessageBlast', () => {
-        //     it('should send a text message blast to all barber clients', done => {
-        //         const res = {
-        //             sendStatus: (status) => {
-        //                 if(status === 200) done();
-        //                 else done('There was an error') 
-        //             }
-        //         }
-        //         twilioLib.sendTextMessageBlast(req, res, {})
         //     })
         // })
     })

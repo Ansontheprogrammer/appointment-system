@@ -45,24 +45,24 @@ describe('Phone Flow System', () => {
 
     
     describe('phoneFlow', () => {
-        it('it should ensure that create customer is called after find customer in database', done => {
-            let calledFindCustomerInDatabase;
-            sinon.stub(twilioLib.database, 'findCustomerInDatabase').callsFake(phoneNumber => {
-                console.log(phoneNumber, 'phoneNumber')
-                calledFindCustomerInDatabase = true
-                return new Promise((resolve, reject) => resolve('success' as any))
-            })
-            sinon.stub(twilioLib.database, 'createCustomer').callsFake(phoneNumber => {
-                // functions were called in correct order
-                if(calledFindCustomerInDatabase) done()
-                else done('create customer was called before we attempted to find them in database')
-                return new Promise(() => {})
-            })
-            res.send = (message) => {
-            }
+        // it('it should ensure that create customer is called after find customer in database', done => {
+        //     let calledFindCustomerInDatabase;
+        //     sinon.stub(twilioLib.database, 'findCustomerInDatabase').callsFake(phoneNumber => {
+        //         console.log(phoneNumber, 'phoneNumber')
+        //         calledFindCustomerInDatabase = true
+        //         return new Promise((resolve, reject) => resolve('success' as any))
+        //     })
+        //     sinon.stub(twilioLib.database, 'createCustomer').callsFake(phoneNumber => {
+        //         // functions were called in correct order
+        //         if(calledFindCustomerInDatabase) done()
+        //         else done('create customer was called before we attempted to find them in database')
+        //         return new Promise(() => {})
+        //     })
+        //     res.send = (message) => {
+        //     }
     
-            new PhoneSystem().phoneFlow({}, res, {}).then(done, done)
-        })
+        //     new PhoneSystem().phoneFlow({}, res, {}).then(done, done)
+        // })
 
         // it('should send the user a text message if the shop is closed currently', done => {
         //     sinon.stub(new VoiceResponse, 'say').callsFake((message, voice) => {
