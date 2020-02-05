@@ -5,10 +5,15 @@ import { timezone, barberShopAvailability } from '../lib/database';
 // store a variable containing if the shop is closed or not.
 export const shopIsClosed = (closedNow?: boolean) => {
   if(closedNow) return true
-
-  const currentDay = getDate().format('dddd')
+  
+  let day;
+  if(process.env.NODE_ENV === 'test'){
+    day = 'Tuesday'
+  } else {
+    day = getDate().format('dddd')
+  }
   const currentTime = parseInt(getDate().format('H'))
-  const shopAvailabilityForTheDay = barberShopAvailability[currentDay.toLowerCase()]
+  const shopAvailabilityForTheDay = barberShopAvailability[day.toLowerCase()]
   
   return (
     currentTime < parseInt(shopAvailabilityForTheDay.from) ||
