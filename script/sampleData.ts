@@ -1,7 +1,7 @@
 export default {
   barberShopName: 'barberSharp',
   friendlyName: 'Barber Sharp',
-  url: 'barber-sharp.netlify.com',
+  url: 'https://0643ad15.ngrok.io',
   phoneVoice: 'Polly.Justin',
   twilioNumber: '+16124393345',
   shopPhoneNumber: '949029323',

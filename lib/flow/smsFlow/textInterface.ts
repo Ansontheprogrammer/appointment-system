@@ -65,16 +65,15 @@ export class TextInterface {
             console.error(err, 'Error finding customer');
         }
         if(userMessage === '1'){
-            sendBookLaterDateLink(phoneNumber)
-            .then(() => {
-                res.status(200)
-                res.end()
-            })
-        // } else if(userMessage === '2'){
-        //     sendTextMessage(new UserMessages().getShopHoursMessage())
+            await sendBookLaterDateLink(phoneNumber)
+            res.status(200)
+            res.end()
         } else if(userMessage.toLowerCase() === 'view' || userMessage.toLowerCase() === 'remove' ){
-            cancelRecentAppointment(req, res)
-        } else {
+            await cancelRecentAppointment(req, res)
+            res.status(200)
+              res.end()
+        }
+        else {
             sendTextMessage('Sorry that was an invalid option\n');
         }
     }

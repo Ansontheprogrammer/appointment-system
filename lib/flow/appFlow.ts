@@ -140,8 +140,11 @@ export class AppSystem {
         total
       }
     }
+    
+    let barberDoc
 
     try {
+      barberDoc = await database.findBarberInDatabase(barber);
       appointmentID = await database.addAppointment(
         barber,
         customerInfo.customerData,
@@ -170,6 +173,7 @@ export class AppSystem {
 
     // send confirmation
     sendText(confirmationMessage, phoneNumber)
+    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${customerInfo.appointmentData.time.from}`, barberDoc.phoneNumber)
 
     createJob(
       formatToCronTime(formattedDateTime),

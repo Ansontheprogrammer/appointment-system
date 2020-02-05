@@ -345,7 +345,7 @@ function ArrNoDupe(a) {
 }
 
 export async function sendText(message: string, toPhoneNumber: string){
-  let twilioNumberToUse = process.env.NODE_ENV === 'develop' ? '16125023342' : twilioPhoneNumber
+  let twilioNumberToUse = process.env.NODE_ENV !== 'develop' ? '16125023342' : twilioPhoneNumber
 
   return await client.messages.create({
     from: twilioNumberToUse,

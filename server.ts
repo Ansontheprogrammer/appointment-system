@@ -26,6 +26,7 @@ const port = process.env.PORT || 80
 app.use(express.json()) // to support JSON-encoded bodies
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded())
+app.use(cors())
 
 
 // Phone system
@@ -35,6 +36,7 @@ app.post('/api/bookAppointment', appSystem.bookAppointment)
 app.post('/api/cancelAppointment', cancelAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
+app.post('/api/notifyCustomerAboutFeeOnTheirNextVisit', notifyCustomerAboutFeeOnTheirNextVisit)
 // Text blast
 app.post('/api/sendTextMessageBlast', sendTextMessageBlast)
 // Text system
