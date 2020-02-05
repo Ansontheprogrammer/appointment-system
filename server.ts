@@ -35,9 +35,6 @@ app.post('/api/bookAppointment', appSystem.bookAppointment)
 app.post('/api/cancelAppointment', cancelAppointment)
 app.post('/api/getBarberAvailableTimes', appSystem.getBarberAvailableTimes)
 app.post('/api/walkinAppointment', appSystem.walkInAppointment)
-// No call no show
-app.post('/api/notifyBarberCustomerTriedToCancelWithinTheHour', notifyBarberCustomerTriedToCancelWithinTheHour)
-app.post('/api/notifyCustomerAboutFeeOnTheirNextVisit', notifyCustomerAboutFeeOnTheirNextVisit)
 // Text blast
 app.post('/api/sendTextMessageBlast', sendTextMessageBlast)
 // Text system
