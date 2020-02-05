@@ -46,8 +46,7 @@ describe('User message interface', () => {
     describe('getTextInterfaceMessage', () => {
         it('should get the appropriate text interface message', () => {
             const message = UserMessage.getTextInterfaceMessage();
-            const expectedMessage = `Welcome to the Fades of Gray help interface. How can I help you today? Press:\n\n(1) Book Appointment Online\n(View) View Appointments`
-            console.log(message, expectedMessage, 'messaages')
+            const expectedMessage = `Welcome to the Barber Sharp help interface. How can I help you today? Press:\n\n(1) Book Appointment Online\n(View) View Appointments`
             assert.equal(message, expectedMessage)
         })
     })
@@ -169,7 +168,7 @@ Total: $40`
         })
     })
     it('confirmedAppointmentMessage', () => {
-        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`;
+        const confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View)`
         assert.equal(UserMessage.confirmedAppointmentMessage, confirmedAppointmentMessage)
     })
     it('chooseAppointmentTypeMessage', () => {
