@@ -4,11 +4,10 @@ import {
     getDate
   } from '../../../config/utils'
   import { 
-    database, 
-    getBarberAppointments, 
+    database,  
     UserMessages, 
   } from '../../twilio'
-  import { barbersInShop } from '../../database'
+  import { barbersInShop, getBarberAppointments} from '../../database'
   import moment from 'moment';
   import { BARBER } from '../..'
   import { createJob } from '../../cron'
