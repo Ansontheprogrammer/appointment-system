@@ -1,17 +1,16 @@
 import admin from 'firebase-admin'
 import { DocumentData } from '@google-cloud/firestore';
 import * as types from './';
-import uuid from 'uuid/v1';
 import developmentData from '../script/sampleData'
 import { validateAppointmentDetails } from '../config/utils';
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler';
 import moment from 'moment';
 
 const scheduler = new Scheduler()
-
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
 });
+
 
 export const db = admin.firestore();
 
@@ -19,10 +18,10 @@ export const db = admin.firestore();
 export let barbersInShop = [];
 
 export const barberShopName = ''
-export let 
-  barberCollection, 
-  customerCollection, 
-  serviceList, 
+export let
+  barberCollection,
+  customerCollection,
+  serviceList,
   barberShopURL,
   barberShopAvailability: types.BARBER_AVAILBILITY,
   friendlyShopName,
@@ -143,9 +142,9 @@ export class Database {
 
     const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber, timeZone } = req.body
     const barberShopDoc = db
-    .collection('barbershops')
-    .doc(barberShopName)
-    
+      .collection('barbershops')
+      .doc(barberShopName)
+
     // SET collections
     barberCollection = barberShopDoc.collection('barbers')
     customerCollection = barberShopDoc.collection('customers')
@@ -157,7 +156,7 @@ export class Database {
 
     // SET barbershop web url
     barberShopURL = url
-    
+
     // SET friendly shop name
     friendlyShopName = friendlyName
 
@@ -166,14 +165,14 @@ export class Database {
 
     // SET phone twilio number
     twilioPhoneNumber = twilioNumber
-    
+
     // SET phone twilio number
     barberShopPhoneNumber = shopPhoneNumber
 
     // SET barbers in shop
     Database.setBarbersInShop(barberCollection)
 
-    if(!timeZone) {
+    if (!timeZone) {
       timezone = 'America/Chicago'
     } else {
       timezone = timeZone
@@ -187,11 +186,11 @@ export class Database {
 
   public static setBarbersInShop = (barberShopDoc: FirebaseFirestore.CollectionReference) => {
     barberShopDoc
-    .get()
-    .then(snapshot => {
-      const barberData = snapshot.docs.map(doc => doc.id)
-      barbersInShop = barberData
-    })
+      .get()
+      .then(snapshot => {
+        const barberData = snapshot.docs.map(doc => doc.id)
+        barbersInShop = barberData
+      })
   }
 
   public findBarberInDatabase(firstName: string): Promise<any> {
@@ -207,16 +206,18 @@ export class Database {
   public updateBarber(firstName: string, update: {}) {
     // finish check to ensure stock list isn't already created.
     return new Promise((resolve, reject) => {
-      let docRef = barberCollection.doc(firstName)
-      docRef.update({ ...update }).then(resolve, reject)
+      barberCollection
+      .doc(firstName)
+      .update({ ...update })
+      .then(resolve, reject)
     })
   }
 
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS): Promise<string | Error> {
     const { phoneNumber, firstName } = customer
     const areAppointmentDetailsCorrect = validateAppointmentDetails(details);
-  
-    if(!areAppointmentDetailsCorrect.correct){
+
+    if (!areAppointmentDetailsCorrect.correct) {
       throw Error(areAppointmentDetailsCorrect.msg)
     }
     
@@ -260,17 +261,19 @@ export class Database {
 
   public findCustomerInDatabase(phoneNumber: string): Promise<DocumentData> {
     return new Promise((resolve, reject) => {
-      customerCollection.doc(phoneNumber).get()
-        .then((snapshot) => resolve(snapshot.data()))
-        .catch(reject);
+      customerCollection
+      .doc(phoneNumber)
+      .get()
+      .then((snapshot) => resolve(snapshot.data()))
+      .catch(reject);
     })
   }
 
   public createCustomer(phoneNumber: string): Promise<any> {
     return new Promise((resolve, reject) => {
       // Assign step number field before saving
-      const customerInfo = Object.assign({ phoneNumber, uuid: uuid() })
-      const session = { stepNumber: '1', finishedGeneralSteps: false}
+      const customerInfo = Object.assign({ phoneNumber, uuid: uuid.v1(), noCallNoShows: [] })
+      const session = { stepNumber: '1', finishedGeneralSteps: false }
 
       this.hasPersonSignedUp(false, customerInfo.phoneNumber).then(hasPersonSignedUp => {
         if (!!hasPersonSignedUp) return reject('Customer has already signed up.')

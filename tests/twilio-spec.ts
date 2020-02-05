@@ -43,6 +43,7 @@ describe('User message interface', () => {
         const isGreetingValid = UserMessage.introGreetingWords.find(greeting => getdGreeting === greeting)
         assert.equal(!!isGreetingValid, true)
     })
+
     describe('getTextInterfaceMessage', () => {
         it('should get the appropriate text interface message', () => {
             const message = UserMessage.getTextInterfaceMessage();
