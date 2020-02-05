@@ -19,6 +19,8 @@ export function createJob(date: string, phoneNumber: string, message: string, id
 }
 
 export function cancelJob(id: string) {
+  console.log('Canceling appointment with id ', id)
+  
   appointmentsInQueue.forEach(job => {
     if(job[0] === id) {
       job[1].stop()

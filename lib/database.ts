@@ -39,7 +39,6 @@ export let
     to: string,
     barber: types.BARBER
   ): TimeAvailability[] {
-    console.log(from, to, 'get available times')
     // set time to get available times
     return scheduler.getIntersection({
       from,
@@ -73,7 +72,7 @@ export let
     barber: types.BARBER,
     date?: string,
     specificTime?: SPECIFIC_TIME
-  ): string[] {
+  ): any {
     const currentDateAndTime = moment()
     let from = currentDateAndTime.format('YYYY-MM-DD')
   
@@ -82,11 +81,6 @@ export let
     let to = moment(from)
       .add(1, 'day')
       .format('YYYY-MM-DD')
-
-    if (!!specificTime) {
-      from = moment(specificTime.time).format('YYYY-MM-DD HH:mm')
-      to = moment(specificTime.time, 'YYYY-MM-DD HH:mm').add(specificTime.duration + 60, 'minutes').format('YYYY-MM-DD HH:mm')
-    }
 
     
     const barbersAllocatedTimes = barber.appointments.map(
@@ -110,7 +104,10 @@ export let
     )
     
     if (!availableTimes) return []
-      console.log(availableTimes, 'available times')
+    // if(!!specificTime) {
+    //   const time = moment(specificTime.time, 'YYYY-MM-DD HH:mm').format('HH:mm')
+    //   return queryAllocatedTimes(availableTimes, time)
+    // }
     return formatAllocatedTimes(availableTimes).map(time =>
       moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm')
     )
@@ -119,11 +116,18 @@ export let
   export function formatAllocatedTimes(
     barbersAllocatedTimes: TimeAvailability[]
   ) {
-    console.log(barbersAllocatedTimes, 'barbers')
     return barbersAllocatedTimes
       .filter(availability => availability.available)
       .map(availability => moment(availability.time, 'HH:mm').format('h:mm a'))
   }
+
+  // export function queryAllocatedTimes(
+  //   barbersAllocatedTimes: TimeAvailability[],
+  //   time: string
+  // ) {
+  //   return barbersAllocatedTimes
+  //     .filter(availability => availability.time === time)[0].available
+  // }
 
   
 export class Database {
@@ -190,22 +194,13 @@ export class Database {
     })
   }
 
-  public findBarberInDatabase(firstName: string): Promise<DocumentData> {
+  public findBarberInDatabase(firstName: string): Promise<any> {
     return new Promise((resolve, reject) => {
       barberCollection
       .doc(firstName)
         .get()
         .then((snapshot) => resolve(snapshot.data()))
         .catch(reject);
-    })
-  }
-
-  public findAllBarbers(): Promise<DocumentData[]> {
-    return new Promise((resolve, reject) => {
-      barberCollection
-        .onSnapshot(snapshot => {
-          snapshot.docs.map(doc => doc.data())
-        }, reject)
     })
   }
 
