@@ -83,9 +83,9 @@ describe('Database class', () => {
                     },
                 }
             })
-            new databaseLib.Database().findCustomerInDatabase('9082097544').then(barber => {
+            new databaseLib.Database().findCustomerInDatabase('9082097544').then(customer => {
                 const expectedCustomerData = { phoneNumber: '908029854' };
-                assert.deepEqual(barber, expectedCustomerData)
+                assert.deepEqual(customer, expectedCustomerData)
             })
         })
     })
@@ -120,7 +120,7 @@ describe('Database class', () => {
 }`
             
             sandbox.stub(databaseLib.barberCollection, 'doc').callsFake((barberName: string) => { 
-                assert.equal(barberName, 'Julian');
+                assert.equal(barberName, 'Kelly');
                 return {
                     get: () => {
                         return {
@@ -141,7 +141,10 @@ describe('Database class', () => {
 
             // TODO: Find a way to override firebase
             const details = {
-                services: ['Hair cut'],
+                services: [{   price: 20,
+                    duration: 30,
+                    service: 'Child’s Haircut (12 and under)' 
+                }],
                 time: { 
                     duration: 30,
                     from: '2019-09-14 13:30'
@@ -190,7 +193,7 @@ describe('Database class', () => {
 }`
             
             sandbox.stub(databaseLib.barberCollection, 'doc').callsFake((barberName: string) => { 
-                assert.equal(barberName, 'Julian');
+                assert.equal(barberName, 'Kelly');
                 return {
                     get: () => {
                         return {
@@ -227,7 +230,12 @@ describe('Database class', () => {
 
             // TODO: Find a way to override firebase
             const details = {
-                services: ['Hair cut'],
+                services: [
+                    {   price: 20,
+                        duration: 30,
+                        service: 'Child’s Haircut (12 and under)' 
+                    } 
+                ],
                 time: { 
                     duration: 30,
                     from: '2019-09-14 13:30'

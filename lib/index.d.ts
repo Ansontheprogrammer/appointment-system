@@ -25,7 +25,7 @@ export type CUSTOMER = {
   }
 
   export type DETAILS = {
-    services: string[],
+    services: SERVICES[],
     time: { 
       duration: number, 
       from: string 

@@ -20,7 +20,7 @@ describe('Utility Functions', () =>{
     describe('validateAppointmentDetails', () => {
         it('should return that the appointment details are incorrect message - date is invalid', () => {
             const exampleIncorrectAppointment = {
-                services: [''],
+                services: [],
                 time: { 
                 duration: 60, 
                 from: 'Invalid date'
@@ -68,7 +68,11 @@ describe('Utility Functions', () =>{
         })
         it('should return that the appointment details are incorrect message - no total', () => {
             const exampleIncorrectAppointment = {
-                services: ['Hair cut'],
+                services: [{   
+                    price: 20,
+                    duration: 30,
+                    service: 'Child’s Haircut (12 and under)' 
+                } ],
                 time: { 
                     duration: 60, 
                     from: '2019-10-10'
@@ -82,9 +86,14 @@ describe('Utility Functions', () =>{
             const areAppointmentDetailsCorrect = validateAppointmentDetails(exampleIncorrectAppointment);
             assert.deepEqual(areAppointmentDetailsCorrect, expectedAppointmentDetailValidation)
         })
+        
         it('should return that the appointment details are correct', () => {
             const exampleIncorrectAppointment = {
-                services: ['Hair Cut'],
+                services: [{   
+                    price: 20,
+                    duration: 30,
+                    service: 'Child’s Haircut (12 and under)' 
+                } ],
                 time: { 
                 duration: 60, 
                 from: '2019-11-09' 

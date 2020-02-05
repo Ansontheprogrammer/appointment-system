@@ -12,7 +12,6 @@ import {
 } from './database'
 import * as types from './'
 
-import { formatToCronTime, getDate } from '../config/utils';
 import moment from 'moment-timezone'
 import { formatToCronTime } from '../config/utils';
 import { createJob, cancelJob } from './cron'
@@ -71,13 +70,6 @@ export class UserMessages {
     Math.floor(Math.random() * this.introGreetingWords.length)
     ]
 
-  public generateShopOpenAvailabilityMessage(){
-    const currentDay = getDate().format('dddd')
-    const shopAvailabilityForTheDay = barberShopAvailability[currentDay.toLowerCase()];
-    const openTime = moment(shopAvailabilityForTheDay.from, 'HH').format('h:mm a');
-    const closeTime = moment(shopAvailabilityForTheDay.to, 'HH').format('h:mm a');
-    return `The shop is open from ${openTime} - ${closeTime} today`
-  }
 
   public getFriendlyTimeFormat = time => {
     return moment(time, 'HH:mm').format('h:mm a')

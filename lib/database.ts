@@ -5,6 +5,7 @@ import developmentData from '../script/sampleData'
 import { validateAppointmentDetails } from '../config/utils';
 import { Scheduler, TimeAvailability } from '@ssense/sscheduler';
 import moment from 'moment';
+import uuid from 'uuid'
 
 const scheduler = new Scheduler()
 admin.initializeApp({
