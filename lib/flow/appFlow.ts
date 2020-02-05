@@ -1,10 +1,10 @@
 import * as utils from '../../config/utils'
-import { database, getBarberAppointments, client, UserMessages } from '../twilio'
+import { database, client, UserMessages } from '../twilio'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 import { formatToCronTime } from '../../config/utils'
-import { twilioPhoneNumber } from '../database'
+import { twilioPhoneNumber, getBarberAppointments} from '../database'
 
 const UserMessage = new UserMessages()
 
@@ -87,7 +87,6 @@ export class AppSystem {
       formatToCronTime(firstAvailableTime),
       phoneNumber,
       reminderMessage,
-      barber, 
       appointmentID
     )
 
@@ -98,9 +97,6 @@ export class AppSystem {
     // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
     const { barber, fromDate, services } = req.body
     // Handle case for retrieving schedules on the dashboard
-    if(services.length){
-      if (!Object.keys(services[0]).length) services.shift()
-    }
     const barberInDatabase = await (database.findBarberInDatabase(
       barber
     ) as Promise<BARBER>)
@@ -113,6 +109,7 @@ export class AppSystem {
       moment(time, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
     )
     res.json({ availableTimes })
+    
   }
 
   public async bookAppointment(req, res, next) {
@@ -188,8 +185,7 @@ export class AppSystem {
     createJob(
       formatToCronTime(formattedDateTime),
       phoneNumber,
-      reminderMessage,
-      barber, 
+      reminderMessage, 
       appointmentID
     )
 
