@@ -11,7 +11,6 @@ import {
   friendlyShopName,
 } from './database'
 import * as types from './'
-
 import moment from 'moment-timezone'
 import { formatToCronTime } from '../config/utils';
 import { createJob, cancelJob } from './cron'
@@ -69,7 +68,6 @@ export class UserMessages {
     this.introGreetingWords[
     Math.floor(Math.random() * this.introGreetingWords.length)
     ]
-
 
   public getFriendlyTimeFormat = time => {
     return moment(time, 'HH:mm').format('h:mm a')

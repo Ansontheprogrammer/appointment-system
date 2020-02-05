@@ -246,7 +246,6 @@ describe('Database class', () => {
                 done()
             }, done)
         })
-
         it('should create an appointment', async() => {
         // TODO: Find a way to override firebase
             const details = {

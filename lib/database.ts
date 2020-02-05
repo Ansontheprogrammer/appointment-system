@@ -8,6 +8,7 @@ import moment from 'moment';
 import uuid from 'uuid'
 
 const scheduler = new Scheduler()
+
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
 });
@@ -222,9 +223,8 @@ export class Database {
       throw Error(areAppointmentDetailsCorrect.msg)
     }
     
-    const appointmentID = uuid()
+    const appointment = { phoneNumber, firstName, details, uuid: uuid.v1() }
 
-    const appointment = { phoneNumber, firstName, details, uuid: appointmentID }
     try {
       let docRef = await barberCollection.doc(barberFirstName)
       let barber = await docRef.get()
