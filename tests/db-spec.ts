@@ -39,27 +39,26 @@ describe('Database class', () => {
             firstName: 'Anson'
         }
 
-        it.only('should create an appointment', async() => {
+        it('should create an appointment', async() => {
         // TODO: Find a way to override firebase
             const details = {
                 services: [
                     {   price: 20,
                         duration: 30,
-                        checked: true,
                         service: 'Child’s Haircut (12 and under)' 
                     } 
                 ],
                 time: { 
                     duration: 30,
-                    from: '2019-09-15 13:15'
+                    from: '2019-09-15 14:00'
                 },
                 total: 25
             }
             try {
                 const appointmentID = await new databaseLib.Database().addAppointment(barberName, customer, details)
-                console.log(appointmentID, 'appointment id')
+                assert.equal(appointmentID.toString().length >= 1, true)
             } catch(err){
-                console.log( err, 'err appointment id')
+                throw Error(err)
             }
         })
 
@@ -69,13 +68,12 @@ describe('Database class', () => {
                     services: [
                         {   price: 20,
                             duration: 30,
-                            checked: true,
                             service: 'Child’s Haircut (12 and under)' 
                         } 
                     ],
                     time: { 
                         duration: 30,
-                        from: '2019-11-13 13:15'
+                        from: '2019-11-13 13:00'
                     },
                     total: 25
                 }
