@@ -194,7 +194,6 @@ export async function cancelAppointment(req, res, next) {
   let date = customer.date
   date = moment(date, 'YYYY-MM-DD HH:mm').format(new UserMessages().friendlyFormat)
   let message;
-
   cancelJob(id);
   try {
     const barberData =  await database.findBarberInDatabase(barberName)
@@ -251,23 +250,6 @@ export async function removeAppointmentFromList(barberID, appointmentID, clientD
   }
 
   return triedToCancelWithinOneHour;
-}
-export async function notifyBarberCustomerTriedToCancelWithinTheHour(req, res, next) {
-  const { customer, barberName } = req.body
-  const { phoneNumber, name } = customer
-  let date = customer.date
-  date = moment(date, 'YYYY-MM-DD HH:mm').format(this.UserMessage.friendlyFormat)
-  const message = `${name} tried to cancel an appointment within the hour for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
-  const barberData = await database.findBarberInDatabase(barberName)
-
-  
-  client.messages.create({
-    from: twilioPhoneNumber,
-    body: message,
-    to: barberData.phoneNumber
-  })
-
-  res.sendStatus(200)
 }
 
 export async function notifyCustomerAboutFeeOnTheirNextVisit(req, res, next) {

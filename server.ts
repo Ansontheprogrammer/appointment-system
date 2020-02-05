@@ -6,7 +6,6 @@ import { AppSystem } from './lib/flow/appFlow'
 import { 
   createBarber, 
   sendTextMessageBlast, 
-  notifyBarberCustomerTriedToCancelWithinTheHour,
   notifyCustomerAboutFeeOnTheirNextVisit,
   cancelAppointment
 } from './lib/twilio'
