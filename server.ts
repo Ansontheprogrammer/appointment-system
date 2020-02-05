@@ -5,7 +5,6 @@ import { TextSystem } from './lib/flow/smsFlow/smsFlow'
 import { AppSystem } from './lib/flow/appFlow'
 import { 
   createBarber, 
-  resetCronJobs, 
   sendTextMessageBlast, 
   notifyBarberCustomerTriedToCancelWithinTheHour,
   notifyCustomerAboutFeeOnTheirNextVisit,
@@ -27,7 +26,7 @@ const port = process.env.PORT || 80
 app.use(express.json()) // to support JSON-encoded bodies
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded())
-app.use(cors())
+
 
 // Phone system
 app.post('/api/phoneAppointmentFlow', phoneSystem.phoneFlow)
@@ -48,8 +47,6 @@ app.post('/api/textMessageFlow', textSystem.textMessageFlow, flow.processFlow)
 app.post('/api/createBarber', createBarber)
 // Set Barber Shop Data
 app.post('/api/setBarberShopData', Database.setBarberShopData)
-// Reset server cron jobs
-app.get('/api/resetCronJobs', resetCronJobs)
 app.get('/api/ping', (req, res, next) => {
   res.sendStatus(200)
 })
@@ -57,4 +54,7 @@ app.get('/api/ping', (req, res, next) => {
 app.listen(port, () => {
   console.log('Server is up and running')
   console.log('Setting individual shop data...', '\nCurrent enviroment:',process.env.NODE_ENV)
+  if(process.env.NODE_ENV === 'develop'){
+    Database.setBarberShopData({}, {}, {})
+  }
 })
