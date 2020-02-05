@@ -223,7 +223,8 @@ export class Database {
       throw Error(areAppointmentDetailsCorrect.msg)
     }
     
-    const appointment = { phoneNumber, firstName, details, uuid: uuid.v1() }
+    const appointmentID = uuid.v1()
+    const appointment = { phoneNumber, firstName, details, uuid: appointmentID }
 
     try {
       let docRef = await barberCollection.doc(barberFirstName)
