@@ -1,5 +1,5 @@
 import * as utils from '../../config/utils'
-import { database, client, UserMessages } from '../twilio'
+import { database, client, UserMessages, sendText } from '../twilio'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
@@ -121,19 +121,15 @@ export class AppSystem {
 
     const { barber, date, time, name, services } = req.body
     const phoneNumber = utils.phoneNumberFormatter(req.body.phoneNumber)
-    // remove first element if empty
-    if (!Object.keys(services[0]).length) services.shift()
-
     const dateTime = `${date} ${time}`
     const formattedDateTime = moment(
       dateTime,
       `MM-DD-YYYY ${UserMessage.friendlyFormat}`
     ).format('YYYY-MM-DD HH:mm')
 
-    let duration = 0
-    services.forEach(service => (duration += service.duration))
+    let duration = 0, total = 0, appointmentID
 
-    let total = 0
+    services.forEach(service => (duration += service.duration))
     services.forEach(service => (total += service.price))
 
     const customerInfo = {
@@ -145,10 +141,8 @@ export class AppSystem {
       }
     }
 
-    let appointmentID
-
     try {
-      appointmentID = database.addAppointment(
+      appointmentID = await database.addAppointment(
         barber,
         customerInfo.customerData,
         customerInfo.appointmentData
@@ -159,7 +153,6 @@ export class AppSystem {
       return res.send(err).status(500)
     }
 
-    // send confirmation
     const confirmationMessage = UserMessage.getConfirmationMessage(
       services,
       barber,
@@ -168,19 +161,15 @@ export class AppSystem {
       true
     )
 
-    client.messages.create({
-      from: twilioPhoneNumber,
-      body: confirmationMessage,
-      to: phoneNumber
-    })
-
-
     const reminderMessage = UserMessage.getReminderMessage(
       services,
       barber,
       formattedDateTime,
       total
     )
+
+    // send confirmation
+    sendText(confirmationMessage, phoneNumber)
 
     createJob(
       formatToCronTime(formattedDateTime),

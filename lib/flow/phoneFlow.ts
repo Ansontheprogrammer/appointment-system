@@ -29,7 +29,6 @@ import { TextInterface } from './smsFlow/textInterface'
 
 export class PhoneSystem {
   public static callBarbershop(res, twiml) {
-    console.log('in call barbershop')
     let phoneNumber;
     if(process.env.NODE_ENV === 'development'){
       phoneNumber = '9082097544'

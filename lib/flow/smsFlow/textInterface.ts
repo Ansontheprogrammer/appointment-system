@@ -23,10 +23,10 @@ export class TextInterface {
         //     action: '3',
         //     name: 'Book First Available Appointment'
         // },
-        shopHours: {
-            action: '2',
-            name: 'Shop Hours'
-        },
+        // shopHours: {
+        //     action: '2',
+        //     name: 'Shop Hours'
+        // },
         viewAppointment: {
             action: 'View',
             name: 'View Appointments'
@@ -70,9 +70,9 @@ export class TextInterface {
                 res.status(200)
                 res.end()
             })
-        } else if(userMessage === '2'){
-            sendTextMessage(new UserMessages().getShopHoursMessage())
-        } else if(userMessage.toLowerCase() === 'review'){
+        // } else if(userMessage === '2'){
+        //     sendTextMessage(new UserMessages().getShopHoursMessage())
+        } else if(userMessage.toLowerCase() === 'view' || userMessage.toLowerCase() === 'remove' ){
             cancelRecentAppointment(req, res)
         } else {
             sendTextMessage('Sorry that was an invalid option\n');

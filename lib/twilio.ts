@@ -8,10 +8,9 @@ import {
   barberShopAvailability,
   twilioPhoneNumber,
   barberCollection,
-  friendlyShopName
+  friendlyShopName,
 } from './database'
 import * as types from './'
-import { Scheduler, TimeAvailability } from '@ssense/sscheduler'
 import moment from 'moment-timezone'
 import { formatToCronTime } from '../config/utils';
 import { createJob, cancelJob } from './cron'
@@ -43,7 +42,7 @@ export function sendshopIsClosedMessage(phoneNumber, res?) {
 }
 
 export class UserMessages {
-  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View) \n\nTo book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
+  confirmedAppointmentMessage = `Great! We are looking forward to seeing you!\n\nIf you would like to view your appointments \nText: (View)`
   chooseAppointmentTypeMessage = `Would you like to book the first available time, book an appointment for today or book for a later date? \nPress: \n(1) First available time\n(2) Book an appointment for today\n(3) Later date`
   friendlyFormat = 'ddd, MMMM Do, h:mm a'
   errorConfirmingAppointment = `Okay, let's fix it. Just text me when you are ready to restart.\nPress: \n(1) First available appointment time\n(2) Book an appointment for today\n(3) Later date`
@@ -187,82 +186,69 @@ export async function sendBookLaterDateLink(phoneNumber: string) {
   })
 }
 
-export function cancelAppointment(req, res, next) {
+export async function cancelAppointment(req, res, next) {
   const { customer, barberName, id } = req.body
   const { phoneNumber, name } = customer
   let date = customer.date
-  date = moment(date, 'YYYY-MM-DD HH:mm').format(this.UserMessage.friendlyFormat)
-  const message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
-  const barberData =  database.findBarberInDatabase(barberName)
-  const clientData =  getClientData(phoneNumber, id)
+  date = moment(date, 'YYYY-MM-DD HH:mm').format(new UserMessages().friendlyFormat)
+  let message;
 
   cancelJob(id);
-  // try {
-  //   //  removeAppointmentFromList(barberName, id, clientData)
-  //   //  sendText(message, barberData.phoneNumber)
-  // } catch(err){
-    
-  // }
-  res.sendStatus(200)
-}
+  try {
+    const barberData =  await database.findBarberInDatabase(barberName)
+    const clientData =  await database.findCustomerInDatabase(phoneNumber)
+    const didCustomerTryToCancelWithinOneHour = await removeAppointmentFromList(barberName, id, clientData)
+    if(didCustomerTryToCancelWithinOneHour) message = `ALERT! \n${name} just tried to cancel within one hour \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.\nThey are not removed out of the system`
+    else message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
 
-export async function getClientData(phoneNumber, id){
-  await barberCollection
-      .collection('customers')
-      .doc(phoneNumber)
-      .get()
-      .then(doc => {
-        const data = doc.data()
-        // Set error if document or uuid is invalid
-        if (!data || id !== data.uuid) {
-          throw 'ERROR: Phone number and client ID do not match.'
-        }
-        return data
-      })
+    let toPhoneNumber = process.env.NODE_ENV === 'develop' ? '9082097544' : barberData.phoneNumber
+    await sendText(message, toPhoneNumber)
+    res.sendStatus(200)
+  } catch(err){
+      return next(err)
+  } 
 }
 
 export async function removeAppointmentFromList(barberID, appointmentID, clientData){
-  
-  const barberDoc = await barberCollection
-      .collection('barbers')
-      .doc(barberID)
-      .get()
-
-    const barberData = barberDoc.data()
-    let appointmentToDelete, triedToCancelWithinTheHour;
-    const updatedAppointments = barberData.appointments.filter(appointment => {
-      // set appointment to notify barber about
-      if(appointment.uuid === appointmentID) {
-        // find the appointment time
-        const appointmentTime = appointment.details.time.from;
-        // find the appointment time one hour before
-        const appointmentTimeOneHourBefore = moment(appointmentTime).subtract(1,"hours").format("YYYY,MM-DD HH:mm");
-        // find the current time in the same appointment time format
-        const currentTime = moment().tz("America/Chicago").format('YYYY-MM-DD HH:mm');
-        // Check if the current time is after the current appointment
-        if(moment(currentTime).isAfter(appointmentTimeOneHourBefore)){
-          // To close to appointment time, the customer can't delete the appointment
-          if(!clientData.noCallNoShows.length){
-            // alert('You can’t cancel an appointment, you will be charged a $10 fee on your next visit')
-          } else {
-            // alert('You can’t cancel an appointment, you will be charged the full cost of your service on your next visit')
+  let triedToCancelWithinOneHour: boolean = false;
+  const barberData = await new Database().findBarberInDatabase(barberID)
+  const updatedAppointments = barberData.appointments.filter(appointment => {
+    // set appointment to notify barber about
+    if(appointment.uuid === appointmentID) {
+      // find the appointment time
+      const appointmentTime = appointment.details.time.from;
+      // find the appointment time one hour before
+      const appointmentTimeOneHourBefore = moment(appointmentTime).tz("America/Chicago").subtract(1,"hours").format("YYYY-MM-DD HH:mm");
+      // find the current time in the same appointment time format
+      const currentTime = moment().tz("America/Chicago").format('YYYY-MM-DD HH:mm');
+      // Check if the current time is after the current appointment
+      if(moment(currentTime).isAfter(appointmentTimeOneHourBefore)){
+        // To close to appointment time, the customer can't delete the appointment
+        if(!clientData.noCallNoShows.length){
+          if(process.env.NODE_ENV !== 'develop'){
+            sendText('You can’t cancel an appointment one hour prior, you will be charged a $10 fee on your next visit', clientData.phoneNumber)
           }
-          triedToCancelWithinTheHour = true;
-          return true
+        } else {
+          if(process.env.NODE_ENV !== 'develop'){
+            sendText('You can’t cancel an appointment one hour prior, you will be charged the full cost of your service on your next visit', clientData.phoneNumber)
+          }
         }
-        appointmentToDelete = appointment
+        triedToCancelWithinOneHour = true;
+        return true
       }
-      return appointment.uuid !== appointmentID
-    })
+    }
+    return appointment.uuid !== appointmentID
+  })
 
+  if(process.env.NODE_ENV !== 'develop'){
     await barberCollection
-      .collection('barbers')
-      .doc(barberID)
-      .update({
-        appointments: updatedAppointments
-      })
+    .doc(barberID)
+    .update({
+      appointments: updatedAppointments
+    })
+  }
 
-    return triedToCancelWithinTheHour
+  return triedToCancelWithinOneHour;
 }
 export async function notifyBarberCustomerTriedToCancelWithinTheHour(req, res, next) {
   const { customer, barberName } = req.body
@@ -339,7 +325,7 @@ export function sendTextMessageBlast(req, res, next){
     }
     // Send blast text message 
     const sendBlastTextMessagePromises = customerPhoneNumbersToBlastToo.map((phoneNumber, index) => {
-      return sendText(messageToBlast, phoneNumber, true)
+      return sendText(messageToBlast, phoneNumber)
     });
 
     Promise.all(sendBlastTextMessagePromises).then(() => res.sendStatus(200))
@@ -356,8 +342,9 @@ function ArrNoDupe(a) {
   return r;
 }
 
-export async function sendText(message: string, toPhoneNumber: string, testEnv?){
-  const twilioNumberToUse = testEnv ? '16125023342' : twilioPhoneNumber
+export async function sendText(message: string, toPhoneNumber: string){
+  let twilioNumberToUse = process.env.NODE_ENV === 'develop' ? '16125023342' : twilioPhoneNumber
+
   return await client.messages.create({
     from: twilioNumberToUse,
     body: message,
