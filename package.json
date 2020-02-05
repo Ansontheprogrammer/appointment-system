@@ -6,9 +6,9 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && export NODE_ENV=production && node dist/server.js",
-    "dev": "npm run build && node dist/server.js",
+    "dev": "npm run build && NODE_ENV=develop node dist/server.js",
     "set": "NODE_ENV=development node script/startFadesOfGray.js",
-    "test": "tsc && export NODE_ENV=test && mocha --recursive dist/tests --exit"
+    "test": "tsc && export NODE_ENV=develop && mocha --recursive dist/tests --exit"
   },
   "repository": {
     "type": "git",
@@ -25,8 +25,9 @@
     "body-parser": "^1.18.3",
     "cron": "^1.7.1",
     "express": "^4.16.4",
+    "firebase-admin": "^8.9.2",
     "moment": "^2.24.0",
-    "mongoose": "^5.4.20",
+    "moment-timezone": "^0.5.27",
     "twilio": "^3.29.2",
     "uuid": "^3.3.2"
   },
@@ -37,7 +38,6 @@
     "@types/sinon": "7.0.11",
     "@types/twilio": "0.0.10",
     "cors": "^2.8.5",
-    "firebase-admin": "^8.8.0",
     "mocha": "^6.0.2",
     "request": "^2.88.0",
     "sinon": "^7.3.2",

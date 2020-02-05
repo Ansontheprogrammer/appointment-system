@@ -5,16 +5,17 @@ import {
   } from '../../../config/utils'
   import { 
     database, 
-    getBarberAppointments, 
-    UserMessage, 
+    UserMessages,  
   } from '../../twilio'
-  import { barbersInShop } from '../../database'
+  import { barbersInShop, getBarberAppointments } from '../../database'
   import moment from 'moment';
   import { BARBER } from '../..'
   import { createJob } from '../../cron'
 import { TextSystem } from './smsFlow';
 
 export class TextBookAppointmentInterface {
+    private UserMessage = new UserMessages()
+
     public async textChoseApproximateTime(req, res, next) {
       const userMessage: string = extractText(req.body.Body)
       const sendTextMessage = TextSystem.getTextMessageTwiml(res)
@@ -26,7 +27,7 @@ export class TextBookAppointmentInterface {
   
       if (!validatedResponse)
         return sendTextMessage(
-          `You must choose a valid response. ${UserMessage.generateChooseBarberMessage()}`
+          `You must choose a valid response. ${this.UserMessage.getChooseBarberMessage()}`
         )
   
       barberName = barbersInShop[parseInt(userMessage) - 1]
@@ -43,9 +44,9 @@ export class TextBookAppointmentInterface {
         req.customer.session.services,
         barber
       ).map(time =>
-        moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat)
+        moment(time, 'YYYY-MM-DD HH-mm').format(this.UserMessage.friendlyFormat)
       )
-      const message = `${UserMessage.generateRandomAgreeWord()}! We will let ${barberName} know your coming. ${UserMessage.generateGetBarberAvailableTimesMessage(
+      const message = `${this.UserMessage.getRandomAgreeWord()}! We will let ${barberName} know your coming. ${this.UserMessage.getGetBarberAvailableTimesMessage(
         barberSchedule
       )}`
   
@@ -87,7 +88,7 @@ export class TextBookAppointmentInterface {
       ) as Promise<BARBER>)
       const barberSchedule = getBarberAppointments(services, barberInDatabase)
       const formattedBarberSchedule = barberSchedule.map(time =>
-        moment(time, 'YYYY-MM-DD HH-mm').format(UserMessage.friendlyFormat)
+        moment(time, 'YYYY-MM-DD HH-mm').format(this.UserMessage.friendlyFormat)
       )
       const validResponses = barberSchedule.map((time, index) =>
         (index + 1).toString()
@@ -100,13 +101,13 @@ export class TextBookAppointmentInterface {
   
       if (!validatedResponse)
         return sendTextMessage(
-          UserMessage.generateErrorValidatingAppointmentTime(
+          this.UserMessage.getErrorValidatingAppointmentTime(
             formattedBarberSchedule
           )
         )
   
       const exactTime = barberSchedule[parseInt(userMessage) - 1]
-      const confirmationMessage = UserMessage.generateConfirmationMessage(
+      const confirmationMessage = this.UserMessage.getConfirmationMessage(
         services,
         barber,
         exactTime,
@@ -140,10 +141,10 @@ export class TextBookAppointmentInterface {
         return TextSystem.resetUser(phoneNumber, sendTextMessage)
   
       if (!validatedResponse)
-        return sendTextMessage(UserMessage.errorValidatingConfirmingAppointment)
+        return sendTextMessage(this.UserMessage.errorValidatingConfirmingAppointment)
   
       if (userMessage === '1') {
-        sendTextMessage(UserMessage.confirmedAppointmentMessage)
+        sendTextMessage(this.UserMessage.confirmedAppointmentMessage)
         const appointmentData = {
           time: { from: time, duration },
           services,
@@ -161,19 +162,20 @@ export class TextBookAppointmentInterface {
         const alertHour = appointmentHour.includes('pm')
           ? parseInt(appointmentHour) + 12
           : parseInt(appointmentHour) - 1
-        const reminderMessage = UserMessage.generateReminderMessage(
+        const reminderMessage = this.UserMessage.getReminderMessage(
           services,
           barber,
           time,
           total
         )
-        createJob(
-          `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
-          phoneNumber,
-          reminderMessage
-        )
+        // createJob(
+        //   `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
+        //   phoneNumber,
+        //   reminderMessage,
+        //   barber
+        // )
       } else {
-        sendTextMessage(UserMessage.errorConfirmingAppointment)
+        sendTextMessage(this.UserMessage.errorConfirmingAppointment)
       }
   
       // reset user's session

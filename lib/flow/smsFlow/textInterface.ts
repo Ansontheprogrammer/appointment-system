@@ -1,65 +1,62 @@
 import { 
-    extractNumberFromMessage, phoneNumberFormatter,
+  phoneNumberFormatter, extractText,
 } from '../../../config/utils'
 import { 
     cancelRecentAppointment, 
     MessagingResponse,
     sendBookLaterDateLink,
-    UserMessage,
     database,
+    UserMessages,
 } from '../../twilio'
 
 export class TextInterface {
-    public static getTextMessageTwiml(res: any) {
-        return message => {
-            const msg = new MessagingResponse()
-            msg.message(message)
-            return res.send(msg.toString())
-        }
-    }
-
     public static userInterfaceOptions = {
-        cancelAppointment: {
-            number: '1',
-            name: 'Cancel Appointment'
-        },
         bookAppointmentOnline: {
-            number: '2',
+            action: '1',
             name: 'Book Appointment Online'
         },
-        bookAppointmentOffline: {
-            number: '3',
-            name: 'Book Appointment Offline'
+        // bookAppointmentOffline: {
+        //     action: '2',
+        //     name: 'Book Appointment through text'
+        // },
+        // bookFirstAvailableAppointment: {
+        //     action: '3',
+        //     name: 'Book First Available Appointment'
+        // },
+        // shopHours: {
+        //     action: '2',
+        //     name: 'Shop Hours'
+        // },
+        viewAppointment: {
+            action: 'View',
+            name: 'View Appointments'
         },
-        help: {
-            number: '4',
-            name: 'Help'
-        },
-        shopHours: {
-            number: '5',
-            name: 'Shop Hours'
+    }
+
+    public sendInterface(res){
+        const sendTextMessage = TextInterface.getMessage(res)
+        sendTextMessage(new UserMessages().getTextInterfaceMessage());
+    }
+
+    // For some reason I'm not able to access this method from inside of the user interface method so I will be making this a static method
+    public static getMessage(res){
+        return message => {
+            const msg = new MessagingResponse()
+            const messageToSend = msg.message(message)
+            return res.send(messageToSend.toString())
         }
-    }
-
-    public static sendInterface(res){
-        const sendTextMessage = TextInterface.getTextMessageTwiml(res)
-        sendTextMessage(UserMessage.generateTextInterfaceMessage());
-    }
-
-    public static invalidInterfaceOption(res){
-       const sendTextMessage = TextInterface.getTextMessageTwiml(res)
-       sendTextMessage('Sorry that was an invalid option\n')
-       TextInterface.sendInterface(res);
     }
 
     public async userInterface(req, res, next) {
         /* Todo:
-            Add a feature that they can press maybe 3 to cancel their most recent appointment
+            Add a feature that they can press maybe 3 to cancel their most recent appointment maybe no
             If they press four they can cancel a future appointment 
+            Add a button to book appointment with first available barber
+            Add a button for deals by this barber
          */
-        const userMessage: string = extractNumberFromMessage(req.body.Body);
+        const userMessage: string = extractText(req.body.Body);
         const phoneNumber = phoneNumberFormatter(req.body.From)
-        const sendTextMessage = TextInterface.getTextMessageTwiml(res);
+        const sendTextMessage = TextInterface.getMessage(res)
         try {
             let customer = await database.findCustomerInDatabase(phoneNumber)
             // set req.customer to the customer found in database or an object containing the customer's phone number. 
@@ -68,18 +65,16 @@ export class TextInterface {
             console.error(err, 'Error finding customer');
         }
         if(userMessage === '1'){
-            cancelRecentAppointment(req, res);
-        } else if(userMessage === '2'){
-            sendBookLaterDateLink(phoneNumber)
-        } else if(userMessage === '3'){
-            // Add customer field allowing us to make the text message flow active or not.
-            sendTextMessage('Sorry this shop does not provide offline booking')
-        } else if(userMessage === '4'){
-            TextInterface.sendInterface(res)
-        } else if(userMessage === '5'){
-            sendTextMessage(UserMessage.generateShopOpenAvailabilityMessage)
-        }  else {
-            TextInterface.invalidInterfaceOption(res)
+            await sendBookLaterDateLink(phoneNumber)
+            res.status(200)
+            res.end()
+        } else if(userMessage.toLowerCase() === 'view' || userMessage.toLowerCase() === 'remove' ){
+            await cancelRecentAppointment(req, res)
+            res.status(200)
+              res.end()
+        }
+        else {
+            sendTextMessage('Sorry that was an invalid option\n');
         }
     }
 }

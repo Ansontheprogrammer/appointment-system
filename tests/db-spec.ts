@@ -28,7 +28,6 @@ describe('Database class', () => {
     describe('setCorrectTimeZone', () => {
         it('it should set to America/Chicago if no timezone is passed', () => {
             const timeZone = databaseLib.timezone
-            console.log(timeZone, 'timeZone')
             assert.equal(timeZone, 'America/Chicago')
         })
     })
@@ -84,16 +83,16 @@ describe('Database class', () => {
                     },
                 }
             })
-            new databaseLib.Database().findCustomerInDatabase('9082097544').then(barber => {
+            new databaseLib.Database().findCustomerInDatabase('9082097544').then(customer => {
                 const expectedCustomerData = { phoneNumber: '908029854' };
-                assert.deepEqual(barber, expectedCustomerData)
+                assert.deepEqual(customer, expectedCustomerData)
             })
         })
     })
 
 
     describe('addAppointment', () => {
-        const barberName = 'Julian';
+        const barberName = 'Kelly';
         const customer = {
             phoneNumber: '9082097544',
             firstName: 'Anson'
@@ -121,7 +120,7 @@ describe('Database class', () => {
 }`
             
             sandbox.stub(databaseLib.barberCollection, 'doc').callsFake((barberName: string) => { 
-                assert.equal(barberName, 'Julian');
+                assert.equal(barberName, 'Kelly');
                 return {
                     get: () => {
                         return {
@@ -142,7 +141,10 @@ describe('Database class', () => {
 
             // TODO: Find a way to override firebase
             const details = {
-                services: ['Hair cut'],
+                services: [{   price: 20,
+                    duration: 30,
+                    service: 'Child’s Haircut (12 and under)' 
+                }],
                 time: { 
                     duration: 30,
                     from: '2019-09-14 13:30'
@@ -191,7 +193,7 @@ describe('Database class', () => {
 }`
             
             sandbox.stub(databaseLib.barberCollection, 'doc').callsFake((barberName: string) => { 
-                assert.equal(barberName, 'Julian');
+                assert.equal(barberName, 'Kelly');
                 return {
                     get: () => {
                         return {
@@ -228,7 +230,12 @@ describe('Database class', () => {
 
             // TODO: Find a way to override firebase
             const details = {
-                services: ['Hair cut'],
+                services: [
+                    {   price: 20,
+                        duration: 30,
+                        service: 'Child’s Haircut (12 and under)' 
+                    } 
+                ],
                 time: { 
                     duration: 30,
                     from: '2019-09-14 13:30'
@@ -239,5 +246,50 @@ describe('Database class', () => {
                 done()
             }, done)
         })
+        it('should create an appointment', async() => {
+        // TODO: Find a way to override firebase
+            const details = {
+                services: [
+                    {   price: 20,
+                        duration: 30,
+                        service: 'Child’s Haircut (12 and under)' 
+                    } 
+                ],
+                time: { 
+                    duration: 30,
+                    from: '2019-09-15 14:00'
+                },
+                total: 25
+            }
+            try {
+                const appointmentID = await new databaseLib.Database().addAppointment(barberName, customer, details)
+                assert.equal(appointmentID.toString().length >= 1, true)
+            } catch(err){
+                throw Error(err)
+            }
+        })
+
+        it('should not create an appointment, because appointment already scheduled', done => {
+            // TODO: Find a way to override firebase
+                const details = {
+                    services: [
+                        {   price: 20,
+                            duration: 30,
+                            service: 'Child’s Haircut (12 and under)' 
+                        } 
+                    ],
+                    time: { 
+                        duration: 30,
+                        from: '2019-11-13 13:00'
+                    },
+                    total: 25
+                }
+                new databaseLib.Database().addAppointment(barberName, customer, details).then(() => {
+                    done('Was suppose to trigger an error.')
+                }, err => {
+                    assert.equal(err.message, 'Appointment already scheduled')
+                    done()
+                })
+            })
     })
 })

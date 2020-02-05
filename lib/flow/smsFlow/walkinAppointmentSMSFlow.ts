@@ -4,16 +4,17 @@ import {
     getDate
   } from '../../../config/utils'
   import { 
-    database, 
-    getBarberAppointments, 
-    UserMessage, 
+    database,  
+    UserMessages, 
   } from '../../twilio'
-  import { barbersInShop } from '../../database'
+  import { barbersInShop, getBarberAppointments} from '../../database'
   import moment from 'moment';
   import { BARBER } from '../..'
   import { createJob } from '../../cron'
 import { TextSystem } from './smsFlow';
   
+const UserMessage = new UserMessages()
+
 export class TextWalkInAppointmentInterface  {
     /*
       TODO: 
@@ -33,7 +34,7 @@ export class TextWalkInAppointmentInterface  {
   
       if (!validatedResponse) {
         return sendTextMessage(
-          `You must choose a valid response. ${UserMessage.generateChooseBarberMessage()}`
+          `You must choose a valid response. ${UserMessage.getChooseBarberMessage()}`
         )
       }
   
@@ -61,7 +62,7 @@ export class TextWalkInAppointmentInterface  {
         }
         return
       } else {
-        const confirmationMessage = UserMessage.generateConfirmationMessage(
+        const confirmationMessage = UserMessage.getConfirmationMessage(
           services,
           barberName,
           firstAvailableTime,
@@ -127,17 +128,18 @@ export class TextWalkInAppointmentInterface  {
         const alertHour = appointmentHour.includes('pm')
           ? parseInt(appointmentHour) + 12
           : parseInt(appointmentHour) - 1
-        const reminderMessage = UserMessage.generateReminderMessage(
+        const reminderMessage = UserMessage.getReminderMessage(
           services,
           barber,
           time,
           total
         )
-        createJob(
-          `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
-          phoneNumber,
-          reminderMessage
-        )
+        // createJob(
+        //   `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
+        //   phoneNumber,
+        //   reminderMessage,
+        //   barber
+        // )
       } else {
         sendTextMessage(UserMessage.errorConfirmingAppointment)
       }
