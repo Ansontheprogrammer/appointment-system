@@ -1,77 +1,107 @@
 export default {
-    barberShopName: 'fadesOfGray',
-    friendlyName: 'Fades of Gray',
-    url: 'fadesofgray.netlify.com',
-    phoneVoice: 'Polly.Salli',
-    twilioNumber: '16125023342',
-    shopPhoneNumber: '6128796369',
-    shopAvailability: JSON.stringify({
-        tuesday : {
-            from: '10',
-            to: '18',
-        },
-        wednesday : {
-            from: '10',
-            to: '18',
-        },
-        thursday : {
-            from: '10',
-            to: '18',
-        },
-        friday : {
-            from: '10',
-            to: '18',
-        },
-        saturday : {
-            from: '9:30',
-            to: '17:30',
-        }
-    }),
-    serviceList: JSON.stringify({
-        1: {
-          service: 'Adult Haircut',
-          price: 25,
-          duration: 30
-        },
-        2: {
-          service: 'Child Haircut',
-          price: 15,
-          duration: 30,
-        },
-        3: {
-          service: 'Haircut & Shave',
-          price: 35,
-          duration: 45,
-        },
-        4: {
-          service: 'Beard Trim',
-          price: 15,
-          duration: 15,
-        },
-        5: {
-          service: 'Dry Shave',
-          price: 10,
-          duration: 15
-        },
-        6: {
-          service: 'Razor Face Shave',
-          price: 15,
-          duration: 30
-        },
-        7: {
-          service: 'Hair Lining',
-          price: 10,
-          duration: 15
-        },
-        8: {
-          service: 'Mustache Trim',
-          price: 7,
-          duration: 15
-        },
-        9: {
-          service: 'Shampoo',
-          price: 15,
-          duration: 15
-        }
-    })
-  }
+  barberShopName: 'barberSharp',
+  friendlyName: 'Barber Sharp',
+  url: 'https://0643ad15.ngrok.io',
+  phoneVoice: 'Polly.Justin',
+  twilioNumber: '+16124393345',
+  shopPhoneNumber: '949029323',
+  shopAvailability: JSON.stringify({
+      tuesday : {
+          from: '9',
+          to: '19',
+      },
+      wednesday : {
+          from: '9',
+          to: '19',
+      },
+      thursday : {
+          from: '9',
+          to: '19',
+      },
+      friday : {
+          from: '9',
+          to: '17',
+      },
+      saturday : {
+          from: '9',
+          to: '15',
+      }
+  }),
+  serviceList: JSON.stringify({
+      1: {
+        service: 'Classic Cut and Hot Lather Shave Combo',
+        price: 45,
+        duration: 45
+      },
+      2: {
+        service: 'Classic Cut with Famous Razor Finish',
+        price: 22,
+        duration: 30,
+      },
+      3: {
+        service: 'Skin Fade',
+        price: 27,
+        duration: 30,
+      },
+      4: {
+        service: 'Shampoo (relax and cleanse) ',
+        price: 5,
+        duration: 15,
+      },
+      5: {
+        service: 'Child’s Haircut',
+        price: 20,
+        duration: 30
+      },
+      6: {
+        service: 'Senior’s Haircut',
+        price: 15,
+        duration: 30
+      },
+      7: {
+        service: 'Gray Blending',
+        price: 25,
+        duration: 45
+      },
+      8: {
+        service: 'Vigorous Scalp Massage',
+        price: 7,
+        duration: 30
+      },
+      9: {
+        service: 'Vigorous Scalp Massage with Haircut',
+        price: 5,
+        duration: 30
+      },
+      10: {
+        service: 'Ultimate Sharp Shave',
+        price: 55,
+        duration: 90
+      },
+      11: {
+        service: 'Classic Hot Lather Shave',
+        price: 35,
+        duration: 45
+      },
+      12: {
+        service: 'Head Shave',
+        price: 27,
+        duration: 45
+      },
+      13: {
+        service: 'Neck Shave',
+        price: 5,
+        duration: 30
+      },
+      14: {
+        service: 'Beard Trim',
+        price: 15,
+        duration: 30
+      },
+      15: {
+        service: 'Beard Trim & Haircut',
+        price: 29,
+        duration: 45
+      },
+  })
+}

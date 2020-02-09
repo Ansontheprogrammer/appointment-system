@@ -1,10 +1,12 @@
 import * as utils from '../../config/utils'
-import { database, getBarberAppointments, UserMessage, client } from '../twilio'
+import { database, client, UserMessages, sendText } from '../twilio'
 import moment from 'moment';
 import { BARBER } from '../'
 import { createJob } from '../cron'
 import { formatToCronTime } from '../../config/utils'
-import { twilioPhoneNumber, barbersInShop, barberShopName, friendlyShopName } from '../database'
+import { twilioPhoneNumber, getBarberAppointments} from '../database'
+
+const UserMessage = new UserMessages()
 
 export class AppSystem {
   public async walkInAppointment(req, res, next) {
@@ -39,7 +41,7 @@ export class AppSystem {
       return res.sendStatus(400)
     }
 
-    const confirmationMessage = UserMessage.generateConfirmationMessage(
+    const confirmationMessage = UserMessage.getConfirmationMessage(
       services,
       barber,
       firstAvailableTime,
@@ -60,9 +62,11 @@ export class AppSystem {
       services,
       total
     }
+    
+    let appointmentID;
 
     try {
-      await database.addAppointment(barber, customer, appointmentData)
+      appointmentID = await database.addAppointment(barber, customer, appointmentData)
     } catch(err){
       console.error(err, 'error trying to add appointment')
     }
@@ -72,7 +76,7 @@ export class AppSystem {
       return res.send('Barbershop is closed').status(400)
     }
 
-    const reminderMessage = UserMessage.generateReminderMessage(
+    const reminderMessage = UserMessage.getReminderMessage(
       services,
       barber,
       firstAvailableTime,
@@ -82,7 +86,8 @@ export class AppSystem {
     createJob(
       formatToCronTime(firstAvailableTime),
       phoneNumber,
-      reminderMessage
+      reminderMessage,
+      appointmentID
     )
 
     res.sendStatus(200)
@@ -92,9 +97,6 @@ export class AppSystem {
     // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
     const { barber, fromDate, services } = req.body
     // Handle case for retrieving schedules on the dashboard
-    if(services.length){
-      if (!Object.keys(services[0]).length) services.shift()
-    }
     const barberInDatabase = await (database.findBarberInDatabase(
       barber
     ) as Promise<BARBER>)
@@ -107,9 +109,10 @@ export class AppSystem {
       moment(time, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
     )
     res.json({ availableTimes })
+    
   }
 
-  public bookAppointment(req, res, next) {
+  public async bookAppointment(req, res, next) {
     /* 
       Formats:
         Date - MM-DD-YYYY
@@ -118,19 +121,15 @@ export class AppSystem {
 
     const { barber, date, time, name, services } = req.body
     const phoneNumber = utils.phoneNumberFormatter(req.body.phoneNumber)
-    // remove first element if empty
-    if (!Object.keys(services[0]).length) services.shift()
-
     const dateTime = `${date} ${time}`
     const formattedDateTime = moment(
       dateTime,
       `MM-DD-YYYY ${UserMessage.friendlyFormat}`
     ).format('YYYY-MM-DD HH:mm')
 
-    let duration = 0
-    services.forEach(service => (duration += service.duration))
+    let duration = 0, total = 0, appointmentID
 
-    let total = 0
+    services.forEach(service => (duration += service.duration))
     services.forEach(service => (total += service.price))
 
     const customerInfo = {
@@ -141,17 +140,23 @@ export class AppSystem {
         total
       }
     }
-
-    database.addAppointment(
-      barber,
-      customerInfo.customerData,
-      customerInfo.appointmentData
-    ).catch(err => 'App Flow - could not add customer appointment')
     
-    database.createCustomer(phoneNumber).catch(err => 'App Flow - could not create customer')
+    let barberDoc
 
-    // send confirmation
-    const confirmationMessage = UserMessage.generateConfirmationMessage(
+    try {
+      barberDoc = await database.findBarberInDatabase(barber);
+      appointmentID = await database.addAppointment(
+        barber,
+        customerInfo.customerData,
+        customerInfo.appointmentData
+      )
+      
+      database.createCustomer(phoneNumber)
+    } catch (err){
+      return res.send(err).status(500)
+    }
+
+    const confirmationMessage = UserMessage.getConfirmationMessage(
       services,
       barber,
       formattedDateTime,
@@ -159,24 +164,22 @@ export class AppSystem {
       true
     )
 
-    client.messages.create({
-      from: twilioPhoneNumber,
-      body: confirmationMessage,
-      to: phoneNumber
-    })
-
-
-    const reminderMessage = UserMessage.generateReminderMessage(
+    const reminderMessage = UserMessage.getReminderMessage(
       services,
       barber,
       formattedDateTime,
       total
     )
 
+    // send confirmation
+    sendText(confirmationMessage, phoneNumber)
+    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${customerInfo.appointmentData.time.from}`, barberDoc.phoneNumber)
+
     createJob(
       formatToCronTime(formattedDateTime),
       phoneNumber,
-      reminderMessage
+      reminderMessage, 
+      appointmentID
     )
 
     res.sendStatus(200)
