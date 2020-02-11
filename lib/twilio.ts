@@ -196,7 +196,7 @@ export async function cancelAppointment(req, res, next) {
   try {
     const barberData =  await database.findBarberInDatabase(barberName)
     const clientData =  await database.findCustomerInDatabase(phoneNumber)
-    // const didCustomerTryToCancelWithinOneHour = await removeAppointmentFromList(barberName, id, clientData)
+    await removeAppointmentFromList(barberName, id, clientData)
     // if(didCustomerTryToCancelWithinOneHour) message = `ALERT! \n${name} just tried to cancel within one hour \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.\nThey are not removed out of the system`
     message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
 
