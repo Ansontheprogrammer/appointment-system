@@ -1,9 +1,6 @@
 const { db } = require('../dist/lib/database');
 const eclipperzPhoneNumbers = [
-  '9082097544',
-  '9739015711',
-  '7632382351',
-  '9203127891'
+  '8622940204',
 ]
 
 function findAppointmentsInCustomerCollection(barbershopName){
@@ -51,4 +48,4 @@ function deleteAppointments(barbershopName){
   findAppointmentsInBarberCollection(barbershopName)
 }
 
-deleteAppointments('fadesOfGray')
+deleteAppointments('barberSharp')
