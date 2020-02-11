@@ -236,6 +236,7 @@ export async function removeAppointmentFromList(barberID, appointmentID, clientD
         // return true
       }
     appointment.uuid !== appointmentID
+
   })
 
   if(process.env.NODE_ENV !== 'develop'){
