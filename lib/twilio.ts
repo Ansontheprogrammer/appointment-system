@@ -196,9 +196,9 @@ export async function cancelAppointment(req, res, next) {
   try {
     const barberData =  await database.findBarberInDatabase(barberName)
     const clientData =  await database.findCustomerInDatabase(phoneNumber)
-    const didCustomerTryToCancelWithinOneHour = await removeAppointmentFromList(barberName, id, clientData)
-    if(didCustomerTryToCancelWithinOneHour) message = `ALERT! \n${name} just tried to cancel within one hour \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.\nThey are not removed out of the system`
-    else message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
+    // const didCustomerTryToCancelWithinOneHour = await removeAppointmentFromList(barberName, id, clientData)
+    // if(didCustomerTryToCancelWithinOneHour) message = `ALERT! \n${name} just tried to cancel within one hour \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.\nThey are not removed out of the system`
+    message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
 
     let toPhoneNumber = process.env.NODE_ENV === 'develop' ? '9082097544' : barberData.phoneNumber
     await sendText(message, toPhoneNumber)
@@ -216,27 +216,26 @@ export async function removeAppointmentFromList(barberID, appointmentID, clientD
     if(appointment.uuid === appointmentID) {
       // find the appointment time
       const appointmentTime = appointment.details.time.from;
-      // find the appointment time one hour before
-      const appointmentTimeOneHourBefore = moment(appointmentTime).tz("America/Chicago").subtract(1,"hours").format("YYYY-MM-DD HH:mm");
-      // find the current time in the same appointment time format
-      const currentTime = moment().tz("America/Chicago").format('YYYY-MM-DD HH:mm');
-      // Check if the current time is after the current appointment
-      if(moment(currentTime).isAfter(appointmentTimeOneHourBefore)){
-        // To close to appointment time, the customer can't delete the appointment
-        if(!clientData.noCallNoShows.length){
-          if(process.env.NODE_ENV !== 'develop'){
-            sendText('You can’t cancel an appointment one hour prior, you will be charged a $10 fee on your next visit', clientData.phoneNumber)
-          }
-        } else {
-          if(process.env.NODE_ENV !== 'develop'){
-            sendText('You can’t cancel an appointment one hour prior, you will be charged the full cost of your service on your next visit', clientData.phoneNumber)
-          }
-        }
-        triedToCancelWithinOneHour = true;
-        return true
+      // // find the appointment time one hour before
+      // const appointmentTimeOneHourBefore = moment(appointmentTime).tz("America/Chicago").subtract(1,"hours").format("YYYY-MM-DD HH:mm");
+      // // find the current time in the same appointment time format
+      // const currentTime = moment().tz("America/Chicago").format('YYYY-MM-DD HH:mm');
+      // // Check if the current time is after the current appointment
+      // if(moment(currentTime).isAfter(appointmentTimeOneHourBefore)){
+      //   // To close to appointment time, the customer can't delete the appointment
+      //   if(!clientData.noCallNoShows.length){
+      //     if(process.env.NODE_ENV !== 'develop'){
+      //       sendText('You can’t cancel an appointment one hour prior, you will be charged a $10 fee on your next visit', clientData.phoneNumber)
+      //     }
+      //   } else {
+      //     if(process.env.NODE_ENV !== 'develop'){
+      //       sendText('You can’t cancel an appointment one hour prior, you will be charged the full cost of your service on your next visit', clientData.phoneNumber)
+      //     }
+      //   }
+        // triedToCancelWithinOneHour = true;
+        // return true
       }
-    }
-    return appointment.uuid !== appointmentID
+    appointment.uuid !== appointmentID
   })
 
   if(process.env.NODE_ENV !== 'develop'){
