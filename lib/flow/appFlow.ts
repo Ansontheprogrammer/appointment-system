@@ -171,7 +171,10 @@ export class AppSystem {
       total
     )
 
-    const timeFormat = moment(customerInfo.appointmentData.time.from, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
+    const timeFormat = moment(
+      dateTime,
+      `MM-DD-YYYY ${UserMessage.friendlyFormat}`
+    ).format(UserMessage.friendlyFormat)
     // send confirmation
     sendText(confirmationMessage, phoneNumber)
     sendText(`${customerInfo.customerData.firstName} just made an appointment for ${timeFormat} there phone number is ${phoneNumber}`, '9082097544')
