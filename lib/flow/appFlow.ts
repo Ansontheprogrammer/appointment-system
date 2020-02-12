@@ -171,9 +171,10 @@ export class AppSystem {
       total
     )
 
+    const timeFormat = moment(customerInfo.appointmentData.time.from, 'YYYY-MM-DD HH:mm').format(UserMessage.friendlyFormat)
     // send confirmation
     sendText(confirmationMessage, phoneNumber)
-    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${customerInfo.appointmentData.time.from}`, barberDoc.phoneNumber)
+    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${timeFormat} there phone number is ${phoneNumber}`, '9082097544')
 
     createJob(
       formatToCronTime(formattedDateTime),
