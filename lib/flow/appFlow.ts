@@ -177,7 +177,7 @@ export class AppSystem {
     ).format(UserMessage.friendlyFormat)
     // send confirmation
     sendText(confirmationMessage, phoneNumber)
-    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${timeFormat} there phone number is ${phoneNumber}`, '9082097544')
+    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${timeFormat}\nHere is there phone number is ${phoneNumber}`, barberDoc.phoneNumber)
 
     createJob(
       formatToCronTime(formattedDateTime),
