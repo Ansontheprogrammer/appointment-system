@@ -93,7 +93,7 @@ export class UserMessages {
       )
   }
 
-  public getTextInterfaceMessage(){
+  public getTextInterfaceMessage() {
     const options = TextInterface.userInterfaceOptions;
     let message = `Welcome to the ${friendlyShopName} help interface. How can I help you today? Press:\n`
     for (let option in options) message += `\n(${options[option].action}) ${options[option].name}`
@@ -150,7 +150,7 @@ export class UserMessages {
     const formatTime = (time: string) => new UserMessages().getFriendlyTimeFormat(time)
 
     for (day in barberShopAvailability) {
-      message += `${Database.firstLetterUpperCase(day)} - ${formatTime(barberShopAvailability[day].from)} to ${formatTime(barberShopAvailability[day].to)}  ` 
+      message += `${Database.firstLetterUpperCase(day)} - ${formatTime(barberShopAvailability[day].from)} to ${formatTime(barberShopAvailability[day].to)}  `
     }
 
     return message
@@ -161,7 +161,7 @@ export class UserMessages {
 export async function cancelRecentAppointment(req, res) {
   let message;
   // if the customer has a uuid that means they have appointments in the database
-  if(!!req.customer.uuid){
+  if (!!req.customer.uuid) {
     const { phoneNumber, uuid } = req.customer
     const url = `${barberShopURL}/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
     message = `Here's a link to cancel your appointment \n${url}`
@@ -194,8 +194,8 @@ export async function cancelAppointment(req, res, next) {
   let message;
   cancelJob(id);
   try {
-    const barberData =  await database.findBarberInDatabase(barberName)
-    const clientData =  await database.findCustomerInDatabase(phoneNumber)
+    const barberData = await database.findBarberInDatabase(barberName)
+    const clientData = await database.findCustomerInDatabase(phoneNumber)
     await removeAppointmentFromList(barberName, id, clientData)
     // if(didCustomerTryToCancelWithinOneHour) message = `ALERT! \n${name} just tried to cancel within one hour \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.\nThey are not removed out of the system`
     message = `${name} just canceled an appointment for \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.`
@@ -203,17 +203,17 @@ export async function cancelAppointment(req, res, next) {
     let toPhoneNumber = process.env.NODE_ENV === 'develop' ? '9082097544' : barberData.phoneNumber
     await sendText(message, toPhoneNumber)
     res.sendStatus(200)
-  } catch(err){
-      return next(err)
-  } 
+  } catch (err) {
+    return next(err)
+  }
 }
 
-export async function removeAppointmentFromList(barberID, appointmentID, clientData){
+export async function removeAppointmentFromList(barberID, appointmentID, clientData) {
   let triedToCancelWithinOneHour: boolean = false;
   const barberData = await new Database().findBarberInDatabase(barberID)
   const updatedAppointments = barberData.appointments.filter(appointment => {
     // set appointment to notify barber about
-    if(appointment.uuid === appointmentID) {
+    if (appointment.uuid === appointmentID) {
       // find the appointment time
       const appointmentTime = appointment.details.time.from;
       // // find the appointment time one hour before
@@ -232,20 +232,17 @@ export async function removeAppointmentFromList(barberID, appointmentID, clientD
       //       sendText('You can’t cancel an appointment one hour prior, you will be charged the full cost of your service on your next visit', clientData.phoneNumber)
       //     }
       //   }
-        // triedToCancelWithinOneHour = true;
-        // return true
-      }
-    appointment.uuid !== appointmentID
-
+      // triedToCancelWithinOneHour = true;
+      // return true
+    }
+    return appointment.uuid !== appointmentID
   })
 
-  if(process.env.NODE_ENV !== 'develop'){
-    await barberCollection
+  await barberCollection
     .doc(barberID)
     .update({
       appointments: updatedAppointments
     })
-  }
 
   return triedToCancelWithinOneHour;
 }
@@ -253,7 +250,7 @@ export async function removeAppointmentFromList(barberID, appointmentID, clientD
 export async function notifyCustomerAboutFeeOnTheirNextVisit(req, res, next) {
   const { amountOfTimesTheyHaveCanceled, customerPhoneNumber } = req.body
   let message;
-  if(amountOfTimesTheyHaveCanceled === 0){
+  if (amountOfTimesTheyHaveCanceled === 0) {
     message = `You've recently had an appointment at the Fades of Gray and you didn't call or cancel your appointment.\nYou will be charged a $10 fee on your next visit.`
   } else {
     message = `You've recently had an appointment at the Fades of Gray and you didn't call or cancel your appointment.\nYou will be charged the total cost of your service on your next visit.`
@@ -268,38 +265,38 @@ export async function notifyCustomerAboutFeeOnTheirNextVisit(req, res, next) {
   res.sendStatus(200)
 }
 
-export function resetCronJobs(){
+export function resetCronJobs() {
   barberCollection
-  .get()
-  .then(snapshot => {
+    .get()
+    .then(snapshot => {
       snapshot.docs.forEach(doc => {
-          const barberName = doc.id
-          const barberAppointments = (doc.get('appointments') as types.BARBER_APPOINTMENTS[]);
-          barberAppointments.forEach(appointment => {
-              const reminderMessage = this.UserMessage.getReminderMessage(
-                appointment.details.services,
-                (barberName as any),
-                appointment.details.time.from,
-                appointment.details.total
-              )
-              console.log(`Creating job for ${barberName}\n${appointment.firstName}\nAt - ${appointment.details.time.from}`)
-              createJob(
-                formatToCronTime(appointment.details.time.from),
-                appointment.phoneNumber,
-                reminderMessage,
-                appointment.uuid
-              )
-          })
+        const barberName = doc.id
+        const barberAppointments = (doc.get('appointments') as types.BARBER_APPOINTMENTS[]);
+        barberAppointments.forEach(appointment => {
+          const reminderMessage = this.UserMessage.getReminderMessage(
+            appointment.details.services,
+            (barberName as any),
+            appointment.details.time.from,
+            appointment.details.total
+          )
+          console.log(`Creating job for ${barberName}\n${appointment.firstName}\nAt - ${appointment.details.time.from}`)
+          createJob(
+            formatToCronTime(appointment.details.time.from),
+            appointment.phoneNumber,
+            reminderMessage,
+            appointment.uuid
+          )
+        })
       })
-  })
+    })
 }
 
-export function sendTextMessageBlast(req, res, next){
+export function sendTextMessageBlast(req, res, next) {
   const { barberName, messageToBlast } = req.body
   database.findBarberInDatabase(barberName).then(barber => {
     const appointments = barber.appointments
     let customerPhoneNumbersToBlastToo;
-    if(process.env.NODE_ENV === 'test'){
+    if (process.env.NODE_ENV === 'test') {
       customerPhoneNumbersToBlastToo = ['9082097544']
     } else {
       const phoneNumbersToBlast = appointments.map(appointment => appointment.phoneNumber)
@@ -317,14 +314,14 @@ export function sendTextMessageBlast(req, res, next){
 function ArrNoDupe(a) {
   var temp = {};
   for (var i = 0; i < a.length; i++)
-      temp[a[i]] = true;
+    temp[a[i]] = true;
   var r = [];
   for (var k in temp)
-      r.push(k);
+    r.push(k);
   return r;
 }
 
-export async function sendText(message: string, toPhoneNumber: string){
+export async function sendText(message: string, toPhoneNumber: string) {
   let twilioNumberToUse = process.env.NODE_ENV !== 'develop' ? '16125023342' : twilioPhoneNumber
 
   return await client.messages.create({
