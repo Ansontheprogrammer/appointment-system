@@ -265,7 +265,7 @@ describe('POST /v1/update/companyInfo/:barbershop/', () => {
         }
 
         request
-        .post('/v1/update/companyInfo/barberSharp')
+        .put('/v1/update/companyInfo/barberSharp')
         .send(body)
         .expect(200)
         .end(function(err, res) {
