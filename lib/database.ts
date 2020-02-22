@@ -1,218 +1,40 @@
 import admin from 'firebase-admin'
-import { DocumentData } from '@google-cloud/firestore';
 import * as types from './';
-import developmentData from '../script/sampleData'
-import { validateAppointmentDetails } from '../config/utils';
-import { Scheduler, TimeAvailability } from '@ssense/sscheduler';
-import moment from 'moment';
+import { validateAppointmentDetails, friendlyFormat, phoneNumberFormatter, getConfirmationMessage, getReminderMessage, formatToCronTime } from '../config/utils';
 import uuid from 'uuid'
+import * as ae from 'ae-backend-database'
+import { createJob, cancelJob } from './cron';
+import moment from 'moment';
+import { sendText } from './twilio';
 
-const scheduler = new Scheduler()
+const AE_Allision = ae.AE_Allision 
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
 });
 
+const db = admin.firestore()
 
-export const db = admin.firestore();
-
-// subscribe to barbers
-export let barbersInShop = [];
-
-export const barberShopName = ''
-export let
-  barberCollection,
-  customerCollection,
-  serviceList,
-  barberShopURL,
-  barberShopAvailability: types.BARBER_AVAILBILITY,
-  friendlyShopName,
-  automatedVoice,
-  twilioPhoneNumber,
-  barberShopPhoneNumber,
-  timezone
-
-  export function getAvailableTimes(
-    duration: number,
-    interval: number,
-    allocatedTimes: types.ALLOCATED_TIMES[],
-    from: string,
-    to: string,
-    barber: types.BARBER
-  ): TimeAvailability[] {
-    // set time to get available times
-    return scheduler.getIntersection({
-      from,
-      to,
-      duration,
-      interval,
-      schedules: [
-        {
-          ...barberShopAvailability,
-          unavailability: [
-            {
-              from: `${from} ${barber.unavailabilities.lunch.from}`,
-              to: `${from} ${barber.unavailabilities.lunch.to}}`
-            },
-            ...barber.unavailabilities.offDays,
-            ...barber.unavailabilities.unavailableTimes,
-            ...barber.unavailabilities.vacations
-          ],
-          allocated: allocatedTimes
-        }
-      ]
-    })[from]
-  }
-  
-  type SPECIFIC_TIME = {
-    time: string,
-    duration: number
-  }
-  export function getBarberAppointments(
-    services: types.SERVICES[],
-    barber: types.BARBER,
-    date?: string,
-    specificTime?: SPECIFIC_TIME
-  ): any {
-    const currentDateAndTime = moment()
-    let from = currentDateAndTime.format('YYYY-MM-DD')
-  
-    if (!!date) from = moment(date).format('YYYY-MM-DD')
-  
-    let to = moment(from)
-      .add(1, 'day')
-      .format('YYYY-MM-DD')
-
-    
-    const barbersAllocatedTimes = barber.appointments.map(
-      appointment => appointment.details.time
-    )
-    let totalDuration = 0
-    // sum up total durations
-    services.forEach(service => (totalDuration += service.duration))
-    // TODO: think of a way to architect it to provide different features per shop
-    // FADESOFGRAY - if customer didn't just order a hair lining, lets change interval to 30
-    let interval;
-    interval = 30;
-  
-    let availableTimes = getAvailableTimes(
-      totalDuration,
-      interval,
-      barbersAllocatedTimes,
-      from,
-      to,
-      barber
-    )
-    
-    if (!availableTimes) return []
-    // if(!!specificTime) {
-    //   const time = moment(specificTime.time, 'YYYY-MM-DD HH:mm').format('HH:mm')
-    //   return queryAllocatedTimes(availableTimes, time)
-    // }
-    return formatAllocatedTimes(availableTimes).map(time =>
-      moment(`${from} ${time}`, 'YYYY-MM-DD h:mm a').format('YYYY-MM-DD HH:mm')
-    )
-  }
-  
-  export function formatAllocatedTimes(
-    barbersAllocatedTimes: TimeAvailability[]
-  ) {
-    return barbersAllocatedTimes
-      .filter(availability => availability.available)
-      .map(availability => moment(availability.time, 'HH:mm').format('h:mm a'))
-  }
-
-  // export function queryAllocatedTimes(
-  //   barbersAllocatedTimes: TimeAvailability[],
-  //   time: string
-  // ) {
-  //   return barbersAllocatedTimes
-  //     .filter(availability => availability.time === time)[0].available
-  // }
-
-  
 export class Database {
-  constructor(){}
+  db: ae.AE_Allision
+  
+  constructor(path){
+    if(!!path['secondCollection']){
+      this.db = new AE_Allision(db, null, {
+        firstCollection: path.firstCollection,
+        doc: path.doc,
+        secondCollection: path.secondCollection
+      })
+    } else {
+      this.db = new AE_Allision(db, null, null, {
+        firstCollection: path.firstCollection,
+        doc: path.doc
+      })
+    }
+  }
+  
   public static firstLetterUpperCase(string) {
     return string[0].toUpperCase() + string.slice(1)
-  }
-
-  public static setBarberShopData(req, res, next){
-    if(process.env.NODE_ENV === 'develop'){
-      req.body = developmentData
-    }
-
-    const { barberShopName, url, shopAvailability, friendlyName, phoneVoice, twilioNumber, shopPhoneNumber, timeZone } = req.body
-    const barberShopDoc = db
-      .collection('barbershops')
-      .doc(barberShopName)
-
-    // SET collections
-    barberCollection = barberShopDoc.collection('barbers')
-    customerCollection = barberShopDoc.collection('customers')
-    // SET service list
-    serviceList = JSON.parse(req.body.serviceList)
-
-    // SET barbershop availability
-    barberShopAvailability = JSON.parse(shopAvailability)
-
-    // SET barbershop web url
-    barberShopURL = url
-
-    // SET friendly shop name
-    friendlyShopName = friendlyName
-
-    // SET phone automated voice
-    automatedVoice = phoneVoice
-
-    // SET phone twilio number
-    twilioPhoneNumber = twilioNumber
-
-    // SET phone twilio number
-    barberShopPhoneNumber = shopPhoneNumber
-
-    // SET barbers in shop
-    Database.setBarbersInShop(barberCollection)
-
-    if (!timeZone) {
-      timezone = 'America/Chicago'
-    } else {
-      timezone = timeZone
-    }
-
-    // resetCronJobs();
-    if(process.env.NODE_ENV !== 'develop'){
-      res.sendStatus(200)
-    }
-  }
-
-  public static setBarbersInShop = (barberShopDoc: FirebaseFirestore.CollectionReference) => {
-    barberShopDoc
-      .get()
-      .then(snapshot => {
-        const barberData = snapshot.docs.map(doc => doc.id)
-        barbersInShop = barberData
-      })
-  }
-
-  public findBarberInDatabase(firstName: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      barberCollection
-      .doc(firstName)
-        .get()
-        .then((snapshot) => resolve(snapshot.data()))
-        .catch(reject);
-    })
-  }
-
-  public updateBarber(firstName: string, update: {}) {
-    // finish check to ensure stock list isn't already created.
-    return new Promise((resolve, reject) => {
-      barberCollection
-      .doc(firstName)
-      .update({ ...update })
-      .then(resolve, reject)
-    })
   }
 
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS): Promise<string | Error> {
@@ -225,78 +47,142 @@ export class Database {
     
     const appointmentID = uuid.v1()
     const appointment = { phoneNumber, firstName, details, uuid: appointmentID }
-
     try {
-      let docRef = await barberCollection.doc(barberFirstName)
-      let barber = await docRef.get()
-      let appointments = await barber.get('appointments')
-      if (appointments) {
-        // TODO re query database and find out if this appointment time is available
-        const appointmentAlreadyScheduledForThisTime = !!appointments.find(appointment => appointment.details.time.from === details.time.from)
-        if(appointmentAlreadyScheduledForThisTime) throw Error('Appointment already scheduled');
-        let newAppointmentsArray = appointments.concat(appointment)
-        if(process.env.NODE_ENV !== 'develop') {
-          // avoid saving to test database
-          await docRef.update({ appointments: newAppointmentsArray });
-        }
-      }
+      let barber = await this.db.findOne('name', barberFirstName) as types.BARBER
+      const appointments = barber.appointments
+      const appointmentAlreadyScheduledForThisTime = !!appointments.find(appointment => appointment.details.time.from === details.time.from)
+      if(appointmentAlreadyScheduledForThisTime) throw Error('Appointment already scheduled');
+      let newAppointmentsArray = appointments.concat(appointment)
+      if(!barber.id) barber.id = uuid.v1()
+      await this.db.createAndUpdateOne({ ...barber, appointments: newAppointmentsArray });
       // Return appointmentID to use to query list if we have to cancel job.
       return appointmentID
     } catch (err) {
       throw err
     }
   }
+}
 
-  public createBarber(barberInfo: types.BARBER) {
-    // Assign step number field before saving
-    barberInfo = Object.assign(barberInfo, { appointments: [] })
-    barberInfo.name = Database.firstLetterUpperCase(barberInfo.name)
-    barberInfo.email = barberInfo.email.toLowerCase()
-    return new Promise((resolve, reject) => {
-      this.hasPersonSignedUp(true, barberInfo.name).then(hasPersonSignedUp => {
-        if (!!hasPersonSignedUp) return reject('Barber has already signed up.')
-        let docRef = barberCollection.doc(barberInfo.name);
-        docRef.set({ ...barberInfo }).then(resolve, reject)
-      })
-    })
-  }
+// const customerInfo = Object.assign({ phoneNumber, uuid: uuid.v1(), noCallNoShows: [] })
 
-  public findCustomerInDatabase(phoneNumber: string): Promise<DocumentData> {
-    return new Promise((resolve, reject) => {
-      customerCollection
-      .doc(phoneNumber)
-      .get()
-      .then((snapshot) => resolve(snapshot.data()))
-      .catch(reject);
-    })
-  }
+export async function updateCompanyInfo(req, res){
+  const barberShopDoc = new Database({
+    firstCollection: 'barbershops',
+    doc: req.params.barbershop
+  }).db.firebaseDoc
+  const data = JSON.parse(JSON.stringify(req.body))
+  const barberShopInfo = await (await barberShopDoc.get()).data()
+  barberShopDoc.set({...barberShopInfo, ...data})
+  res.sendStatus(200)
+}
 
-  public createCustomer(phoneNumber: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      // Assign step number field before saving
-      const customerInfo = Object.assign({ phoneNumber, uuid: uuid.v1(), noCallNoShows: [] })
-      const session = { stepNumber: '1', finishedGeneralSteps: false }
+export async function cancelAppointment(req, res, next) {
+  const date = moment(req.body.date, 'YYYY-MM-DD HH:mm').format(friendlyFormat)
+  let message;
+  cancelJob(req.body.appointmentID);
+  try {
+    await removeAppointmentFromList(req)
+  
+    // if(didCustomerTryToCancelWithinOneHour) message = `ALERT! \n${name} just tried to cancel within one hour \n${date}. \n\nTheir phone number is ${phoneNumber} if you would like to contact them.\nThey are not removed out of the system`
+    message = `${req.body.clientName} just canceled an appointment for \n${date}. \n\nTheir phone number is ${req.body.phoneNumber} if you would like to contact them.`
 
-      this.hasPersonSignedUp(false, customerInfo.phoneNumber).then(hasPersonSignedUp => {
-        if (!!hasPersonSignedUp) return reject('Customer has already signed up.')
+    let toPhoneNumber = process.env.NODE_ENV === 'develop' ? '9082097544' : req.barber.phoneNumber
+    await sendText(message, toPhoneNumber, req.barberShopInfo.twilioNumber)
 
-        let docRef = customerCollection.doc(customerInfo.phoneNumber);
-        docRef.set({ ...customerInfo, session }).then(resolve, reject)
-      })
-    })
-  }
-
-  public updateCustomer(phoneNumber: string, update: {}) {
-    return new Promise((resolve, reject) => {
-      let docRef = customerCollection.doc(phoneNumber)
-      docRef.update({ ...update }).then(resolve, reject)
-    })
-  }
-
-  private hasPersonSignedUp(barber: boolean, phoneNumber: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      if (barber) this.findBarberInDatabase(phoneNumber).then(resolve, reject)
-      else this.findCustomerInDatabase(phoneNumber).then(resolve, reject)
-    })
+    res.sendStatus(200)
+  } catch (err) {
+    return next(err)
   }
 }
+
+export async function removeAppointmentFromList(req) {
+  let triedToCancelWithinOneHour: boolean = false;
+  const updatedAppointments = req.barber.appointments.filter(appointment => {
+    // set appointment to notify barber about
+    if (appointment.uuid === req.body.appointmentID) {
+      // find the appointment time
+      const appointmentTime = appointment.details.time.from;
+      // // find the appointment time one hour before
+      // const appointmentTimeOneHourBefore = moment(appointmentTime).tz("America/Chicago").subtract(1,"hours").format("YYYY-MM-DD HH:mm");
+      // // find the current time in the same appointment time format
+      // const currentTime = moment().tz("America/Chicago").format('YYYY-MM-DD HH:mm');
+      // // Check if the current time is after the current appointment
+      // if(moment(currentTime).isAfter(appointmentTimeOneHourBefore)){
+      //   // To close to appointment time, the customer can't delete the appointment
+      //   if(!clientData.noCallNoShows.length){
+      //     if(process.env.NODE_ENV !== 'develop'){
+      //       sendText('You can’t cancel an appointment one hour prior, you will be charged a $10 fee on your next visit', clientData.phoneNumber)
+      //     }
+      //   } else {
+      //     if(process.env.NODE_ENV !== 'develop'){
+      //       sendText('You can’t cancel an appointment one hour prior, you will be charged the full cost of your service on your next visit', clientData.phoneNumber)
+      //     }
+      //   }
+      // triedToCancelWithinOneHour = true;
+      // return true
+    }
+    return appointment.uuid !== req.body.appointmentID
+  })
+  await req.barberDB.db.createAndUpdateOne({...req.barber, appointments: updatedAppointments})
+
+  return triedToCancelWithinOneHour;
+
+}
+export async function bookAppointment(req, res, next) {
+    const { date, name, services } = req.body
+    const phoneNumber = phoneNumberFormatter(req.body.phoneNumber)
+
+    let duration = 0, total = 0, appointmentID
+
+    services.forEach(service => {
+      duration += service.duration;
+      total += service.price
+    })
+
+    const customerInfo = {
+      customerData: { phoneNumber, firstName: name },
+      appointmentData: {
+        time: { from: date, duration },
+        services,
+        total
+      }
+    }
+
+    try {
+      appointmentID = await req.barberDB.addAppointment(
+        req.barber.name,
+        customerInfo.customerData,
+        customerInfo.appointmentData
+      )
+      await req.session.clientDB.db.createAndUpdateOne(phoneNumber)
+    } catch (err){
+      return Promise.reject(res.sendStatus(400))
+    }
+
+    const confirmationMessage = getConfirmationMessage(
+      services,
+      req.barber.name,
+      date,
+      total,
+    )
+
+    const reminderMessage = getReminderMessage(req.barber.name)
+
+    const timeFormat = moment(
+      date,
+      `MM-DD-YYYY ${friendlyFormat}`
+    ).format(friendlyFormat)
+    // send confirmation
+    sendText(confirmationMessage, phoneNumber)
+    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${timeFormat}\nHere is there phone number is ${phoneNumber}`, req.barber.phoneNumber)
+
+    createJob(
+      formatToCronTime(date),
+      phoneNumber,
+      reminderMessage, 
+      appointmentID,
+      req.barberShopInfo.timeZone
+    )
+
+    res.sendStatus(200)
+  }

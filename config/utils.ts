@@ -1,25 +1,32 @@
-import { DETAILS } from '../lib'
+import { DETAILS, SERVICES } from '../lib'
 import moment = require('moment');
-import { timezone, barberShopAvailability } from '../lib/database';
 
-// store a variable containing if the shop is closed or not.
-export const shopIsClosed = (closedNow?: boolean) => {
-  if(closedNow) return true
-  
-  let day;
-  if(process.env.NODE_ENV === 'test'){
-    day = 'Tuesday'
-  } else {
-    day = getDate().format('dddd')
+
+export const friendlyFormat = 'ddd, MMMM Do, h:mm a'
+
+export const getFriendlyTimeFormat = time => {
+    return moment(time, 'HH:mm').format('h:mm a')
   }
-  const currentTime = parseInt(getDate().format('H'))
-  const shopAvailabilityForTheDay = barberShopAvailability[day.toLowerCase()]
-  
-  return (
-    currentTime < parseInt(shopAvailabilityForTheDay.from) ||
-    currentTime > parseInt(shopAvailabilityForTheDay.to)
-  )
+
+export function getConfirmationMessage(
+    services: SERVICES[],
+    barberName: string,
+    time: string,
+    total: number,
+  ) {
+    if (!services.length || !barberName || !time || !total)
+      throw Error('ERR - error creating confirmation message')
+    time = moment(time, 'YYYY-MM-DD HH:mm').format(this.friendlyFormat)
+    const message = `Great! Here are your appointment details:\n\nService: ${services.map(
+      service => `\n${service.service}`
+    )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\nIf you would like to view your appointments text (view)`
+    return message
+  }
+
+export function getReminderMessage(barberName: string) {
+  return `REMINDER:\nYour appointment with ${barberName} less than an hour away`
 }
+
 
 export function phoneNumberFormatter(phoneNumber: string) {
   if (phoneNumber[0] === '+') return phoneNumber.slice(2)
@@ -38,16 +45,6 @@ export function validateMessage(body: string, validResponses: string[]) {
   if (!extractedNumber) return false
   extractedNumber = extractedNumber[0]
   return validResponses.includes(extractedNumber)
-}
-
-export function extractNumbers(body: string) {
-  var numbers = body.match(/\d+/g).map(Number);
-  return numbers
-}
-
-export function extractNumberFromMessage(body: string) {
-  var numbers = body.match(/\d+/g)[0];
-  return numbers
 }
 
 export function validateAppointmentDetails(details: DETAILS): { correct: boolean, msg?: string} {
@@ -70,14 +67,6 @@ export function validateAppointmentDetails(details: DETAILS): { correct: boolean
   else {
     return { correct: true }
   }
-}
-
-export function getDate(): moment.Moment {
-  const dateWithTimeZone = new Date().toLocaleString('en-US', {
-    timeZone: timezone
-  })
-  
-  return moment(dateWithTimeZone, 'M/DD/YYYY, h:mm:ss a')
 }
 
 // Expects time to be in format yyyy-mm-dd hh-mm

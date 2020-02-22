@@ -6,7 +6,7 @@ describe('Cron Jobs', () => {
   afterEach(() => {
     clearQueue()
   })
-
+  const timezone = 'America/Chicago'
   it('should format dateTime to correct cron format', () => {
     const result = formatToCronTime('2019-09-13 12:00')
     assert.equal(result, '0 0 11 13 8 *')
@@ -16,8 +16,8 @@ describe('Cron Jobs', () => {
     const date = '2019-09-13 10:01'
     const phoneNumber = '9082097544'
     const id = '90832fefe'
-    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder', id)
-    assert.equal(appointmentsInQueue[0][0], id)
+    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder', id, timezone)
+    assert.equal(appointmentsInQueue[0][0], id, timezone)
   })
 
   it('should cancel a cron job', () => {
@@ -25,7 +25,7 @@ describe('Cron Jobs', () => {
     const phoneNumber = '9082097544'
     const id = '90832fefe'
     // create a job
-    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder', id)
+    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder', id, timezone)
     assert.equal(appointmentsInQueue.length, 1, 'Appointment created')
     // cancel job
     cancelJob(id)
@@ -37,10 +37,10 @@ describe('Cron Jobs', () => {
     const phoneNumber = '9082097544'
     const id = '90832fefe'
     // create a job
-    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder', id)
+    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder', id, timezone)
     assert.equal(appointmentsInQueue.length, 1, 'Appointment created')
     // create a job
-    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder 2', id)
+    createJob(formatToCronTime(date), phoneNumber, 'Creating dummy reminder 2', id, timezone)
     assert.equal(appointmentsInQueue.length, 2, 'Appointment created')
     // cancel job
     clearQueue()

@@ -5,6 +5,7 @@ export default {
   phoneVoice: 'Polly.Justin',
   twilioNumber: '+16124393345',
   shopPhoneNumber: '949029323',
+  timeZone: 'America/Chicago',
   shopAvailability: JSON.stringify({
       tuesday : {
           from: '9',

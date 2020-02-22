@@ -1,16 +1,14 @@
 const CronJob = require('cron').CronJob
-import { client } from './twilio'
-import { twilioPhoneNumber, timezone } from './database'
+import { client, sendText } from './twilio'
 export const appointmentsInQueue = []
+import * as types from './'
+import { formatToCronTime } from '../config/utils';
+import { DocumentData } from '@google-cloud/firestore';
 
-export function createJob(date: string, phoneNumber: string, message: string, id: string) {
-  // Check to make sure date is not passed ***************
+export function createJob(date: string, phoneNumber: string, message: string, id: string, timezone: string) {
+  console.log(date, phoneNumber, 'create job')
   let job = new CronJob(date, function () {
-    client.messages.create({
-      from: twilioPhoneNumber,
-      body: message,
-      to: phoneNumber
-    })
+    sendText(message, phoneNumber)
 
     this.stop()
   }, () => onComplete(id), true, timezone)
@@ -18,9 +16,7 @@ export function createJob(date: string, phoneNumber: string, message: string, id
   appointmentsInQueue.push([id, job])
 }
 
-export function cancelJob(id: string) {
-  console.log('Canceling appointment with id ', id)
-  
+export function cancelJob(id: string) {  
   appointmentsInQueue.forEach(job => {
     if(job[0] === id) {
       job[1].stop()
@@ -38,4 +34,30 @@ export function onComplete(id: string) {
 
 export function clearQueue() {
   appointmentsInQueue.length = 0;
+}
+
+export function resetCronJobs(barberCollection: FirebaseFirestore.CollectionReference<DocumentData>) {
+  barberCollection
+    .get()
+    .then(snapshot => {
+      snapshot.docs.forEach(doc => {
+        const barberName = doc.id
+        const barberAppointments = (doc.get('appointments') as types.BARBER_APPOINTMENTS[]);
+        barberAppointments.forEach(appointment => {
+          const reminderMessage = this.UserMessage.getReminderMessage(
+            appointment.details.services,
+            (barberName as any),
+            appointment.details.time.from,
+            appointment.details.total
+          )
+          createJob(
+            formatToCronTime(appointment.details.time.from),
+            appointment.phoneNumber,
+            reminderMessage,
+            appointment.uuid,
+            'America/Chicago'
+          )
+        })
+      })
+    })
 }

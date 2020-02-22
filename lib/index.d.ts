@@ -10,6 +10,7 @@ export type CUSTOMER = {
   }
 
   export type BARBER = {
+    id: string,
     phoneNumber: string
     email: string
     name: string

@@ -6,9 +6,9 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && export NODE_ENV=production && node dist/server.js",
-    "dev": "npm run build && cross-env NODE_ENV=develop node dist/server.js",
-    "set": "NODE_ENV=development node script/startFadesOfGray.js",
-    "test": "tsc && export NODE_ENV=develop && mocha --recursive dist/tests --exit"
+    "update": "npm run build && export NODE_ENV=development && node script/updateDocField.js",
+    "dev": "npm run build && NODE_ENV=develop node dist/server.js",
+    "test": "npm run build && export NODE_ENV=develop && mocha --recursive dist/tests --exit"
   },
   "repository": {
     "type": "git",
@@ -22,9 +22,11 @@
   "homepage": "https://github.com/Ansontheprogrammer/Sale-Hogs#readme",
   "dependencies": {
     "@ssense/sscheduler": "^1.3.2",
+    "ae-backend-database": "git+https://github.com/ae-allison/backend-database.git",
     "body-parser": "^1.18.3",
     "cron": "^1.7.1",
     "express": "^4.16.4",
+    "express-session": "^1.17.0",
     "firebase-admin": "^8.9.2",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.27",

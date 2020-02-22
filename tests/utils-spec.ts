@@ -1,22 +1,8 @@
 import 'mocha';
 import * as assert from 'assert';
-import { extractNumberFromMessage, validateAppointmentDetails } from '../config/utils';
+import { validateAppointmentDetails } from '../config/utils';
 
 describe('Utility Functions', () =>{
-    describe('extractNumberFromMessage', () => {
-        it('should extract number', () => {
-            const extractedNumber = extractNumberFromMessage('4');
-            assert.equal(extractedNumber, '4');
-        })
-        it('should extract number - even with space after', () => {
-            const extractedNumber = extractNumberFromMessage('4 ');
-            assert.equal(extractedNumber, '4');
-        })
-        it('should extract number - even with letters', () => {
-            const extractedNumber = extractNumberFromMessage('4a');
-            assert.equal(extractedNumber, '4');
-        })
-    })
     describe('validateAppointmentDetails', () => {
         it('should return that the appointment details are incorrect message - date is invalid', () => {
             const exampleIncorrectAppointment = {

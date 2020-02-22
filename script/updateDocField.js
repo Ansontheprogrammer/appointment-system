@@ -1,23 +1,30 @@
-const { db } = require('../dist/lib/database');
+const { Database } = require('../dist/lib/database');
 // Get the `FieldValue` object
 let FieldValue = require('firebase-admin').firestore.FieldValue;
 
 function updateFields(barbershopName){
-    const barberShopDoc = db.collection('barbershops').doc(barbershopName);
-    const customerCollection = barberShopDoc.collection('customers');
-    customerCollection
-    .get()
-    .then(snapshot => {
-      snapshot.docs.forEach(doc => {
-          const customerDocument = customerCollection.doc(doc.id)
-          customerDocument.update({ 
-              cancellations: FieldValue.delete(),
-              cancellation: FieldValue.delete(),
-              noCallNoShows: []
-        })
-      })
+    const db = new Database({
+      firstCollection: 'barbershops',
+      doc: 'barberSharp',
+      secondCollection: 'barbers'
     })
-    .catch(console.error)
+    db.db.createAndUpdateOne({
+    id: 'fewoinfwon',
+    name: 'Julian',
+    email: '',
+    unavailabilities: {
+        lunch: { from : '13:00', to: '14:00' },
+        vacations: [
+            { from: '2019-08-17 00:00', to: '2019-08-18 00:00'}
+        ],
+        offDays: [
+            { from: '2019-08-19 00:00', to: '2019-08-20 00:00'}
+        ],
+        unavailableTimes:[
+            { from: '2019-08-16 12:00', to: '2019-08-16 13:00'}
+        ]
+    }
+})
+  console.log(db.db.createAndUpdateOne, 'db')
   }
-
-  updateFields('fadesOfGray')
+  updateFields('')
