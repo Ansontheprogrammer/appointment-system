@@ -6,7 +6,6 @@ import { formatToCronTime } from '../config/utils';
 import { DocumentData } from '@google-cloud/firestore';
 
 export function createJob(date: string, phoneNumber: string, message: string, id: string, timezone: string) {
-  console.log(date, phoneNumber, 'create job')
   let job = new CronJob(date, function () {
     sendText(message, phoneNumber)
 

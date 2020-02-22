@@ -2,7 +2,8 @@ import 'mocha';
 import * as assert from 'assert';
 import { app } from '../server'
 import supertest from 'supertest';
-
+import sinon from 'sinon'
+import { client } from '../lib/twilio';
 const request = supertest(app)
 
 const barber = 'Kelly'
@@ -99,17 +100,6 @@ describe('GET /v1/get/schedule/:barbershop/:barber', () => {
 })
 describe('POST /v1/phone/:barbershop', () => {
   it('should start phone flow', done => {
-  //   sinon.stub(twilioLib.client.messages, 'create').callsFake((createdMessage) => {
-  //     // functions were called in correct order
-  //     const expectedMessage = { 
-  //         from: '16125023342',
-  //         body: 'Here\'s a link to book at a later date fadesofgray.netlify.com/cue',
-  //         to: '9082097544' 
-  //     }
-
-  //     assert.deepEqual(createdMessage, expectedMessage)
-  //     return 
-  // })
       request
       .post(`/v1/phone/${barberShop}`)
       .expect(200)
@@ -122,6 +112,17 @@ describe('POST /v1/phone/:barbershop', () => {
 
 describe('POST /v1/send/:barbershop/:notification', () => {
   it('should send text blast', done => {
+    sinon.stub(client.messages, 'create').callsFake((createdMessage) => {
+      // functions were called in correct order
+      const expectedMessage = { 
+          from: '16125023342',
+          body: 'Here\'s a link to book at a later date fadesofgray.netlify.com/cue',
+          to: '9082097544' 
+      }
+      console.log(createdMessage)
+      // assert.deepEqual(createdMessage, expectedMessage)
+      return 
+  })
       const body = {
         message: 'Success!'
       }

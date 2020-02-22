@@ -5,22 +5,6 @@ export const client: any = twilio(
   config.TWILIO_AUTH_TOKEN
 )
 export const VoiceResponse = (twilio as any).twiml.VoiceResponse
-export const MessagingResponse = (twilio as any).twiml.MessagingResponse
-
-export async function cancelRecentAppointment(req, res) {
-  let message;
-  // if the customer has a uuid that means they have appointments in the database
-  if (!!req.customer.uuid) {
-    const { phoneNumber, uuid } = req.customer
-    const url = `${req.barberShopInfo.barberShopURL}/client?phoneNumber=${phoneNumber}&uuid=${uuid}`
-    message = `Here's a link to cancel your appointment \n${url}`
-  }
-  else {
-    message = `Hey, seems like you haven't booked an appointment with anyone. \nYou need to book an appointment first before trying to cancel one.`
-  }
-  sendText(message, req.customer.phoneNumber)
-}
-
 
 export async function notifyCustomerAboutFeeOnTheirNextVisit(req, res, next) {
   const { amountOfTimesTheyHaveCanceled, customerPhoneNumber } = req.body

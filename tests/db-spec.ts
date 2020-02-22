@@ -2,6 +2,7 @@ import 'mocha';
 import * as assert from 'assert';
 import sinon from 'sinon';
 import { Database } from '../lib/database'
+import { client } from '../lib/twilio';
 
 describe('Database class', () => {
     let sandbox;
@@ -36,6 +37,17 @@ describe('Database class', () => {
         }
 
         it('should create an appointment', async() => {
+            sinon.stub(client.messages, 'create').callsFake((createdMessage) => {
+                // functions were called in correct order
+                const expectedMessage = { 
+                    from: '16125023342',
+                    body: 'Here\'s a link to book at a later date fadesofgray.netlify.com/cue',
+                    to: '9082097544' 
+                }
+                console.log(createdMessage)
+                // assert.deepEqual(createdMessage, expectedMessage)
+                return 
+            })
         // TODO: Find a way to override firebase
             const details = {
                 services: [

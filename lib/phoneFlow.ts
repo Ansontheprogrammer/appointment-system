@@ -25,7 +25,7 @@ export class PhoneSystem {
 
     public async phoneFlow(req, res, next) {
       const twiml = new VoiceResponse()
-      const connectToShopMessage = `Thank you for calling ${req.barberShopInfo.friendlyShopName}!. I'm connecting you to the shop right now. One moment please`;
+      // const connectToShopMessage = `Thank you for calling ${req.barberShopInfo.friendlyShopName}!. I'm connecting you to the shop right now. One moment please`;
       // TODO: Play caller a song or waiting sound while we connect them to the shop
       // PhoneSystem.sayMessageToClient(req, res, twiml, connectToShopMessage)
       PhoneSystem.callBarbershop(req, res, twiml)
