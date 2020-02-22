@@ -63,7 +63,7 @@ app.use(session(sessionConfig))
 app.get('/v1/get/schedule/:barbershop/:barber', setSystemConfigMiddleWare, getSchedule)
 app.post('/v1/phone/:barbershop/', setSystemConfigMiddleWare, phoneSystem.phoneFlow)
 app.post('/v1/create/appointment/:barbershop/:barber', setSystemConfigMiddleWare, bookAppointment)
-app.post('/v1/delete/appointment/:barbershop/:barber', setSystemConfigMiddleWare, cancelAppointment)
+app.delete('/v1/delete/appointment/:barbershop/:barber', setSystemConfigMiddleWare, cancelAppointment)
 app.put('/v1/update/companyInfo/:barbershop', updateCompanyInfo)
 app.post('/v1/send/:barbershop/:barber/:notification/', setSystemConfigMiddleWare, sendNotification)
 app.get('/api/ping', (req, res, next) => {

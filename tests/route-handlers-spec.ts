@@ -56,7 +56,7 @@ describe('POST /v1/delete/appointment/:barbershop/:barber/:appointmentID', () =>
         }
 
         request
-        .post(`/v1/delete/appointment/${barberShop}/${barber}/`)
+        .delete(`/v1/delete/appointment/${barberShop}/${barber}/`)
         .send(body)
         .expect(200)
         .end(function(err, res) {
