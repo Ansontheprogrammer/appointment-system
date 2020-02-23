@@ -32,7 +32,7 @@ export function sendBackUpEmail(backup){
 }
 export async function scheduleBackup(companyType: string, companyName: string) {
   var rule = new schedule.RecurrenceRule();
-  rule.second = 30
+  rule.minute = 30
   
   schedule.scheduleJob(rule, async function(){
     // Create backup
@@ -51,7 +51,7 @@ export async function scheduleBackup(companyType: string, companyName: string) {
     .set({ ...backup } as any);
 
     // Send email
-    sendBackUpEmail(backup)
+    // sendBackUpEmail(backup)
   })
 }
 
