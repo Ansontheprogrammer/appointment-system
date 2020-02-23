@@ -17,8 +17,8 @@ export function createJob(date: string, phoneNumber: string, message: string, id
   appointmentsInQueue.push([id, job])
 }
 
-export function scheduleBackup(companyType: string, companyName: string) {
-  new CronJob('1 0 * 2 * *', async function () {
+export async function scheduleBackup(companyType: string, companyName: string) {
+  // new CronJob('1 0 * 2 * *', async function () {
     // Create backup
     const backup = await AE_Allision.createBackup(db, {
       companyType: companyType,
@@ -28,9 +28,9 @@ export function scheduleBackup(companyType: string, companyName: string) {
     })
 
     // store backup
-    db.collection('backups').add({[backup.time] : JSON.stringify(backup, null, 4)});
+    db.collection('backups').doc(companyName).collection(new Date().toDateString()).add({[backup.time] : JSON.stringify(backup, null, 4)});
 
-  }, () => {}, true, 'America/Chicago')
+  // }, () => {}, true, 'America/Chicago')
 }
 
 export function cancelJob(id: string) {  
