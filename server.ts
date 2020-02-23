@@ -87,7 +87,7 @@ app.get('/api/ping', (req, res, next) => {
   res.sendStatus(200)
 })
 
-app.listen(port, async () => {
+app.listen(port, () => {
   console.log('Server is up and running')
   console.log('Setting individual shop data...', '\nCurrent enviroment:',process.env.NODE_ENV)
   scheduleBackup('barbershops', 'barberSharp')
