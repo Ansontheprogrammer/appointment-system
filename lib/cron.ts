@@ -6,6 +6,8 @@ import { formatToCronTime } from '../config/utils';
 import { DocumentData } from '@google-cloud/firestore';
 import { AE_Allision } from 'ae-backend-database';
 import { db } from './database';
+import schedule from 'node-schedule'
+import { request } from 'http';
 
 export function createJob(date: string, phoneNumber: string, message: string, id: string, timezone: string) {
   let job = new CronJob(date, function () {
@@ -17,20 +19,40 @@ export function createJob(date: string, phoneNumber: string, message: string, id
   appointmentsInQueue.push([id, job])
 }
 
+export function sendBackUpEmail(backup){
+  (request as any)('https://application-form-server.glitch.me/', { 
+      body : JSON.stringify({
+        ...backup,
+        sendTo: 'anson.ervin@gmail.com'
+      })
+    }, (err, res, body) => {
+      if (err) { return console.log(err); }
+      console.log(body)
+    })
+}
 export async function scheduleBackup(companyType: string, companyName: string) {
-  // new CronJob('1 0 * 2 * *', async function () {
+  var rule = new schedule.RecurrenceRule();
+  rule.second = 30
+  
+  schedule.scheduleJob(rule, async function(){
     // Create backup
-    const backup = await AE_Allision.createBackup(db, {
+    const backup: any = await AE_Allision.createBackup(db, {
       companyType: companyType,
       companyName: companyName,
       admin: 'barbers',
       client: 'customers'
     })
-
     // store backup
-    db.collection('backups').doc(companyName).collection(new Date().toDateString()).add({[backup.time] : JSON.stringify(backup, null, 4)});
+    db
+    .collection(companyType)
+    .doc(companyName)
+    .collection('backups')
+    .doc(backup.time)
+    .set({ ...backup } as any);
 
-  // }, () => {}, true, 'America/Chicago')
+    // Send email
+    sendBackUpEmail(backup)
+  })
 }
 
 export function cancelJob(id: string) {  
