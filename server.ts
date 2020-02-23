@@ -24,6 +24,8 @@ const sessionConfig = {
 }
 
 export async function setSystemConfigMiddleWare(req: any, res, next){
+  scheduleBackup('barbershops', req.params.barbershop)
+  
   try { 
     req.barberShopInfo = await new Database({
       firstCollection: 'barbershops',
@@ -88,5 +90,4 @@ app.get('/api/ping', (req, res, next) => {
 app.listen(port, async () => {
   console.log('Server is up and running')
   console.log('Setting individual shop data...', '\nCurrent enviroment:',process.env.NODE_ENV)
-  scheduleBackup('barbershops', 'barberSharp')
 })
