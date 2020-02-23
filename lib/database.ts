@@ -13,13 +13,14 @@ admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
 });
 
-const db = admin.firestore()
+export const db = admin.firestore()
 
 export class Database {
   db: ae.AE_Allision
   
   constructor(path){
     if(!!path['secondCollection']){
+      
       this.db = new AE_Allision(db, null, {
         firstCollection: path.firstCollection,
         doc: path.doc,
@@ -58,7 +59,7 @@ export class Database {
       // Return appointmentID to use to query list if we have to cancel job.
       return appointmentID
     } catch (err) {
-      throw err
+      return Promise.reject(err)
     }
   }
 }
@@ -96,12 +97,10 @@ export async function cancelAppointment(req, res, next) {
 }
 
 export async function removeAppointmentFromList(req) {
-  let triedToCancelWithinOneHour: boolean = false;
-  const updatedAppointments = req.barber.appointments.filter(appointment => {
-    // set appointment to notify barber about
-    if (appointment.uuid === req.body.appointmentID) {
-      // find the appointment time
-      const appointmentTime = appointment.details.time.from;
+  const appointmentFilter = appointment => appointment.uuid === req.body.appointmentID
+  const appointmentToRemove = req.barber.appointments.find(appointmentFilter)
+  const indexOfAppointmentToRemove = req.barber.appointments.indexOf(appointmentToRemove)
+  req.barber.appointments.splice(indexOfAppointmentToRemove, indexOfAppointmentToRemove + 1)
       // // find the appointment time one hour before
       // const appointmentTimeOneHourBefore = moment(appointmentTime).tz("America/Chicago").subtract(1,"hours").format("YYYY-MM-DD HH:mm");
       // // find the current time in the same appointment time format
@@ -120,13 +119,7 @@ export async function removeAppointmentFromList(req) {
       //   }
       // triedToCancelWithinOneHour = true;
       // return true
-    }
-    return appointment.uuid !== req.body.appointmentID
-  })
-  await req.barberDB.db.createAndUpdateOne({...req.barber, appointments: updatedAppointments})
-
-  return triedToCancelWithinOneHour;
-
+  await req.barberDB.db.createAndUpdateOne({...req.barber, appointments: req.barber.appointments})
 }
 export async function bookAppointment(req, res, next) {
     const { date, name, services } = req.body
@@ -147,7 +140,6 @@ export async function bookAppointment(req, res, next) {
         total
       }
     }
-
     try {
       appointmentID = await req.barberDB.addAppointment(
         req.barber.name,
@@ -156,7 +148,7 @@ export async function bookAppointment(req, res, next) {
       )
       await req.session.clientDB.db.createAndUpdateOne(phoneNumber)
     } catch (err){
-      return Promise.reject(res.sendStatus(400))
+      return next(`Error adding appointment \n${err}`)
     }
 
     const confirmationMessage = getConfirmationMessage(
@@ -168,13 +160,13 @@ export async function bookAppointment(req, res, next) {
 
     const reminderMessage = getReminderMessage(req.barber.name)
 
-    const timeFormat = moment(
+    const friendlyAppointmentTimeFormat = moment(
       date,
-      `MM-DD-YYYY ${friendlyFormat}`
+      `YYYY-MM-DD HH:mm`
     ).format(friendlyFormat)
     // send confirmation
     sendText(confirmationMessage, phoneNumber)
-    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${timeFormat}\nHere is there phone number is ${phoneNumber}`, req.barber.phoneNumber)
+    sendText(`${customerInfo.customerData.firstName} just made an appointment for ${friendlyAppointmentTimeFormat}\nHere is their phone number is ${phoneNumber}`, req.barber.phoneNumber)
 
     createJob(
       formatToCronTime(date),
@@ -184,5 +176,5 @@ export async function bookAppointment(req, res, next) {
       req.barberShopInfo.timeZone
     )
 
-    res.sendStatus(200)
+    res.json({ appointmentID })
   }
