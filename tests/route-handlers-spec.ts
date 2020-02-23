@@ -123,7 +123,7 @@ describe('API Endpoints', () => {
   })
 
   describe('GET /v1/get/schedule/:barbershop/:barber', () => {
-      it.only('should retrieve barber schedule', done => {
+      it('should retrieve barber schedule', done => {
           const expectedSchedule = { 
               availableTimes:
                   [  'Wed, January 2nd, 9:00 am',

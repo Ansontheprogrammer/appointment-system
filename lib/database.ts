@@ -2,12 +2,11 @@ import admin from 'firebase-admin'
 import * as types from './';
 import { validateAppointmentDetails, friendlyFormat, phoneNumberFormatter, getConfirmationMessage, getReminderMessage, formatToCronTime } from '../config/utils';
 import uuid from 'uuid'
-import * as ae from 'ae-backend-database'
+import { AE_Allision } from 'ae-backend-database'
 import { createJob, cancelJob } from './cron';
 import moment from 'moment';
 import { sendText } from './twilio';
 
-const AE_Allision = ae.AE_Allision 
 
 admin.initializeApp({
   credential: admin.credential.cert('./config/firebaseAdminKey.json')
@@ -16,7 +15,7 @@ admin.initializeApp({
 export const db = admin.firestore()
 
 export class Database {
-  db: ae.AE_Allision
+  db: AE_Allision
   
   constructor(path){
     if(!!path['secondCollection']){

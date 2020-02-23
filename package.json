@@ -22,7 +22,7 @@
   "homepage": "https://github.com/Ansontheprogrammer/Sale-Hogs#readme",
   "dependencies": {
     "@ssense/sscheduler": "^1.3.2",
-    "ae-backend-database": "^1.0.0",
+    "ae-backend-database": "^1.0.3",
     "body-parser": "^1.18.3",
     "cron": "^1.7.1",
     "express": "^4.16.4",
