@@ -108,7 +108,6 @@ describe('API Endpoints', () => {
               phoneNumber: customer.phoneNumber,
               date: fromDate
           }
-          console.log(body.appointmentID, 'id')
           request
           .delete(`/v1/delete/appointment/${barberShop}/${barber}/`)
           .send(body)

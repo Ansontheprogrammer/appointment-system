@@ -24,10 +24,8 @@ const sessionConfig = {
 }
 
 export async function setSystemConfigMiddleWare(req: any, res, next){
-  scheduleBackup('barbershops', req.params.barbershop)
-  
   try { 
-    req.barberShopInfo = await new Database({
+    req.session.barberShopInfo = await new Database({
       firstCollection: 'barbershops',
       doc: req.params.barbershop
     }).db.findDataInDocument()
@@ -46,7 +44,7 @@ export async function setSystemConfigMiddleWare(req: any, res, next){
       firstCollection: 'barbershops',
       doc: req.params.barbershop,
       secondCollection: 'customers'
-    })
+    }) 
     return next()
   } catch (err) {
     next(err)

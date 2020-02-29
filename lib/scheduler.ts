@@ -54,7 +54,7 @@ export function getSchedule(req, res): any {
     from,
     to,
     req.barber, 
-    req.barberShopInfo.shopAvailability
+    req.session.barberShopInfo.shopAvailability
     )
 
     if (!availableTimes) {

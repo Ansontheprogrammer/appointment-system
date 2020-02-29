@@ -87,7 +87,7 @@ export async function cancelAppointment(req, res, next) {
     message = `${req.body.clientName} just canceled an appointment for \n${date}. \n\nTheir phone number is ${req.body.phoneNumber} if you would like to contact them.`
 
     let toPhoneNumber = process.env.NODE_ENV === 'develop' ? '9082097544' : req.barber.phoneNumber
-    await sendText(message, toPhoneNumber, req.barberShopInfo.twilioNumber)
+    await sendText(message, toPhoneNumber, req.session.barberShopInfo.twilioNumber)
 
     res.sendStatus(200)
   } catch (err) {
@@ -172,7 +172,7 @@ export async function bookAppointment(req, res, next) {
       phoneNumber,
       reminderMessage, 
       appointmentID,
-      req.barberShopInfo.timeZone
+      req.session.barberShopInfo.timeZone
     )
 
     res.json({ appointmentID })

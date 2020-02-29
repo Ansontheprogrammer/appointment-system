@@ -13,19 +13,19 @@ import {
 
 export class PhoneSystem {
   public static callBarbershop(req, res, twiml) {
-    let phoneNumber = process.env.NODE_ENV === 'development' ? '9082097544' : req.barberShopInfo.shopPhoneNumber
+    let phoneNumber = process.env.NODE_ENV === 'development' ? '9082097544' : req.session.barberShopInfo.shopPhoneNumber
     twiml.dial(phoneNumber)
     return res.send(twiml.toString())
   }
 
   public static sayMessageToClient(req, res, twiml, message){
-    twiml.say(message, { voice: req.barberShopInfo.phoneVoice })
+    twiml.say(message, { voice: req.session.barberShopInfo.phoneVoice })
     return res.send(twiml.toString())
   }
 
     public async phoneFlow(req, res, next) {
       const twiml = new VoiceResponse()
-      // const connectToShopMessage = `Thank you for calling ${req.barberShopInfo.friendlyShopName}!. I'm connecting you to the shop right now. One moment please`;
+      // const connectToShopMessage = `Thank you for calling ${req.session.barberShopInfo.friendlyShopName}!. I'm connecting you to the shop right now. One moment please`;
       // TODO: Play caller a song or waiting sound while we connect them to the shop
       // PhoneSystem.sayMessageToClient(req, res, twiml, connectToShopMessage)
       PhoneSystem.callBarbershop(req, res, twiml)
