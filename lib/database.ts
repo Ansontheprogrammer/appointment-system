@@ -53,7 +53,7 @@ export class Database {
       const appointmentAlreadyScheduledForThisTime = !!appointments.find(appointment => appointment.details.time.from === details.time.from)
       if(appointmentAlreadyScheduledForThisTime) throw Error('Appointment already scheduled');
       let newAppointmentsArray = appointments.concat(appointment)
-      // if(!barber.id) barber.id = uuid.v1()
+      if(!barber.id) barber.id = barberFirstName
       await this.db.createAndUpdateOne({ ...barber, appointments: newAppointmentsArray });
       // Return appointmentID to use to query list if we have to cancel job.
       return appointmentID
