@@ -37,6 +37,24 @@ export class Database {
     return string[0].toUpperCase() + string.slice(1)
   }
 
+  // public findBarberInDatabase(firstName: string): Promise<DocumentData> {
+  //   return new Promise((resolve, reject) => {
+  //     barberCollection
+  //     .doc(firstName).get()
+  //       .then((snapshot) => resolve(snapshot.data()))
+  //       .catch(reject);
+  //   })
+  // }
+
+  // public findAllBarbers(): Promise<DocumentData[]> {
+  //   return new Promise((resolve, reject) => {
+  //     barberCollection
+  //       .onSnapshot(snapshot => {
+  //         snapshot.docs.map(doc => doc.data())
+  //       }, reject)
+  //   })
+  // }
+
   public async addAppointment(barberFirstName: string, customer: { phoneNumber: string, firstName: string }, details: types.DETAILS): Promise<string | Error> {
     const { phoneNumber, firstName } = customer
     const areAppointmentDetailsCorrect = validateAppointmentDetails(details);
@@ -64,6 +82,26 @@ export class Database {
 }
 
 // const customerInfo = Object.assign({ phoneNumber, uuid: uuid.v1(), noCallNoShows: [] })
+// public createBarber(barberInfo: types.BARBER) {
+//   // Assign step number field before saving
+//   barberInfo = Object.assign(barberInfo, { appointments: [] })
+//   barberInfo.name = Database.firstLetterUpperCase(barberInfo.name)
+//   barberInfo.email = barberInfo.email.toLowerCase()
+//   return new Promise((resolve, reject) => {
+//     this.hasPersonSignedUp(true, barberInfo.name).then(hasPersonSignedUp => {
+//       if (!!hasPersonSignedUp) return reject('Barber has already signed up.')
+//       let docRef = barberCollection.doc(barberInfo.name);
+//       docRef.set({ ...barberInfo }).then(resolve, reject)
+//     })
+//   })
+// }
+// public findCustomerInDatabase(phoneNumber: string): Promise<DocumentData> {
+//   return new Promise((resolve, reject) => {
+//     customerCollection.doc(phoneNumber).get()
+//       .then((snapshot) => resolve(snapshot.data()))
+//       .catch(reject);
+//   })
+// }
 
 export async function updateCompanyInfo(req, res){
   const barberShopDoc = new Database({
@@ -177,3 +215,83 @@ export async function bookAppointment(req, res, next) {
 
     res.json({ appointmentID })
   }
+  // export function async walkInAppointment(req, res, next) {
+  //   const { barber, name, services } = req.body
+  //   const phoneNumber = utils.phoneNumberFormatter(req.body.phoneNumber)
+
+  //   const customer = {
+  //     phoneNumber,
+  //     firstName: name
+  //   }
+
+  //   if (!Object.keys(services[0]).length) services.shift()
+
+  //   let total = 0
+  //   services.forEach(service => (total += service.price))
+
+  //   let duration = 0
+  //   services.forEach(service => (duration += service.duration))
+
+  //   const barberInDatabase = await (database.findBarberInDatabase(
+  //     barber
+  //   ) as any)
+
+  //   const firstAvailableTime = getBarberAppointments(
+  //     services,
+  //     barberInDatabase
+  //   )[0]
+
+
+  //   if (!firstAvailableTime) {
+  //     // This barber is booked up for the day or shop is closed
+  //     return res.sendStatus(400)
+  //   }
+
+  //   const confirmationMessage = UserMessage.generateConfirmationMessage(
+  //     services,
+  //     barber,
+  //     firstAvailableTime,
+  //     total,
+  //     true
+  //   )
+
+  //   client.messages.create({
+  //     from: twilioPhoneNumber,
+  //     body: confirmationMessage,
+  //     to: phoneNumber
+  //   })
+
+  //   const time = { from: firstAvailableTime, duration }
+
+  //   const appointmentData = {
+  //     time,
+  //     services,
+  //     total
+  //   }
+
+  //   try {
+  //     await database.addAppointment(barber, customer, appointmentData)
+  //   } catch(err){
+  //     console.error(err, 'error trying to add appointment')
+  //   }
+
+  //   // handle if barbershop is closed
+  //   if (utils.shopIsClosed()) {
+  //     return res.send('Barbershop is closed').status(400)
+  //   }
+
+  //   const reminderMessage = UserMessage.generateReminderMessage(
+  //     services,
+  //     barber,
+  //     firstAvailableTime,
+  //     total
+  //   )
+
+  //   createJob(
+  //     formatToCronTime(firstAvailableTime),
+  //     phoneNumber,
+  //     reminderMessage
+  //   )
+
+  //   res.sendStatus(200)
+  // }
