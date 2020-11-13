@@ -64,10 +64,8 @@ app.listen(port, () => {
       if (err) {
         console.error(err);
         process.exit()
-        return;
       }
       console.log('Finished submitting shop data')
     });
   }
-  
 })

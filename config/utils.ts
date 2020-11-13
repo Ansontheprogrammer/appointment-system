@@ -1,4 +1,3 @@
-import * as twilioLib from '../lib/twilio'
 import { DETAILS } from '../lib'
 import moment = require('moment');
 import { timezone, barberShopAvailability } from '../lib/database';
