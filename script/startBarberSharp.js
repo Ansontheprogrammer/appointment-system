@@ -1,117 +1,52 @@
 const request = require('request')
 
 let url;
-if(process.env.NODE_ENV === 'development'){
-  url = `http://localhost:80/api/setBarberShopData`
-} else {
-  url = `https://appointment-system.onrender.com/api/setBarberShopData`
-}
+url = `https://eclipperz.onrender.com/api/setBarberShopData`
 
-console.log('sending request, ', url)
 request.post(url).form({
-    barberShopName: 'barberSharp',
-    friendlyName: 'Barber Sharp',
-    url: 'barber-sharp.netlify.com',
-    phoneVoice: 'Polly.Justin',
+    barberShopName: 'barberSharp.',
+    friendlyName: 'Anson Ervin Inc.',
+    url: 'ansonervin.com',
+    phoneVoice: 'Polly.Salli',
     twilioNumber: '+16124393345',
-    shopPhoneNumber: '6123155985',
+    shopPhoneNumber: '2012071177',
     shopAvailability: JSON.stringify({
         tuesday : {
-            from: '9',
+            from: '5',
             to: '19',
         },
         wednesday : {
-            from: '9',
+            from: '5',
             to: '19',
         },
         thursday : {
-            from: '9',
+            from: '5',
             to: '19',
         },
         friday : {
-            from: '9',
+            from: '5',
             to: '17',
         },
         saturday : {
-            from: '9',
+            from: '5',
             to: '15',
         }
     }),
     serviceList: JSON.stringify({
         1: {
-          service: 'Classic Cut and Hot Lather Shave Combo',
+          service: 'Basic Website',
           price: 45,
           duration: 45
         },
         2: {
-          service: 'Classic Cut with Famous Razor Finish',
+          service: 'Mobile app',
           price: 22,
           duration: 30,
         },
         3: {
-          service: 'Skin Fade',
-          price: 27,
-          duration: 30,
-        },
-        4: {
-          service: 'Shampoo (relax and cleanse) ',
-          price: 5,
-          duration: 15,
-        },
-        5: {
-          service: 'Child’s Haircut',
-          price: 20,
-          duration: 30
-        },
-        6: {
-          service: 'Senior’s Haircut',
-          price: 15,
-          duration: 30
-        },
-        7: {
-          service: 'Gray Blending',
-          price: 25,
-          duration: 45
-        },
-        8: {
-          service: 'Vigorous Scalp Massage',
-          price: 7,
-          duration: 30
-        },
-        9: {
-          service: 'Vigorous Scalp Massage with Haircut',
-          price: 5,
-          duration: 30
-        },
-        10: {
-          service: 'Ultimate Sharp Shave',
-          price: 55,
-          duration: 90
-        },
-        11: {
-          service: 'Classic Hot Lather Shave',
-          price: 35,
-          duration: 45
-        },
-        12: {
-          service: 'Head Shave',
-          price: 27,
-          duration: 45
-        },
-        13: {
-          service: 'Neck Shave',
-          price: 5,
-          duration: 30
-        },
-        14: {
-          service: 'Beard Trim',
-          price: 15,
-          duration: 30
-        },
-        15: {
-          service: 'Beard Trim & Haircut',
-          price: 29,
-          duration: 45
-        },
+            service: 'Luxury Website',
+            price: 45,
+            duration: 45
+          },
     })
   })
