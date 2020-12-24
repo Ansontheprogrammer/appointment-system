@@ -37,60 +37,74 @@ const sessionConfig = {
   saveUninitialized: true,
   cookie: { secure: true },
 };
+
 app.use(session(sessionConfig));
 
-// Phone system
-app.post("/api/v2/phoneAppointmentFlow", phoneSystem.phoneAppointmentFlow);
-app.post("/api/v2/chooseService", phoneSystem.chooseService);
-app.post("/api/v2/chosenBarber", phoneSystem.chosenBarber);
-app.post("/api/v2/confirmation", phoneSystem.confirmation);
-// App system
-app.post("/api/v2/bookAppointment", appSystem.bookAppointment);
-app.post("/api/v2/walkinAppointment", appSystem.walkInAppointment);
-// No call no show
-app.post("/api/v2/notifyBarber", notifyBarber);
+// DATA ENDPOINTS
+app.put("/api/v2/update/company/:barbershop", router.updateCompanyInfo);
+
+// APPOINTMENT ENDPOINTS
 app.post(
-  "/api/v2/notifyBarberCustomerTriedToCancelWithinTheHour",
+  "/api/v2/appointment/create/:barbershop/:barber",
+  setSystemConfigMiddleWare,
+  setClientMiddleWare,
+  appSystem.bookAppointment
+);
+app.post(
+  "/api/v2/appointment/create/nextAvailable",
+  appSystem.walkInAppointment
+);
+
+app.delete(
+  "/api/v2/appointment/delete/:barbershop/:barber",
+  setSystemConfigMiddleWare,
+  router.cancelAppointment
+);
+
+// Notifications
+app.post("/api/v2/notification/:barbershop/:barber/:type", notifyBarber);
+app.post(
+  "/api/v2/notification/:barbershop/:barber/:type",
   notifyBarberCustomerTriedToCancelWithinTheHour
 );
 app.post(
-  "/api/v2/notifyCustomerAboutFeeOnTheirNextVisit",
+  "/api/v2/notification/:barbershop/:barber/:type",
   notifyCustomerAboutFeeOnTheirNextVisit
 );
+app.post(
+  "/api/v2/send/:barbershop/:barber/:notification/",
+  setSystemConfigMiddleWare,
+  sendNotification
+);
+
 // Text system
 app.post(
   "/api/v2/textMessageFlow",
   textSystem.textMessageFlow,
   flow.processFlow
 );
+
+/**
+ * @api /api/v2/get/schedule/ Get barber schedule
+ */
 app.get(
   "/api/v2/get/schedule/:barbershop/:barber",
   setSystemConfigMiddleWare,
   appSystem.getBarberAvailableTimes
 );
+// PHONE SYSTEM */
+/**
+ * @api /api/v2/phone/ Start company phone tree
+ */
 app.post(
-  "/api/v2/phone/:barbershop/",
+  "/api/v2/phone/welcome/:barbershop/",
   setSystemConfigMiddleWare,
   phoneSystem.phoneAppointmentFlow
 );
-
-app.post(
-  "/api/v2/create/appointment/:barbershop/:barber",
-  setSystemConfigMiddleWare,
-  setClientMiddleWare,
-  appSystem.bookAppointment
-);
-app.delete(
-  "/api/v2/delete/appointment/:barbershop/:barber",
-  setSystemConfigMiddleWare,
-  router.cancelAppointment
-);
-app.put("/api/v2/update/companyInfo/:barbershop", router.updateCompanyInfo);
-app.post(
-  "/api/v2/send/:barbershop/:barber/:notification/",
-  setSystemConfigMiddleWare,
-  sendNotification
-);
+/**
+ * @api /api/v2/phone/confirmation Move to step 2 of phone tree
+ */
+app.post("/api/v2/phone/confirmation", phoneSystem.confirmation);
 
 // Reset server cron jobs
 app.get("/api/resetCronJobs", resetCronJobs);

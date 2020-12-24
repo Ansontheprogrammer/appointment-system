@@ -1,4 +1,4 @@
-import { DETAILS } from "../lib";
+import { DETAILS, SERVICES } from "../lib";
 import moment = require("moment");
 // import { timezone, barberShopAvailability } from '../lib/database';
 
@@ -61,6 +61,39 @@ export function getDate(): moment.Moment {
   return moment(dateWithTimeZone, "M/DD/YYYY, h:mm:ss a");
 }
 
+export function removeDuplicates(a) {
+  var temp = {};
+  for (var i = 0; i < a.length; i++) temp[a[i]] = true;
+  var r = [];
+  for (var k in temp) r.push(k);
+  return r;
+}
+
+export const friendlyFormat = "ddd, MMMM Do, h:mm a";
+
+export const getFriendlyTimeFormat = (time) => {
+  return moment(time, "HH:mm").format("h:mm a");
+};
+
+export function getConfirmationMessage(
+  services: SERVICES[],
+  barberName: string,
+  time: string,
+  total: number
+) {
+  if (!services.length || !barberName || !time || !total)
+    throw Error("ERR - error creating confirmation message");
+  time = moment(time, "YYYY-MM-DD HH:mm").format(this.friendlyFormat);
+  const message = `Great! Here are your appointment details:\n\nService: ${services.map(
+    (service) => `\n${service.service}`
+  )}\n\nBarber: ${barberName}\nTime: \n${time}\nTotal: $${total}\nIf you would like to view your appointments text (view)`;
+  return message;
+}
+
+export function getReminderMessage(barberName: string) {
+  return `REMINDER:\nYour appointment with ${barberName} less than an hour away`;
+}
+
 // Expects time to be in format yyyy-mm-dd hh-mm
 export const formatToCronTime = (time) => {
   // Date Values for cron job
@@ -72,11 +105,3 @@ export const formatToCronTime = (time) => {
 
   return `0 ${minutes} ${alertHour} ${dayOfMonth} ${month} *`;
 };
-
-export function removeDuplicates(a) {
-  var temp = {};
-  for (var i = 0; i < a.length; i++) temp[a[i]] = true;
-  var r = [];
-  for (var k in temp) r.push(k);
-  return r;
-}

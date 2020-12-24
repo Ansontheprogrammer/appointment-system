@@ -1,7 +1,13 @@
 export type CUSTOMER = {
+  id: string;
   phoneNumber: string;
   firstName: string;
   stepNumber?: string;
+  phoneSession: {
+    barber?: string;
+    services?: SERVICES[];
+    total: number;
+  };
 };
 
 export type ALLOCATED_TIMES = {
@@ -52,4 +58,44 @@ export type SERVICES = {
   service: string;
   price?: number;
   duration: number;
+};
+
+export type BARBERSHOP = {
+  id: string;
+  systemName: string;
+  friendlyName: string;
+  url: string;
+  phoneVoice: string;
+  twilioNumber: string;
+  shopPhoneNumber: string;
+  timezone: string;
+  serviceList: [
+    {
+      service: string;
+      price: number;
+      duration: number;
+    }
+  ];
+  shopAvailability: {
+    tuesday: {
+      from: string;
+      to: string;
+    };
+    wednesday: {
+      from: string;
+      to: string;
+    };
+    thursday: {
+      from: string;
+      to: string;
+    };
+    friday: {
+      from: string;
+      to: string;
+    };
+    saturday: {
+      from: string;
+      to: string;
+    };
+  };
 };

@@ -182,7 +182,7 @@ export async function phoneFlow(req, res, next) {
   // const connectToShopMessage = `Thank you for calling ${req.barberShopInfo.friendlyShopName}!. I'm connecting you to the shop right now. One moment please`;
   // TODO: Play caller a song or waiting sound while we connect them to the shop
   // PhoneSystem.sayMessageToClient(req, res, twiml, connectToShopMessage)
-  PhoneSystem.callBarbershop(req, res);
+  PhoneSystem.callCompany(req, res);
   res.status(200);
 }
 

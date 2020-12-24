@@ -1,12 +1,9 @@
 const CronJob = require("cron").CronJob;
-import { client, sendText } from "./twilio";
+import { sendText } from "./twilio";
 export const appointmentsInQueue = [];
 import * as types from "./";
 import { formatToCronTime } from "../config/utils";
 import { DocumentData } from "@google-cloud/firestore";
-import { AE_Allision } from "ae-backend-database";
-import { db } from "./db/";
-import schedule from "node-schedule";
 import { request } from "http";
 
 export function createJob(
@@ -20,7 +17,6 @@ export function createJob(
     date,
     function () {
       sendText(message, phoneNumber);
-
       this.stop();
     },
     () => onComplete(id),
