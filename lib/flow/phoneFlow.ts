@@ -1,231 +1,199 @@
-import {
-  phoneNumberFormatter,
-  shopIsClosed,
-  getDate,
-} from "../../config/utils";
-import {
-  database,
-  getBarberAppointments,
-  sendBookLaterDateLink,
-  VoiceResponse,
-  client,
-} from "../twilio";
+import { phoneNumberFormatter, addDebugConsoleLog } from "../../config/utils";
+import { client } from "../twilio";
 import uuid from "uuid";
-import moment from "moment";
-import { BARBER, BARBERSHOP, CUSTOMER } from "../";
-import { createJob } from "../cron";
+import { BARBERSHOP, CUSTOMER } from "../";
 import { UserMessage } from "../userMessage";
-import { User } from "../db/customer";
+import { Customer } from "../db/customer";
 import { Barbershop } from "../db/barbershop";
+import twilio from "twilio";
+const VoiceResponse = (twilio as any).twiml.VoiceResponse;
 
 export class PhoneSystem {
-  public async phoneAppointmentFlow(req, res, next) {
+  public static sayMessageToClient(barbershop: BARBERSHOP, twiml, message) {
+    twiml.say(message, { voice: barbershop.phoneVoice });
+  }
+  public static async callCompany(barbershop: BARBERSHOP, res, twiml, next) {
     const phoneNumber = phoneNumberFormatter(res.req.body.From);
-    const twiml = new VoiceResponse();
-    const barbershopDB = new Barbershop(["barbershops"]);
-    const barbershop = (await barbershopDB.db.AECollection.findOne(
-      "phoneNumber",
-      res.req.body.To
-    )) as BARBERSHOP;
-    const customerDB = new User(["barbershop", barbershop.id, "users"]);
-    /*
-          if shop is closed currently send shop is closed message
-          sending twiml before creating gather twiml to avoid latency issues
-      */
-    if (shopIsClosed()) {
-      twiml.say(
-        `The shop is closed currently. I'm sending you a link to book an appointment at a later date`,
-        {
-          voice: barbershop.phoneVoice,
-        }
-      );
-      res.send(twiml.toString());
-      sendBookLaterDateLink(phoneNumber);
-      return;
+    const customerDB = new Customer([
+      "barbershops",
+      barbershop.id,
+      Customer.customerSubCollectionDBName,
+    ]);
+    const phoneSession = {};
+
+    try {
+      const customer = (await customerDB.db.AECollection.findOne(
+        "phoneNumber",
+        phoneNumber
+      )) as CUSTOMER;
+      customerDB.db.AECollection.createAndUpdateOne({
+        id: customer.id,
+        phoneSession,
+        phoneNumber,
+      });
+
+      twiml.dial(barbershop.shopPhoneNumber);
+      res.set("Content-Type", "text/xml");
+      return res.send(twiml.toString());
+    } catch (err) {
+      if (err === "No matching documents.") {
+        customerDB.db.AECollection.createAndUpdateOne({
+          id: uuid(),
+          phoneSession,
+          phoneNumber,
+        });
+      } else {
+        return next(err);
+      }
     }
+  }
+
+  public async oneStepPhoneFlow(req, res, next) {
+    const twiml = new VoiceResponse();
+    const connectToShopMessage = `Thank you for calling AnsonErvin ink!. I'm connecting you to the shop right now. One moment please`;
+    // TODO: Play caller a song or waiting sound while we connect them to the shop
+    PhoneSystem.sayMessageToClient(
+      req.session.barbershop,
+      twiml,
+      connectToShopMessage
+    );
+    return res.status(200);
+  }
+
+  public async phoneAppointmentFlow(req, res, next) {
+    const barbershop = req.session.barbershop;
+    const twiml = new VoiceResponse();
+    const phoneSession = {};
+    const phoneNumber = req.session.phoneNumber;
+    addDebugConsoleLog([
+      "phoneAppointmentFlow",
+      "Just received the barbershop",
+      JSON.stringify(barbershop, null, 4),
+      twiml,
+      phoneNumber,
+    ]);
 
     let gather, chooseServiceMessage;
     let message = ``;
     for (let prop in barbershop.serviceList) {
       message += `(${prop}) for ${barbershop.serviceList[prop].service}\n`;
     }
+    addDebugConsoleLog([
+      "phoneAppointmentFlow",
+      "message to text user",
+      message,
+      JSON.stringify(barbershop, null, 4),
+      "BARBERSHop",
+    ]);
 
-    if (Object.keys(barbershop.serviceList).length <= 10) {
-      gather = twiml.gather({
-        action: "/api/chooseService",
-        method: "POST",
-        finishOnKey: "#",
-        timeout: 3,
-      });
-      chooseServiceMessage = `Thank you for calling ${barbershop.friendlyName}!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`;
-    } else {
-      gather = twiml.gather({
-        action: "/api/chooseService",
-        method: "POST",
-        timeout: 5,
-      });
-      chooseServiceMessage = `Thank you for calling ${barbershop.friendlyName}!. What type of service would you like? ${message}`;
-    }
+    gather = twiml.gather({
+      action: `/api/v2/phone/multi/confirmation/${barbershop.id}`,
+      method: "POST",
+      finishOnKey: "#",
+      timeout: 3,
+    });
+    addDebugConsoleLog([
+      "phoneAppointmentFlow",
+      "Collected twiml gather",
+      gather,
+    ]);
+
+    chooseServiceMessage = `Thank for calling ${barbershop.friendlyName}!. What type of service would you like? Please choose one or more of the following. Press pound when your finish. ${message}`;
 
     gather.say(chooseServiceMessage, { voice: barbershop.phoneVoice });
-
-    const customer = (await customerDB.db.AECollection.findOne(
-      "phoneNumber",
-      phoneNumber
-    )) as CUSTOMER;
-
-    if (!customer)
-      await customerDB.db.AECollection.createAndUpdateOne({
-        phoneNumber,
-        id: customer.id,
-      });
-    res.send(twiml.toString());
-  }
-
-  public static async callCompany(res, next) {
-    const phoneNumber = phoneNumberFormatter(res.req.body.From);
-    const barbershopDB = new Barbershop(["barbershops"]);
-    const barbershop = (await barbershopDB.db.AECollection.findOne(
-      "phoneNumber",
-      res.req.body.To
-    )) as BARBERSHOP;
-
-    const customerDB = new User(["barbershop", barbershop.id, "users"]);
-    const customer = (await customerDB.db.AECollection.findOne(
-      "phoneNumber",
-      phoneNumber
-    )) as CUSTOMER;
-
+    addDebugConsoleLog([
+      "phoneAppointmentFlow",
+      "chooseServiceMessage",
+      chooseServiceMessage,
+    ]);
+    const customerDB = new Customer([
+      "barbershops",
+      barbershop.id,
+      Customer.customerSubCollectionDBName,
+    ]);
     try {
-      const phoneSession = {};
-      customerDB.db.AECollection.createAndUpdateOne({
+      const customer = (await customerDB.db.AECollection.findOne(
+        "phoneNumber",
+        phoneNumber
+      )) as CUSTOMER;
+      addDebugConsoleLog(["phoneAppointmentFlow", "customer ID", customer.id]);
+      await customerDB.db.AECollection.createAndUpdateOne({
         id: customer.id,
         phoneSession,
         phoneNumber,
       });
-    } catch (err) {
-      next(err);
-    }
 
-    const twiml = new VoiceResponse();
-    twiml.say(
-      `${UserMessage.generateRandomAgreeWord()}! I'm connecting you to the shop right now.`,
-      {
-        voice: barbershop.phoneVoice,
+      res.set("Content-Type", "text/xml");
+      return res.send(twiml.toString());
+    } catch (err) {
+      if (err === "No matching documents.") {
+        customerDB.db.AECollection.createAndUpdateOne({
+          id: uuid(),
+          phoneSession,
+          phoneNumber,
+        });
+        res.sendStatus(200);
+      } else {
+        return next(err);
       }
-    );
-    twiml.dial(barbershop.shopPhoneNumber);
-    res.set("Content-Type", "text/xml");
-    return res.send(twiml.toString());
+    }
+    res.send(twiml.toString());
   }
 
   public async confirmation(req, res, next) {
     const keyPress = res.req.body.Digits;
-    const phoneNumber = phoneNumberFormatter(res.req.body.From);
-    const barbershopDB = new Barbershop(["barbershops"]);
-    const barbershop = (await barbershopDB.db.AECollection.findOne(
-      "phoneNumber",
-      res.req.body.To
-    )) as BARBERSHOP;
-    const barberDB = new Barbershop(["barbershops", barbershop.id, "barbers"]);
-    const foundBarber = (await barberDB.db.AECollection.findOne(
-      "phoneNumber",
-      res.req.body.To
-    )) as BARBER;
-    const customerDB = new User(["barbershop", barbershop.id, "users"]);
-    const customer = (await customerDB.db.AECollection.findOne(
-      "phoneNumber",
-      phoneNumber
-    )) as CUSTOMER;
-    // Use the Twilio Node.js SDK to build an XML response
     const twiml = new VoiceResponse();
-    if (!!keyPress)
-      if (keyPress[0] === "0") return PhoneSystem.callCompany(res, next);
+    const phoneNumber = req.session.phoneNumber;
+    const barbershop = req.session.barbershop;
+    const barberDB = new Barbershop(["barbershops", barbershop.id, "barbers"]);
+    let foundBarber;
 
-    const barber = customer.phoneSession.barber;
-    const firstName = customer.firstName;
-    const services = customer.phoneSession.services;
-    const total = customer.phoneSession.total;
-    let time,
-      duration = 0;
-    const availableTimes = getBarberAppointments(
-      customer.phoneSession.services,
-      foundBarber
-    );
-    time = availableTimes[parseInt(keyPress) - 1];
-
-    if (time === undefined) return this.errorMessage(res, "/api/chosenBarber");
-
-    twiml.say(
-      `${UserMessage.generateRandomAgreeWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today`,
-      { voice: barbershop.phoneVoice }
-    );
-    services.forEach((service) => (duration += service.duration));
-
-    res.send(twiml.toString());
-
-    const details = {
-      services,
-      time: { from: time, duration },
-      total,
-    };
-
-    const reminderMessage = UserMessage.generateReminderMessage(
-      services,
-      barber,
-      time,
-      total
-    );
-    const confirmationMessage = UserMessage.generateConfirmationMessage(
-      services,
-      barber,
-      time,
-      total,
-      true
-    );
     try {
-      await database.addAppointment(
-        barber,
-        { phoneNumber, firstName },
-        details
-      );
-
-      let currDate = getDate();
-
-      const minutes = moment(time, "h:mm a").format("m");
-      const appointmentHour = moment(time, "YYYY-MM-DD h:mm a").format("H");
-      const alertHour = parseInt(appointmentHour) - 1;
-      let date = currDate.date();
-
-      createJob(
-        `0 ${minutes} ${alertHour} ${date} ${currDate.month()} *`,
-        phoneNumber,
-        reminderMessage,
-        uuid(),
-        barbershop.timezone
-      );
-      await customerDB.db.AECollection.createAndUpdateOne({
-        id: customer.id,
-        time,
-        phoneNumber: phoneNumberFormatter(req.body.From),
-      });
+      const allBarbers = await barberDB.db.AECollection.findAll();
+      foundBarber = allBarbers[keyPress];
+      addDebugConsoleLog([
+        "confirmation",
+        "Just Found barber from db",
+        keyPress,
+        "keyPress",
+        foundBarber,
+      ]);
+      if (!!keyPress) {
+        if (keyPress === "0") {
+          addDebugConsoleLog(["confirmation", "User pressed 0"]);
+          return PhoneSystem.callCompany(barbershop, res, twiml, next);
+        } else if (foundBarber) {
+          addDebugConsoleLog([
+            "confirmation",
+            "in found barber condition",
+            phoneNumber,
+            JSON.stringify(barbershop, null, 4),
+            "user phone number",
+          ]);
+          const message = `${UserMessage.getRandomAgreeWord()} so I will be sending you a confirmation text about your appointment. Thank you for working with us today`;
+          twiml.say(message, { voice: barbershop.phoneVoice });
+          client.messages.create({
+            from: barbershop.twilioNumber,
+            body: message,
+            to: phoneNumber,
+          });
+          res.send(twiml.toString());
+          return res.status(200);
+        } else {
+          addDebugConsoleLog(["confirmation", "sending error Message"]);
+          return PhoneSystem.errorMessage(
+            barbershop,
+            res,
+            `/api/v2/phone/multi/confirmation/${barbershop.id}`
+          );
+        }
+      }
     } catch (err) {
       next(err);
     }
-
-    client.messages.create({
-      from: barbershop.twilioNumber,
-      body: confirmationMessage,
-      to: phoneNumber,
-    });
   }
 
-  private async errorMessage(res, redirectUrl: string) {
-    const barbershopDB = new Barbershop(["barbershops"]);
-    const barbershop = (await barbershopDB.db.AECollection.findOne(
-      "phoneNumber",
-      res.req.body.To
-    )) as BARBERSHOP;
+  private static async errorMessage(barbershop, res, redirectUrl: string) {
     const twiml = new VoiceResponse();
 
     twiml.say("That was an invalid response", { voice: barbershop.phoneVoice });

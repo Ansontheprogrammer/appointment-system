@@ -1,12 +1,12 @@
 import * as utils from "../../config/utils";
 import { database, getBarberAppointments, client } from "../twilio";
 import moment from "moment";
-import { BARBER, BARBERSHOP, CUSTOMER } from "../";
+import { BARBER, BARBERSHOP, CUSTOMER } from "..";
 import { createJob } from "../cron";
 import { formatToCronTime } from "../../config/utils";
 import { UserMessage } from "../userMessage";
 import { Barbershop } from "../db/barbershop";
-import { User } from "../db/customer";
+import { Customer } from "../db/customer";
 import uuid from "uuid";
 
 export class AppSystem {
@@ -23,7 +23,7 @@ export class AppSystem {
       "phoneNumber",
       res.req.body.To
     )) as BARBER;
-    const customerDB = new User(["barbershop", barbershop.id, "users"]);
+    const customerDB = new Customer(["barbershop", barbershop.id, "users"]);
     const customer = {
       phoneNumber,
       firstName: name,
@@ -44,7 +44,7 @@ export class AppSystem {
       return res.sendStatus(400);
     }
 
-    const confirmationMessage = UserMessage.generateConfirmationMessage(
+    const confirmationMessage = UserMessage.getConfirmationMessage(
       services,
       barber,
       firstAvailableTime,
@@ -66,18 +66,18 @@ export class AppSystem {
       total,
     };
 
-    try {
-      await database.addAppointment(barber, customer, appointmentData);
-    } catch (err) {
-      console.error(err, "error trying to add appointment");
-    }
+    // try {
+    //   await database.addAppointment(barber, customer, appointmentData);
+    // } catch (err) {
+    //   console.error(err, "error trying to add appointment");
+    // }
 
     // handle if barbershop is closed
     if (utils.shopIsClosed()) {
       return res.send("Barbershop is closed").status(400);
     }
 
-    const reminderMessage = UserMessage.generateReminderMessage(
+    const reminderMessage = UserMessage.getReminderMessage(
       services,
       barber,
       firstAvailableTime,
@@ -134,7 +134,7 @@ export class AppSystem {
       res.req.body.To
     )) as BARBERSHOP;
     const barberDB = new Barbershop(["barbershops", barbershop.id, "barbers"]);
-    const customerDB = new User(["barbershop", barbershop.id, "users"]);
+    const customerDB = new Customer(["barbershop", barbershop.id, "users"]);
     const customer = (await customerDB.db.AECollection.findOne(
       "phoneNumber",
       phoneNumber
@@ -164,20 +164,20 @@ export class AppSystem {
       },
     };
 
-    database
-      .addAppointment(
-        barber,
-        customerInfo.customerData,
-        customerInfo.appointmentData
-      )
-      .catch((err) => "App Flow - could not add customer appointment");
+    // database
+    //   .addAppointment(
+    //     barber,
+    //     customerInfo.customerData,
+    //     customerInfo.appointmentData
+    //   )
+    //   .catch((err) => "App Flow - could not add customer appointment");
 
     customerDB.db.AECollection.createAndUpdateOne({
       id: uuid,
     });
 
     // send confirmation
-    const confirmationMessage = UserMessage.generateConfirmationMessage(
+    const confirmationMessage = UserMessage.getConfirmationMessage(
       services,
       barber,
       formattedDateTime,
@@ -191,7 +191,7 @@ export class AppSystem {
       to: phoneNumber,
     });
 
-    const reminderMessage = UserMessage.generateReminderMessage(
+    const reminderMessage = UserMessage.getReminderMessage(
       services,
       barber,
       formattedDateTime,

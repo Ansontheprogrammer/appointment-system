@@ -1,9 +1,9 @@
 import bodyParser from "body-parser";
 import express from "express";
 import { PhoneSystem } from "./lib/flow/phoneFlow";
-import { TextSystem } from "./lib/flow/smsFlow";
-import { AppSystem } from "./lib/flow/appFlow";
+import { AppSystem } from "./lib/flow/api";
 import * as router from "./lib/router";
+import * as middleware from "./lib/middleware";
 import {
   notifyBarber,
   notifyBarberCustomerTriedToCancelWithinTheHour,
@@ -16,10 +16,11 @@ import cors from "cors";
 import { exec } from "child_process";
 import uuid from "uuid";
 import session from "express-session";
-import { resetCronJobs } from "./lib/cron";
+import { shopIsClosed } from "./config/utils";
+// import { resetCronJobs } from "./lib/cron";
 
 const phoneSystem = new PhoneSystem();
-const textSystem = new TextSystem();
+// const textSystem = new TextSystem();
 const appSystem = new AppSystem();
 
 export const app = express();
@@ -78,11 +79,12 @@ app.post(
 );
 
 // Text system
-app.post(
-  "/api/v2/textMessageFlow",
-  textSystem.textMessageFlow,
-  flow.processFlow
-);
+
+// app.post(
+//   "/api/v2/textMessageFlow",
+//   textSystem.textMessageFlow,
+//   flow.processFlow
+// );
 
 /**
  * @api /api/v2/get/schedule/ Get barber schedule
@@ -92,22 +94,35 @@ app.get(
   setSystemConfigMiddleWare,
   appSystem.getBarberAvailableTimes
 );
+
 // PHONE SYSTEM */
+// ONE SET PHONE FLOW
 /**
- * @api /api/v2/phone/ Start company phone tree
+ * @api /api/v2/phone/single/welcome/:barbershop Start company phone tree
  */
 app.post(
-  "/api/v2/phone/welcome/:barbershop/",
-  setSystemConfigMiddleWare,
+  "/api/v2/phone/single/welcome/:barbershop",
+  middleware.default.phoneFlowMiddleWare,
+  phoneSystem.oneStepPhoneFlow
+);
+// MULTI STEP PHONE FLOW
+/**
+ * @api /api/v2/phone/multi/welcome/:barbershop Start company phone tree
+ */
+app.post(
+  "/api/v2/phone/multi/welcome/:barbershop",
+  middleware.default.phoneFlowMiddleWare,
   phoneSystem.phoneAppointmentFlow
 );
 /**
  * @api /api/v2/phone/confirmation Move to step 2 of phone tree
  */
-app.post("/api/v2/phone/confirmation", phoneSystem.confirmation);
+app.post(
+  "/api/v2/phone/multi/confirmation/:barbershop",
+  middleware.default.phoneFlowMiddleWare,
+  phoneSystem.confirmation
+);
 
-// Reset server cron jobs
-app.get("/api/resetCronJobs", resetCronJobs);
 app.get("/api/ping", (req, res, next) => {
   res.sendStatus(200);
 });
@@ -120,13 +135,10 @@ app.listen(port, () => {
     process.env.NODE_ENV
   );
   if (process.env.NODE_ENV === "development") {
-    exec("npm run set", (err, stdout, stderr) => {
-      if (err) {
-        console.error(err);
-        process.exit();
-      }
-      console.log("Finished submitting shop data");
-    });
+  } else {
+    // Reset server cron jobs
+    /**
+     */
   }
 });
 

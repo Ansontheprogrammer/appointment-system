@@ -88,30 +88,30 @@ export function clearQueue() {
   appointmentsInQueue.length = 0;
 }
 
-export function resetCronJobs(
-  barberCollection: FirebaseFirestore.CollectionReference<DocumentData>
-) {
-  barberCollection.get().then((snapshot) => {
-    snapshot.docs.forEach((doc) => {
-      const barberName = doc.id;
-      const barberAppointments = doc.get(
-        "appointments"
-      ) as types.BARBER_APPOINTMENTS[];
-      barberAppointments.forEach((appointment) => {
-        const reminderMessage = this.UserMessage.getReminderMessage(
-          appointment.details.services,
-          barberName as any,
-          appointment.details.time.from,
-          appointment.details.total
-        );
-        createJob(
-          formatToCronTime(appointment.details.time.from),
-          appointment.phoneNumber,
-          reminderMessage,
-          appointment.uuid,
-          "America/Chicago"
-        );
-      });
-    });
-  });
-}
+// export function resetCronJobs(
+//   barberCollection: FirebaseFirestore.CollectionReference<DocumentData>
+// ) {
+//   barberCollection.get().then((snapshot) => {
+//     snapshot.docs.forEach((doc) => {
+//       const barberName = doc.id;
+//       const barberAppointments = doc.get(
+//         "appointments"
+//       ) as types.BARBER_APPOINTMENTS[];
+//       barberAppointments.forEach((appointment) => {
+//         const reminderMessage = this.UserMessage.getReminderMessage(
+//           appointment.details.services,
+//           barberName as any,
+//           appointment.details.time.from,
+//           appointment.details.total
+//         );
+//         createJob(
+//           formatToCronTime(appointment.details.time.from),
+//           appointment.phoneNumber,
+//           reminderMessage,
+//           appointment.uuid,
+//           "America/Chicago"
+//         );
+//       });
+//     });
+//   });
+// }

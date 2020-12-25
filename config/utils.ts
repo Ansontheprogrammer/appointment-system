@@ -105,3 +105,12 @@ export const formatToCronTime = (time) => {
 
   return `0 ${minutes} ${alertHour} ${dayOfMonth} ${month} *`;
 };
+
+export const addDebugConsoleLog = (log: any[]) => {
+  const concatentedLog: string = [log]
+    .map((element) => element.toString())
+    .reduce((a, b) => a + "\n" + b);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`*** CUSTOM DEBUGGER *** \n${concatentedLog.toUpperCase()}`);
+  }
+};

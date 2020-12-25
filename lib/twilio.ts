@@ -5,14 +5,12 @@ import * as types from "./";
 import { Scheduler, TimeAvailability } from "@ssense/sscheduler";
 import moment from "moment";
 import { removeDuplicates } from "../config/utils";
-import { PhoneSystem } from "./flow/phoneFlow";
 import { UserMessage } from "./userMessage";
 
 export const client: any = twilio(
   config.TWILIO_ACCOUNT_SID,
   config.TWILIO_AUTH_TOKEN
 );
-export const VoiceResponse = (twilio as any).twiml.VoiceResponse;
 export const MessagingResponse = (twilio as any).twiml.MessagingResponse;
 export const database = new Database([]);
 const scheduler = new Scheduler();
@@ -175,15 +173,6 @@ export async function notifyBarberCustomerTriedToCancelWithinTheHour(
   // });
 
   res.sendStatus(200);
-}
-
-export async function phoneFlow(req, res, next) {
-  const twiml = new VoiceResponse();
-  // const connectToShopMessage = `Thank you for calling ${req.barberShopInfo.friendlyShopName}!. I'm connecting you to the shop right now. One moment please`;
-  // TODO: Play caller a song or waiting sound while we connect them to the shop
-  // PhoneSystem.sayMessageToClient(req, res, twiml, connectToShopMessage)
-  PhoneSystem.callCompany(req, res);
-  res.status(200);
 }
 
 export async function notifyCustomerAboutFeeOnTheirNextVisit(req, res, next) {

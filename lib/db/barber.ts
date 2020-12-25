@@ -6,6 +6,8 @@ import { AE_Allision } from "ae-backend-database";
 import { Database } from ".";
 
 export class Barber extends Database {
+  public static subCollectionDBName = "customers";
+
   public async addAppointment(
     barberFirstName: string,
     customer: { phoneNumber: string; firstName: string },
