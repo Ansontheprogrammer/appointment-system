@@ -1,87 +1,149 @@
-import * as types from "./";
-import { TimeAvailability, Scheduler } from "@ssense/sscheduler";
+import { Allocated, Scheduler } from "@ssense/sscheduler";
 import moment from "moment";
-import { friendlyFormat } from "../config/utils";
-
+import { Database } from "./db";
 const scheduler = new Scheduler();
 
-export function getAvailableTimes(
-  duration: number,
-  interval: number,
-  allocatedTimes: types.ALLOCATED_TIMES[],
-  from: string,
-  to: string,
-  barber: types.BARBER,
-  barberShopAvailability
-): TimeAvailability[] {
-  // set time to get available times
-  return scheduler.getIntersection({
-    from,
-    to,
-    duration,
-    interval,
-    schedules: [
-      {
-        ...barberShopAvailability,
-        unavailability: [
-          {
-            from: `${from} ${barber.unavailabilities.lunch.from}`,
-            to: `${from} ${barber.unavailabilities.lunch.to}}`,
-          },
-          ...barber.unavailabilities.offDays,
-          ...barber.unavailabilities.unavailableTimes,
-          ...barber.unavailabilities.vacations,
-        ],
-        allocated: allocatedTimes,
-      },
-    ],
-  })[from];
+export async function getAvailableTimes(req, res, next) {
+  const { duration, interval, from, schedule, id } = req.body;
+  const toDate = moment(from).add(1, "days");
+  const type = req.params.type;
+  console.log("req.body", req.body);
+  if (!duration || !interval || !from || !schedule) {
+    res.status(400);
+    return next(
+      "You need to pass in a duration, interval, 'from' date, and schedule"
+    );
+  }
+  if ((type !== "study" && type !== "rest") || id == null) {
+    res.status(400);
+    return next("You need to pass in a schedule type and user id");
+  }
+
+  const availableTimes = await getTimeSchedule(
+    {
+      duration,
+      interval,
+      from,
+      schedule,
+      toDate,
+      id,
+    },
+    type
+  );
+
+  console.log("RETURNING SCHEDULE...", availableTimes);
+  return res.json(availableTimes);
 }
 
-export function getSchedule(req, res): any {
-  // returns back an array of available times in friendly format - 'ddd, MMMM Do, h:mm a'
-  const { fromDate, totalDuration } = req.query;
-  let from = !!fromDate
-    ? moment(fromDate).format("YYYY-MM-DD")
-    : moment().format("YYYY-MM-DD");
-  let to = moment(from).add(1, "day").format("YYYY-MM-DD");
-  const interval = 30;
-  const barbersAllocatedTimes = req.barber.appointments.map(
-    (appointment) => appointment.details.time
-  );
-  let availableTimes = getAvailableTimes(
-    totalDuration,
-    interval,
-    barbersAllocatedTimes,
-    from,
-    to,
-    req.barber,
-    req.session.barberShopInfo.shopAvailability
-  );
+async function getTimeSchedule(
+  { duration, interval, from, toDate, schedule, id },
+  type: string
+) {
+  try {
+    let availabiltyMap;
+    if (type == "study") {
+      availabiltyMap = scheduler.getAvailability({
+        from,
+        to: toDate,
+        duration,
+        interval,
+        schedule: {
+          weekdays: {
+            from: "08:00",
+            to: "18:00",
+            unavailability: schedule.weekdays.unavailability,
+          },
+          saturday: {
+            from: "08:00",
+            to: "18:00",
+          },
+          unavailability: schedule.unavailability,
+          allocated: await getFormattedEvents(id),
+        },
+      });
+    } else if (type == "rest") {
+      const formattedEvents = await getFormattedEvents(id);
+      console.log(formattedEvents, "formatted Events");
 
-  if (!availableTimes) {
-    return res.json({ availableTimes: [] });
-  } else {
-    const formattedTimes = formatAllocatedTimes(availableTimes).map((time) =>
-      moment(`${from} ${time}`, "YYYY-MM-DD h:mm a").format(friendlyFormat)
-    );
-
-    return res.json({ availableTimes: formattedTimes });
+      availabiltyMap = scheduler.getIntersection({
+        from,
+        to: toDate,
+        duration,
+        interval,
+        schedules: [
+          {
+            weekdays: {
+              from: "22:00",
+              to: "23:45",
+              unavailability: schedule.weekdays.unavailability,
+            },
+            unavailability: schedule.unavailability,
+            allocated: formattedEvents,
+          },
+        ],
+      });
+    }
+    return mapAvailabilityMapToFriendlyFormat(type, availabiltyMap, from);
+  } catch (err) {
+    throw err;
   }
 }
 
-export function formatAllocatedTimes(
-  barbersAllocatedTimes: TimeAvailability[]
+function mapAvailabilityMapToFriendlyFormat(
+  type: string,
+  availabiltyMap,
+  from
 ) {
-  return barbersAllocatedTimes
-    .filter((availability) => availability.available)
-    .map((availability) => moment(availability.time, "HH:mm").format("h:mm a"));
+  if (type === "study") {
+    return Object.keys(availabiltyMap)
+      .map((key) =>
+        availabiltyMap[key]
+          .filter((availability) => availability.available)
+          .map(
+            (availability) =>
+              `${moment(`${from} ${availability.time}`).format(
+                "h:mm:ss a"
+              )} - ${moment(`${from} ${availability.time}`)
+                /// Add estimated 2 hours to study
+                .add(2, "hours")
+                .format("h:mm:ss a")}`
+          )
+      )
+      .flat(1);
+  } else {
+    console.log(availabiltyMap, "availabiltyMap");
+
+    return Object.keys(availabiltyMap)
+      .map((key) =>
+        availabiltyMap[key]
+          .filter((availability) => availability.available)
+          .map((availability) => {
+            return `${moment(`${from} ${availability.time}`).format(
+              "h:mm:ss a"
+            )} - ${moment(`${from} ${availability.time}`)
+              /// Add estimated 8 hours to sleep
+              .add(8, "hours")
+              .format("h:mm:ss a")}`;
+          })
+      )
+      .flat(1);
+  }
 }
 
-// export function queryAllocatedTimes(
-//   barbersAllocatedTimes: TimeAvailability[],
-//   time: string
-// ) {
-//   return barbersAllocatedTimes
-//     .filter(availability => availability.time === time)[0].available
-// }
+async function getFormattedEvents(id: string) {
+  try {
+    const snapshots = await new Database().findUserEvents(id);
+
+    return (await snapshots.get()).docs.map((doc) => {
+      const event: ConsiliumEvent = doc.data() as ConsiliumEvent;
+
+      console.log(event.id, "id");
+      return {
+        duration: 120,
+        from: (event.date as any).toDate(),
+      } as Allocated;
+    });
+  } catch (err) {
+    throw err;
+  }
+}
