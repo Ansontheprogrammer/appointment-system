@@ -23,7 +23,6 @@ export class Database {
 
   async findUserEvents(id: string) {
     try {
-      console.log("ABOUT TO RETRIEVE DB");
       return Promise.resolve(
         await db.collection("events").where("joinedUsers", "array-contains", id)
       );
